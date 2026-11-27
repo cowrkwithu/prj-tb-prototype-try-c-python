@@ -1,0 +1,38 @@
+{# 변이 표 (원본 GenomeBrowser 표) — 빈도·샘플 수는 환자 데이터 집계 #}
+<div class="gap-section">
+  <p class="text-10 text-muted" data-testid="variant-count">{% if is_en %}{{ rows|length }} variants · {{ gene_total }} genes{% else %}총 {{ rows|length }}개 변이 · {{ gene_total }}개 유전자{% endif %}
+    · {% if is_en %}Frequency = carriers / {{ denominator }} subjects with genomic data (computed from the database){% else %}빈도 = 보유 대상자 / 유전체 데이터 보유 대상자 {{ denominator }}명 (DB 집계){% endif %}</p>
+</div>
+<div class="table-wrap gap-table">
+  <table class="table table-compact table-clickable">
+    <thead><tr>
+      <th>{% t "유전자" "Gene" %}</th><th>{% t "위치" "Position" %}</th><th>Ref/Alt</th>
+      <th>{% t "아미노산 변이 (Codon No.)" "AA Change (Codon No.)" %}</th><th>{% t "아미노산 변이 (E. coli)" "AA Change (E. coli)" %}</th>
+      <th>{% t "약제내성 연관" "Associated Resistance" %}</th><th class="text-right">{% t "빈도" "Frequency" %}</th><th class="text-right">{% t "샘플 수" "Samples" %}</th>
+    </tr></thead>
+    <tbody>
+      {% for v in rows %}
+        <tr hx-get="/gap/variants/{{ v.id }}" hx-target="#gap-modal" hx-swap="innerHTML" data-testid="variant-row">
+          <td class="font-mono font-medium text-navy"><span data-tip="{% t '행을 누르면 이 변이의 상세 정보와 데이터 생성 창을 엽니다.' 'Click the row to open details for this variant and generate data.' %}" data-tip-side="right">{{ v.gene }}</span></td>
+          <td class="font-mono">{{ v.position }}</td>
+          <td class="font-mono"><span class="allele-ref">{{ v.ref }}</span> <span class="text-muted">&rarr;</span> <span class="allele-alt">{{ v.alt }}</span></td>
+          <td class="font-mono">{{ v.aa|default:"-" }}</td>
+          <td class="font-mono text-muted">{{ v.ecoli|default:"-" }}</td>
+          <td>{% for d in v.drugs %}<span class="drug-pill">{{ d }}</span> {% endfor %}</td>
+          <td class="text-right"><div class="freq-cell"><div class="bar-track" style="width:64px"><div class="bar-fill" style="width:{{ v.bar }}%"></div></div><span class="font-mono">{{ v.freq_pct|floatformat:1 }}%</span></div></td>
+          <td class="text-right font-mono">{{ v.sample_count }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8" class="text-center text-muted" style="padding:32px">{% t "검색 조건에 해당하는 변이가 없습니다" "No variants match the search conditions" %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if uncatalogued %}
+  <div class="gap-section">
+    <details class="soft-box text-xs" data-testid="uncatalogued">
+      <summary>{% if is_en %}{{ uncatalogued_total }} patient mutation(s) not in the catalogue{% else %}카탈로그에 없는 환자 변이 {{ uncatalogued_total }}종{% endif %}</summary>
+      <p class="mt-1">{% for m, n in uncatalogued %}<span class="font-mono">{{ m }}</span> ({{ n }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    </details>
+  </div>
+{% endif %}

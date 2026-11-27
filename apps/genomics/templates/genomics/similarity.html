@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{% t "유사도 분석" "Similarity Analysis" %}{% endblock %}
+{% block content %}
+{# 원본 src/pages/Gap/SimilarityAnalysis.tsx — strainPoint 대신 선택 대상자의 변이 집합으로 거리 행렬 계산 #}
+<div class="gap-page gap-pad stack" data-testid="gap-similarity">
+  <form class="card card-sm" action="/gap/similarity" method="get" id="sim-form" x-data="{ q: '' }">
+    <input type="hidden" name="run" value="1">
+    <h3 class="text-xs font-semibold text-navy mb-1">{% t "유사도 분석 방법" "Similarity Analysis Method" %}</h3>
+    <div class="grid-3 gap-algos">
+      {% for m in methods %}
+        <label class="gap-algo gap-radio" data-tip="{% if is_en %}Use {{ m.name }} to compute similarity between samples.{% else %}{{ m.name }} 방법으로 샘플 간 유사도를 계산하도록 고릅니다.{% endif %}">
+          <input type="radio" name="method" value="{{ m.id }}" {% if m.id == method %}checked{% endif %}>
+          <span><span class="text-xs font-semibold text-navy">{{ m.name }}</span><span class="block text-10 text-muted mt-1">{{ m.desc }}</span></span>
+        </label>
+      {% endfor %}
+    </div>
+    <p class="text-10 text-muted mt-2">{% t "대상자별로 기록된 내성 변이 집합으로 계산합니다(전장 유전체 SNP·cgMLST·계통수 거리가 아닙니다)." "Computed from the set of resistance mutations recorded for each subject (not whole-genome SNP, cgMLST or phylogenetic distances)." %}</p>
+
+    <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
+      <p class="text-xs font-semibold text-navy">{% if is_en %}Subjects (genomic data) — select 2–{{ max }}{% else %}비교 대상자 (유전체 데이터 보유) — 2~{{ max }}명 선택{% endif %} · <span data-testid="sim-selected">{{ selected|length }}</span></p>
+      <div class="flex items-center gap-1">
+        <select name="cohort" class="input input-xs" aria-label="{% t '데이터셋에서 불러오기' 'Load from dataset' %}" form="sim-load">
+          <option value="">{% t "데이터셋 선택" "Select dataset" %}</option>
+          {% for c in cohorts %}<option value="{{ c.id }}" {% if cohort and cohort.pk == c.id %}selected{% endif %}>{{ c.name }} ({{ c.n }})</option>{% endfor %}
+        </select>
+        <button type="submit" form="sim-load" class="btn btn-secondary btn-xs" data-tip="{% t '저장 데이터셋의 대상자 중 유전체 데이터가 있는 대상자를 비교 목록으로 불러옵니다.' 'Load subjects with genomic data from a saved dataset.' %}">{% icon "download" "w-3 h-3" %} {% t "데이터셋에서 불러오기" "Load from Dataset" %}</button>
+      </div>
+    </div>
+    <input type="search" class="input input-xs mt-1" x-model="q" placeholder="{% t '케이스 ID·Lineage 로 찾기' 'Filter by case ID or lineage' %}" aria-label="{% t '대상자 찾기' 'Filter subjects' %}">
+    <div class="sim-list sm-scroll" data-testid="sim-candidates">
+      {% for p in candidates %}
+        <label class="check-line" data-key="{{ p.condition_id }} {{ p.lineage|default:'' }}" x-show="!q || $el.dataset.key.toLowerCase().includes(q.toLowerCase())">
+          <input type="checkbox" name="p" value="{{ p.pk }}" {% if p.pk in selected_set %}checked{% endif %}>
+          <span class="font-mono">{{ p.condition_id }}</span> <span class="text-10">{{ p.diagnosis_type }} · {{ p.lineage|default:"-" }}{% if not p.has_sequence %} · {% t "변이 기록만" "mutations only" %}{% endif %}</span></label>
+      {% empty %}<p class="text-xs text-muted">{% t "유전체 데이터가 있는 대상자가 없습니다" "No subjects with genomic data" %}</p>{% endfor %}
+    </div>
+    {% for n in notes %}<p class="alert alert-info text-xs mt-2">{{ n }}</p>{% endfor %}
+    {% if error %}<p class="alert alert-error mt-2" role="alert" data-testid="sim-error">{{ error }}</p>{% endif %}
+    <button type="submit" class="btn btn-teal btn-sm mt-3" data-tip="{% t '선택한 방법으로 대상자 간 거리 행렬을 계산합니다.' 'Compute a distance matrix between the selected subjects with the selected method.' %}">{% icon "activity" "w-4 h-4" %} {% t "유사도 분석 실행" "Run Similarity Analysis" %}</button>
+  </form>
+  <form id="sim-load" action="/gap/similarity" method="get"><input type="hidden" name="method" value="{{ method }}"></form>
+
+  {% if result %}
+    <div class="card card-sm" data-testid="sim-result">
+      <h3 class="text-xs font-semibold text-navy">{{ title }}</h3>
+      <p class="text-10 text-muted mb-2">{% if is_en %}{{ result.n }} subjects{% else %}대상자 {{ result.n }}명{% endif %} · {% t "방법" "Method" %}: {{ method_name }}</p>
+      <div style="overflow-x:auto">
+        <table class="sim-matrix">
+          <thead><tr><th class="sim-sticky"></th>{% for r in result.rows %}<th>{{ r.patient.condition_id }}</th>{% endfor %}</tr></thead>
+          <tbody>{% for r in result.rows %}
+            <tr><td class="sim-sticky">{{ r.patient.condition_id }}</td>
+              {% for c in r.cells %}<td class="{% if c.dark %}sim-dark{% endif %}" style="background-color:{% if c.diag %}rgb(42,127,142){% else %}rgba(27,58,92,{{ c.alpha|stringformat:'.3f' }}){% endif %}">{{ c.text }}</td>{% endfor %}</tr>
+          {% endfor %}</tbody>
+        </table>
+      </div>
+      <div class="flex items-center gap-2 mt-3">
+        <span class="text-10 text-muted">Low</span>
+        <div class="flex sim-legend">{% for a in legend %}<span style="background-color:rgba(27,58,92,{{ a|stringformat:'.1f' }})"></span>{% endfor %}</div>
+        <span class="text-10 text-muted">High ({{ unit }}) · max {{ result.max|floatformat:"-2" }}</span>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -8,17 +8,10 @@ from . import dashboard, home_content
 from .i18n import LANGS, get_lang, set_lang
 from .navigation import build_sidebar
 
-# 이후 단계에서 구현될 화면(업로드·관리자 대시보드·데이터 검증은 apps.uploads, 데이터신청 /data 는 apps.datasharing 이 구현): route → (제목 ko, en, 접근 수준, 사이드바)
+# 이후 단계에서 구현될 화면(업로드·관리자 대시보드·데이터 검증은 apps.uploads, 데이터신청 /data 는 apps.datasharing,
+# 유전자 분석 /gap 은 apps.genomics, 영상 분석 /rap 은 apps.imaging 이 구현): route → (제목 ko, en, 접근 수준, 사이드바)
 PLACEHOLDER_PAGES = {
     "manual": ("사용자 매뉴얼", "User Manual", "login", None),
-    "gap": ("유전체 브라우저", "Genome Browser", "login", "gap"),
-    "gap/resistance": ("약제내성 예측", "Drug Resistance Prediction", "login", "gap"),
-    "gap/gwas": ("GWAS 분석", "GWAS Analysis", "login", "gap"),
-    "gap/similarity": ("유사도 분석", "Similarity Analysis", "login", "gap"),
-    "gap/search": ("변이 검색", "Variant Search", "login", "gap"),
-    "rap": ("영상 뷰어", "Image Viewer", "login", "rap"),
-    "rap/timeseries": ("타임시리즈", "Time Series", "login", "rap"),
-    "rap/annotation": ("어노테이션", "Annotation", "login", "rap"),
 }
 
 

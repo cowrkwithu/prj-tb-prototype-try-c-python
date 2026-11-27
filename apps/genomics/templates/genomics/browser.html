@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{% t "유전체 브라우저" "Genome Browser" %}{% endblock %}
+{% block content %}
+{# 원본 src/pages/Gap/GenomeBrowser.tsx — 변이 표·검색·상세 모달. 유전자 트랙(H37Rv)과 빈도·샘플 수는 DB 집계 #}
+<div class="gap-page" data-testid="gap-browser">
+  <div class="gap-search">
+    <form class="input-icon gap-search-box" action="/gap" method="get"
+          hx-get="/gap" hx-target="#gap-variant-table" hx-swap="innerHTML" hx-trigger="input changed delay:300ms from:#gap-q, submit" hx-push-url="true">
+      {% icon "search" "w-4 h-4" %}
+      {% if gene %}<input type="hidden" name="gene" value="{{ gene.gene }}">{% endif %}
+      <input id="gap-q" class="input" type="text" name="q" value="{{ q }}" maxlength="100" autocomplete="off"
+             placeholder="{% t '유전자명, 아미노산 변이(Codon No./E. coli), 약제로 검색 (예: rpoB, S450L, S531L, Rifampicin)' 'Search by gene, amino acid change (Codon No./E. coli), or drug (e.g. rpoB, S450L, S531L, Rifampicin)' %}">
+    </form>
+  </div>
+
+  {# 유전체 트랙 — 전체 유전체(4.41 Mb)와 선택 유전자 확대 #}
+  <div class="gap-section">
+    <div class="card card-sm">
+      <div class="card-header" style="margin-bottom:8px">
+        <h3 class="card-title">{% icon "dna" "w-4 h-4" %} {% t "유전체 트랙 (M. tuberculosis H37Rv)" "Genome Track (M. tuberculosis H37Rv)" %}</h3>
+        <span class="text-xs text-muted">{% t "유전자를 누르면 확대합니다" "Click a gene to zoom in" %}</span>
+      </div>
+      <div class="chips mb-1" data-testid="gene-chips">
+        <a href="/gap{% if q %}?q={{ q|urlencode }}{% endif %}" class="gchip {% if not gene %}on{% endif %}" data-tip="{% t '유전체 전체 보기로 돌아갑니다.' 'Return to the whole-genome view.' %}">{% t "전체" "All" %}</a>
+        {% for g in genes %}<a href="/gap?gene={{ g.gene|urlencode }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="gchip font-mono {% if gene and gene.pk == g.pk %}on{% endif %}"
+             data-tip="{{ g.full_name }} · {{ g.start }}–{{ g.end }} ({{ g.strand }})">{{ g.gene }}</a>{% endfor %}
+      </div>
+      <svg class="gap-track" viewBox="-30 0 1060 92" role="img" aria-label="{% t '유전체 전체 트랙' 'Whole-genome track' %}">
+        <rect x="0" y="40" width="{{ track.width }}" height="6" rx="3" class="gt-backbone"></rect>
+        {% for tk in track.ticks %}<line x1="{{ tk.x }}" x2="{{ tk.x }}" y1="34" y2="52" class="gt-tick"></line><text x="{{ tk.x }}" y="28" class="gt-ticklabel">{{ tk.label }} Mb</text>{% endfor %}
+        {% for g in track.genes %}
+          <a href="/gap?gene={{ g.gene|urlencode }}"><rect x="{{ g.x }}" y="36" width="{{ g.w }}" height="14" class="gt-gene {% if gene and gene.gene == g.gene %}on{% endif %}"><title>{{ g.gene }} ({{ g.n }})</title></rect>
+          <text x="{{ g.cx }}" y="{{ g.ly }}" class="gt-genelabel">{{ g.gene }}</text></a>
+        {% endfor %}
+      </svg>
+      {% if zoom %}
+        <div class="mt-3" data-testid="gene-zoom">
+          <p class="text-xs text-muted">{{ zoom.gene }} · {{ zoom.start }}–{{ zoom.end }} ({% if zoom.strand == "-" %}{% t "− 가닥" "− strand" %}{% else %}{% t "+ 가닥" "+ strand" %}{% endif %}) · {% t "음영 = 상류 프로모터 800bp, 막대 높이 = 보유 대상자 수" "Shaded = 800 bp upstream promoter, bar height = carrier count" %}</p>
+          <svg class="gap-track gap-zoom" viewBox="-30 0 1060 110" role="img" aria-label="{{ zoom.gene }}">
+            <rect x="{{ zoom.prom_x }}" y="64" width="{{ zoom.prom_w }}" height="12" class="gz-promoter"></rect>
+            <rect x="{{ zoom.body_x }}" y="64" width="{{ zoom.body_w }}" height="12" rx="2" class="gz-body"></rect>
+            {% for tk in zoom.ticks %}<line x1="{{ tk.x }}" x2="{{ tk.x }}" y1="78" y2="84" class="gt-tick"></line><text x="{{ tk.x }}" y="98" class="gt-ticklabel">{{ tk.label }}</text>{% endfor %}
+            {% for m in zoom.marks %}
+              <g class="gz-mark" hx-get="/gap/variants/{{ m.id }}" hx-target="#gap-modal" hx-swap="innerHTML" role="button" tabindex="0">
+                <line x1="{{ m.x }}" x2="{{ m.x }}" y1="{{ m.y }}" y2="64"></line><circle cx="{{ m.x }}" cy="{{ m.y }}" r="4"></circle>
+                <title>{{ m.label }} · {{ m.position }} · {% if is_en %}{{ m.count }} carriers{% else %}보유 {{ m.count }}명{% endif %}</title>
+              </g>
+            {% endfor %}
+          </svg>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div id="gap-variant-table">{% include "genomics/_variant_table.html" %}</div>
+  <div id="gap-modal"></div>
+</div>
+{% endblock %}

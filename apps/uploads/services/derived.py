@@ -151,7 +151,10 @@ def recompute_patient_derived(p: Patient, domain: str) -> bool:
         return False
     state = _start_state(base, domain)
     skip = set(int_ids(base.preexisting_ids))
-    rows = [r for r in ROW_MODEL[domain].objects.filter(patient=p).select_related("submission") if r.pk not in skip]
+    qs = ROW_MODEL[domain].objects.filter(patient=p)
+    if domain == "imaging":
+        qs = qs.filter(is_public_sample=False)  # 공개 샘플 영상(4단계 시드)은 케이스 영상 수에 이미 들어 있다 — 접지 않는다
+    rows = [r for r in qs.select_related("submission") if r.pk not in skip]
     rows.sort(key=owner_key)
     step = FOLD[domain]
     for r in rows:

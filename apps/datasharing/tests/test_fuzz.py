@@ -97,7 +97,7 @@ def test_no_500_on_api(client, demo_users, world, name):
     for url in ("/api/v1/cases", "/api/v1/cases/1", "/api/v1/images/1", "/api/v1/genomics/variants", "/api/v1/zz"):
         r = client.get(url, {p: v for p in ("page", "limit", "country", "diagnosisType", "include", "format", "file")},
                        **auth(raw))
-        assert r.status_code < 500 or r.status_code == 503, (url, name, r.status_code)
+        assert r.status_code < 500, (url, name, r.status_code)
     for body in (v, json.dumps({"name": v, "conditions": v}), json.dumps({"name": "x", "conditions": [{"field": v}]}),
                  json.dumps({"name": "x", "description": v, "conditions": [{"field": "demographics.country",
                                                                             "operator": "in", "value": [v]}]})):

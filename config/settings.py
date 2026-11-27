@@ -65,6 +65,8 @@ INSTALLED_APPS = [
     "apps.schemas",
     "apps.cohorts",
     "apps.datasharing",
+    "apps.genomics",
+    "apps.imaging",
 ]
 
 MIDDLEWARE = [

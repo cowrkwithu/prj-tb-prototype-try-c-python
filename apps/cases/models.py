@@ -231,6 +231,13 @@ class ImagingStudy(models.Model):
     # [{finding, location, severity, description}]
     findings = models.JSONField("판독 소견", default=list, blank=True)
     files = models.ManyToManyField("uploads.SubmissionFile", blank=True, related_name="imaging_studies")
+    # 4단계(RAP): 시드 환자의 영상 수에 맞춰 만든 '공개 샘플 영상' 검사 — static/imaging 공개 자산을 가리킨다
+    # (결핵 환자 본인 영상이 아님. 화면에 출처·'결핵 아님'을 표시). 업로드 파생 값 재계산(fold)에서는 제외한다.
+    is_public_sample = models.BooleanField("공개 샘플 영상", default=False)
+    sample_asset = models.ForeignKey("imaging.ImagingAsset", on_delete=models.PROTECT, null=True, blank=True,
+                                     related_name="studies", verbose_name="샘플 자산")
+    suv_max = models.FloatField("SUVmax", null=True, blank=True)
+    seed_key = models.CharField("시드 키", max_length=80, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

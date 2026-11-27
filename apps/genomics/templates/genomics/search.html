@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{% t "변이 검색" "Variant Search" %}{% endblock %}
+{% block content %}
+{# 원본 src/pages/Gap/VariantSearch.tsx — 조건(약제·유전자·아미노산·위치 범위·최소 빈도), 페이지, CSV(DAR 유전체 승인), 데이터셋 저장 #}
+<div class="gap-page gap-pad stack" data-testid="gap-search">
+  <form class="card card-sm" action="/gap/search" method="get">
+    <input type="hidden" name="searched" value="1">
+    <h3 class="text-xs font-semibold text-navy mb-1">{% t "변이 검색 조건" "Variant Search Conditions" %}</h3>
+    <div class="form-grid-3 gap-form">
+      <div><label class="text-10 text-muted" for="s-drug">{% t "약제내성 유형" "Drug Resistance Type" %}</label>
+        <select id="s-drug" class="input input-sm" name="drug"><option value="">{% t "전체" "All" %}</option>
+          {% for d in drugs %}<option value="{{ d }}" {% if d == p.drug %}selected{% endif %}>{{ d }}</option>{% endfor %}</select></div>
+      <div><label class="text-10 text-muted" for="s-gene">{% t "유전자" "Gene" %}</label>
+        <select id="s-gene" class="input input-sm" name="gene"><option value="">{% t "전체" "All" %}</option>
+          {% for g in genes %}<option value="{{ g.gene }}" {% if g.gene == p.gene %}selected{% endif %}>{{ g.gene }} — {{ g.full_name }}</option>{% endfor %}</select></div>
+      <div><label class="text-10 text-muted" for="s-aa">{% t "아미노산 변이 (Codon No./E. coli)" "AA Change (Codon No./E. coli)" %}</label>
+        <input id="s-aa" class="input input-sm" type="text" name="aa" value="{{ p.aa }}" maxlength="40" placeholder="S450L"></div>
+      <div><label class="text-10 text-muted" for="s-pmin">{% t "위치 범위 (H37Rv)" "Position Range (H37Rv)" %}</label>
+        <div class="flex items-center gap-1"><input id="s-pmin" class="input input-sm" type="number" name="pos_min" min="0" max="4411532" value="{{ p.pos_min|default_if_none:'' }}" aria-label="{% t '시작 위치' 'Start position' %}">
+          <span class="text-xs text-muted">~</span><input class="input input-sm" type="number" name="pos_max" min="0" max="4411532" value="{{ p.pos_max|default_if_none:'' }}" aria-label="{% t '끝 위치' 'End position' %}"></div></div>
+      <div><label class="text-10 text-muted" for="s-freq">{% t "최소 빈도 (%)" "Min. Frequency (%)" %}</label>
+        <input id="s-freq" class="input input-sm" type="number" name="min_freq" min="0" max="100" step="0.1" value="{{ p.min_freq|floatformat:'-1' }}"></div>
+    </div>
+    <div class="flex gap-2 mt-3">
+      <button type="submit" class="btn btn-teal btn-sm" data-tip="{% t '입력한 약제·유전자·최소 빈도 조건으로 변이를 찾습니다.' 'Find variants matching the drug, gene and minimum frequency.' %}">{% icon "search" "w-4 h-4" %} {% t "검색" "Search" %}</button>
+      <a href="/gap/search" class="btn btn-secondary btn-sm" data-tip="{% t '검색 조건과 결과를 모두 지우고 처음 상태로 돌립니다.' 'Clear all search conditions and results.' %}">{% t "초기화" "Reset" %}</a>
+    </div>
+    {% for e in errors %}<p class="alert alert-error mt-3" role="alert">{{ e }}</p>{% endfor %}
+  </form>
+
+  {% if searched and not errors %}
+    <div class="card" style="padding:0;overflow:hidden" data-testid="search-results">
+      <div class="gap-result-head">
+        <div><h3 class="text-xs font-semibold text-navy">{% if is_en %}Search Results ({{ total }}){% else %}검색 결과 ({{ total }}건){% endif %}</h3>
+          <p class="text-10 text-muted">{% if is_en %}Frequency = carriers / {{ denominator }} subjects with genomic data{% else %}빈도 = 보유 대상자 / 유전체 데이터 보유 대상자 {{ denominator }}명{% endif %}</p></div>
+        <div class="flex gap-2">
+          {% if total %}
+            {% if genomics_approved %}
+              <a href="/gap/search/export.csv?{{ query }}" class="btn btn-secondary btn-xs" data-testid="csv-download" data-tip="{% t '검색된 변이 목록을 CSV 파일로 내려받습니다.' 'Download the found variants as a CSV file.' %}">{% icon "download" "w-3 h-3" %} {% t "CSV 다운로드" "Download CSV" %}</a>
+            {% else %}
+              <a href="/data?tab=dar&amp;types=genomics" class="btn btn-secondary btn-xs" data-testid="csv-gated" data-tip="{% t 'CSV 내려받기는 유전체 데이터 접근 신청(DAR) 승인이 필요합니다. 눌러서 신청 화면으로 이동합니다.' 'Downloading CSV requires an approved genomics Data Access Request (DAR). Click to go to the request form.' %}">{% icon "lock" "w-3 h-3" %} {% t "CSV 다운로드 (DAR 필요)" "Download CSV (DAR required)" %}</a>
+            {% endif %}
+            <form method="post" action="/gap/search/save">{% csrf_token %}
+              {% for k, v in p.pairs %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+              <button type="submit" class="btn btn-teal btn-xs" data-testid="save-dataset" data-tip="{% t '검색된 변이를 보유한 대상자를 데이터셋으로 저장하고 데이터 탐색으로 이동합니다.' 'Save subjects carrying these variants as a dataset and go to Data Explorer.' %}">{% icon "save" "w-3 h-3" %} {% t "데이터셋 저장" "Save Dataset" %}</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+      {% if not total %}
+        <div class="empty-state text-sm">{% t "검색 조건에 해당하는 변이가 없습니다" "No variants match the search conditions" %}</div>
+      {% else %}
+        <div style="overflow-x:auto">
+          <table class="table table-compact">
+            <thead><tr><th>{% t "유전자" "Gene" %}</th><th>{% t "위치" "Position" %}</th><th>Ref/Alt</th><th>{% t "아미노산 변이 (Codon No.)" "AA Change (Codon No.)" %}</th><th>{% t "아미노산 변이 (E. coli)" "AA Change (E. coli)" %}</th><th>{% t "약제" "Drug" %}</th><th class="text-right">{% t "빈도" "Frequency" %}</th><th class="text-right">{% t "샘플" "Samples" %}</th><th>{% t "주석" "Annotation" %}</th></tr></thead>
+            <tbody>{% for v in rows %}
+              <tr data-testid="search-row"><td class="font-mono font-medium text-navy">{{ v.gene }}</td><td class="font-mono">{{ v.position }}</td>
+                <td class="font-mono"><span class="allele-ref">{{ v.ref }}</span>→<span class="allele-alt">{{ v.alt }}</span></td>
+                <td class="font-mono">{{ v.aa|default:"-" }}</td><td class="font-mono text-muted">{{ v.ecoli|default:"-" }}</td>
+                <td>{% for d in v.drugs %}<span class="drug-pill">{{ d }}</span> {% endfor %}</td><td class="text-right font-mono">{{ v.freq_pct|floatformat:1 }}%</td>
+                <td class="text-right font-mono">{{ v.sample_count }}</td><td class="text-muted truncate" style="max-width:220px">{{ v.annotation }}</td></tr>
+            {% endfor %}</tbody>
+          </table>
+        </div>
+        {% if page.paginator.num_pages > 1 %}
+          <div class="pager" style="margin:12px 0">
+            {% if page.has_previous %}<a class="pager-btn" href="?{{ query }}&amp;page={{ page.previous_page_number }}">{% icon "chevron-left" "w-3 h-3" %} {% t "이전" "Prev" %}</a>{% else %}<span class="pager-btn disabled">{% icon "chevron-left" "w-3 h-3" %} {% t "이전" "Prev" %}</span>{% endif %}
+            <span class="text-xs text-muted">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+            {% if page.has_next %}<a class="pager-btn" href="?{{ query }}&amp;page={{ page.next_page_number }}">{% t "다음" "Next" %} {% icon "chevron-right" "w-3 h-3" %}</a>{% else %}<span class="pager-btn disabled">{% t "다음" "Next" %} {% icon "chevron-right" "w-3 h-3" %}</span>{% endif %}
+          </div>
+        {% endif %}
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 """REST API /api/v1 — 키 인증(없음·잘못됨·폐기·만료 없음), 요청 시점 DAR 승인 판정, 파라미터 검증·퍼징, 페이지 상한,
-비식별, POST cohorts(코호트 서비스 재사용·CSRF 면제), 요청 제한, 변이 503, 영상 메타·파일."""
+비식별, POST cohorts(코호트 서비스 재사용·CSRF 면제), 요청 제한, 영상 메타·파일. (변이 목록 API 는 4단계 — apps/genomics/tests/test_api.py)"""
 import json
 from datetime import timedelta
 
@@ -162,9 +162,10 @@ def test_case_detail_includes(client, api_key, seeded_patients):
     assert client.get("/api/v1/nope", **auth(api_key)).json()["status"] == "not_found"
 
 
-def test_variants_not_available(client, api_key):
-    r = client.get("/api/v1/genomics/variants?gene=rpoB", **auth(api_key))
-    assert r.status_code == 503 and r.json()["status"] == "not_available" and r.json()["error"]
+def test_variants_available_after_stage4(client, api_key):
+    """3c 에서 503 이던 변이 목록은 4단계에서 구현 — 카탈로그가 비어 있으면 빈 목록."""
+    r = client.get("/api/v1/genomics/variants", **auth(api_key))
+    assert r.status_code == 200 and r.json()["data"] == [] and r.json()["total"] == 0
 
 
 def test_method_not_allowed(client, api_key):
@@ -315,8 +316,7 @@ def test_api_param_fuzz_no_500(client, api_key, seeded_patients, v):
     for url in ("/api/v1/cases", "/api/v1/cases/1", "/api/v1/images/1", "/api/v1/genomics/variants"):
         for p in ("page", "limit", "country", "diagnosisType", "include", "format", "file", "gene", "drug", "minFrequency"):
             r = client.get(url, {p: v}, **auth(api_key))
-            # 변이 목록만 의도된 503(4단계 이월), 그 밖에는 5xx 없음
-            assert r.status_code < 500 or (url.endswith("variants") and r.status_code == 503), (url, p, v, r.status_code)
+            assert r.status_code < 500, (url, p, v, r.status_code)
     r = client.get("/api/v1/cases", HTTP_AUTHORIZATION=f"Bearer {v}")
     assert r.status_code == 401
     r = _post_cohort(api_key, {"name": v, "description": v, "conditions": [{"field": v, "operator": v, "value": v}]})

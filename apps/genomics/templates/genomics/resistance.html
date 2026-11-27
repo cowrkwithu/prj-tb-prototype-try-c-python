@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}{% t "약제내성 예측" "Drug Resistance Prediction" %}{% endblock %}
+{% block content %}
+{# 원본 src/pages/Gap/ResistancePrediction.tsx — mockResults 대신 카탈로그 규칙 엔진(DB), 실행 기록(PredictionRun) #}
+<div class="gap-page gap-pad stack" data-testid="gap-resistance" x-data="{ source: '{{ source|escapejs }}' }">
+  <div class="alert alert-info text-xs" role="note">{% icon "info" "w-4 h-4 shrink-0" %}
+    <span>{% t "이 화면은 실제 TB-Profiler·Mykrobe·ResFinder 를 실행하지 않습니다. 포털의 변이 카탈로그(DB)로 각 도구의 판정 방식을 본뜬 규칙을 실행합니다(카탈로그 기반 규칙)." "This page does not run the actual TB-Profiler, Mykrobe or ResFinder tools. It applies rules modelled on each tool to the portal's variant catalogue (catalogue-based rules)." %}</span></div>
+
+  <form method="post" action="/gap/resistance" enctype="multipart/form-data" class="stack" data-testid="prediction-form">{% csrf_token %}
+    <div class="pill-toggle" role="radiogroup" aria-label="{% t '입력 방식' 'Input' %}">
+      <label data-tip="{% t '시퀀스(또는 내성 변이 기록)가 있는 대상자의 변이로 예측합니다.' 'Predict from the variants of a sequenced subject (or one with recorded mutations).' %}"><input type="radio" name="source" value="patient" x-model="source"><span>{% t "대상자 선택" "Select Subject" %}</span></label>
+      <label data-tip="{% t 'VCF·CSV·TSV 변이 목록 파일을 올려 예측합니다.' 'Predict from an uploaded VCF/CSV/TSV variant list.' %}"><input type="radio" name="source" value="upload" x-model="source"><span>{% t "변이 목록 업로드" "Upload Variant List" %}</span></label>
+    </div>
+
+    <div class="card card-sm" x-show="source === 'patient'" {% if source != "patient" %}x-cloak{% endif %}>
+      <label class="text-10 text-muted" for="pr-patient">{% t "대상자 (유전체 데이터 보유)" "Subject (with genomic data)" %}</label>
+      <select id="pr-patient" class="input input-sm" name="patient">
+        <option value="">{% t "선택하세요" "Select" %}</option>
+        {% for p in patients %}<option value="{{ p.pk }}" {% if p.pk == patient_sel %}selected{% endif %}>{{ p.condition_id }} · {{ p.diagnosis_type }} · {{ p.lineage|default:"-" }}{% if not p.has_sequence %} · {% t "시퀀스 없음(변이 기록만)" "no sequence (mutations only)" %}{% endif %}</option>{% endfor %}
+      </select>
+      <p class="text-10 text-muted mt-1">{% t "시퀀스 보유 대상자는 모든 내성 유전자를 검사한 것으로, 시퀀스가 없으면 기록된 변이의 유전자만 검사한 것으로 봅니다." "Sequenced subjects count as tested for every resistance gene; otherwise only the genes of the recorded mutations count as tested." %}</p>
+    </div>
+
+    <div class="stack-sm" x-show="source === 'upload'" {% if source != "upload" %}x-cloak{% endif %}>
+      <label class="dropzone gap-drop" data-tip="{% t '눌러서 또는 파일을 끌어다 놓아 분석할 변이 목록 파일을 올립니다.' 'Click or drop a file here to upload the variant list to analyze.' %}">
+        <input type="file" name="file" accept=".vcf,.csv,.tsv,.txt" class="sr-only" @change="$refs.fname.textContent = $event.target.files.length ? $event.target.files[0].name : ''">
+        {% icon "upload" "w-6 h-6" %}
+        <p class="text-sm font-medium text-navy">{% t "VCF / CSV / TSV 변이 목록 파일을 드래그하거나 클릭하여 업로드" "Drag or click to upload a VCF / CSV / TSV variant list" %}</p>
+        <p class="text-xs text-muted">{% if is_en %}Supported formats: .vcf, .csv, .tsv, .txt (UTF-8, max {{ max_kb }} KB, {{ max_rows }} rows){% else %}지원 형식: .vcf, .csv, .tsv, .txt (UTF-8, 최대 {{ max_kb }}KB · {{ max_rows }}행){% endif %}</p>
+        <p class="text-xs font-mono text-navy" x-ref="fname"></p>
+      </label>
+      <details class="soft-box text-xs"><summary>{% t "또는 내용을 붙여 넣기 · 형식 안내" "Or paste the content · format guide" %}</summary>
+        <p class="mt-1 text-muted">{% t "CSV/TSV 열: mutation(예: rpoB S450L) 또는 gene + change, 또는 position + ref + alt. VCF: CHROM POS ID REF ALT (FILTER 가 PASS·. 인 행만). 머리글 없는 한 줄 한 변이 목록도 됩니다." "CSV/TSV columns: mutation (e.g. rpoB S450L), or gene + change, or position + ref + alt. VCF: CHROM POS ID REF ALT (rows with FILTER PASS or . only). A header-less list with one variant per line also works." %}</p>
+        <textarea class="textarea mt-1 font-mono" name="text" rows="5" placeholder="mutation&#10;rpoB S450L&#10;katG S315T">{{ text }}</textarea>
+      </details>
+      <label class="check-line"><input type="checkbox" name="assume_wgs" value="1" {% if assume_wgs %}checked{% endif %}> {% t "전장 유전체(WGS) 변이 호출 결과입니다 — 목록에 없는 내성 유전자는 야생형(검사됨)으로 봅니다" "This is a whole-genome (WGS) variant call — resistance genes not listed count as wild type (tested)" %}</label>
+    </div>
+
+    <div>
+      <h3 class="text-xs font-semibold text-navy mb-1">{% t "분석 알고리즘 선택" "Select Analysis Algorithms" %}</h3>
+      <div class="grid-3 gap-algos">
+        {% for a in algorithms %}
+          <label class="gap-algo" data-tip="{{ a.rule }}">
+            <input type="checkbox" name="algorithms" value="{{ a.id }}" {% if a.id in selected_algos %}checked{% endif %}>
+            <span><span class="text-xs font-semibold text-navy">{{ a.name }} <span class="text-10 text-muted">({% t "규칙" "rule" %})</span></span>
+              <span class="block text-10 text-muted mt-1">{{ a.desc }}</span><span class="block text-10 text-muted mt-1">{{ a.rule }}</span></span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% if error %}<p class="alert alert-error" role="alert" data-testid="prediction-error">{{ error }}</p>{% endif %}
+    <div><button type="submit" class="btn btn-teal" data-tip="{% t '선택한 알고리즘으로 약제별 내성 여부를 예측합니다.' 'Predict drug resistance with the selected algorithms.' %}">{% icon "activity" "w-4 h-4" %} {% t "분석 실행" "Run Analysis" %}</button></div>
+  </form>
+
+  {% if run_missing %}<p class="alert alert-warning">{% t "실행 기록을 찾을 수 없습니다" "Prediction run not found" %}</p>{% endif %}
+  {% if result %}
+    <div class="card" style="padding:0;overflow:hidden" id="result" data-testid="prediction-result">
+      <div class="gap-result-head"><div>
+        <h3 class="text-xs font-semibold text-navy">{% t "약제내성 예측 결과" "Drug Resistance Prediction Results" %}</h3>
+        <p class="text-10 text-muted">{% t "샘플" "Sample" %}: <span class="font-mono">{{ result.run.sample_name }}</span> · Lineage: {{ result.run.lineage|default:"-" }} · {{ result.run.created_at|date:"Y-m-d H:i" }}
+          · {% if is_en %}{{ result.n_catalog }} catalogue / {{ result.n_unchar }} uncharacterised / {{ result.n_outside }} outside resistance genes{% else %}카탈로그 {{ result.n_catalog }} · 미분류 {{ result.n_unchar }} · 내성 유전자 밖 {{ result.n_outside }}{% endif %}{% if result.skipped %} · {% if is_en %}{{ result.skipped }} rows skipped{% else %}건너뛴 행 {{ result.skipped }}{% endif %}{% endif %}</p></div></div>
+      <div style="overflow-x:auto">
+        <table class="table table-compact">
+          <thead><tr><th>{% t "약제" "Drug" %}</th>{% for a in result.algos %}<th class="text-center">{{ a.name }}</th>{% endfor %}<th class="text-center">{% t "합의" "Consensus" %}</th><th>{% t "근거 변이" "Evidence" %}</th></tr></thead>
+          <tbody>{% for r in result.rows %}
+            <tr data-testid="drug-row" data-drug="{{ r.drug }}" data-consensus="{{ r.consensus }}"><td class="font-medium">{{ r.drug }}</td>
+              {% for c in r.cells %}<td class="text-center"><span class="call call-{{ c.call }}" {% if c.reason == "not_tested" %}data-tip="{% t '연관 유전자가 검사되지 않았습니다' 'Linked genes were not tested' %}"{% elif c.reason == "uncharacterized" %}data-tip="{% t '연관 유전자에 이 약제의 카탈로그 변이가 아닌 변이가 있어 감수성으로 볼 수 없습니다' 'A linked gene carries a variant that is not a catalogue variant for this drug, so it cannot be called susceptible' %}"{% elif c.reason == "low_confidence" %}data-tip="{% t '근거 등급이 높음이 아닌 카탈로그 변이입니다' 'Catalogue variant without high confidence' %}"{% elif c.reason == "no_acquired_genes" %}data-tip="{% t '획득 내성 유전자 카탈로그에 해당 항목이 없습니다' 'No entry in the acquired resistance gene catalogue' %}"{% endif %}>{% if c.call == "R" %}Resistant{% elif c.call == "S" %}Susceptible{% else %}Unknown{% endif %}</span></td>{% endfor %}
+              <td class="text-center"><span class="call call-{{ r.consensus }} font-bold">{% if r.consensus == "R" %}Resistant{% elif r.consensus == "S" %}Susceptible{% else %}Unknown{% endif %}</span></td>
+              <td class="font-mono text-xs">{{ r.evidence|join:", "|default:"-" }}</td></tr>
+          {% endfor %}</tbody>
+        </table>
+      </div>
+      {% if result.observed %}
+        <details class="text-xs" style="padding:12px 16px"><summary>{% if is_en %}Detected variants ({{ result.observed|length }}){% else %}검출 변이 ({{ result.observed|length }}){% endif %}</summary>
+          <ul class="gap-observed">{% for o in result.observed %}<li><span class="font-mono">{{ o.label }}</span>{% if o.input %} <span class="text-muted">({{ o.input }})</span>{% endif %} ·
+            {% if o.status == "catalog" %}<span class="badge badge-sm badge-danger">{% t "카탈로그" "Catalogue" %} · {% if o.drugs %}{{ o.drugs|join:", " }}{% else %}{{ o.drug }}{% endif %}</span>{% elif o.status == "uncharacterized" %}<span class="badge badge-sm badge-warning">{% t "미분류" "Uncharacterised" %} · {{ o.gene }}</span>{% else %}<span class="badge badge-sm badge-neutral">{% t "내성 유전자 밖" "Outside resistance genes" %}</span>{% endif %}</li>{% endfor %}</ul>
+        </details>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="card card-sm" data-testid="prediction-history">
+    <h3 class="card-title mb-1">{% icon "history" "w-4 h-4" %} {% if is_admin_view %}{% t "실행 기록 (전체)" "Run History (all users)" %}{% else %}{% t "내 실행 기록" "My Run History" %}{% endif %}</h3>
+    {% if history.object_list %}
+      <table class="table table-compact"><thead><tr><th>#</th><th>{% t "샘플" "Sample" %}</th><th>{% t "입력" "Input" %}</th><th>{% t "알고리즘" "Algorithms" %}</th>{% if is_admin_view %}<th>{% t "실행자" "User" %}</th>{% endif %}<th>{% t "실행일시" "Run At" %}</th></tr></thead>
+        <tbody>{% for r in history.object_list %}
+          <tr><td><a class="link-underline" href="/gap/resistance?run={{ r.pk }}#result">{{ r.pk }}</a></td><td class="font-mono truncate" style="max-width:220px">{{ r.sample_name }}</td>
+            <td>{% if r.source == "patient" %}{% t "대상자" "Subject" %}{% else %}{{ r.input_format|upper }}{% endif %}</td><td class="text-xs">{{ r.algorithms|join:", " }}</td>
+            {% if is_admin_view %}<td>{{ r.user.shown_name }}</td>{% endif %}<td class="text-xs">{{ r.created_at|date:"Y-m-d H:i" }}</td></tr>
+        {% endfor %}</tbody></table>
+      {% if history.paginator.num_pages > 1 %}
+        <div class="pager">{% if history.has_previous %}<a class="pager-btn" href="?page={{ history.previous_page_number }}">{% icon "chevron-left" "w-3 h-3" %}</a>{% endif %}
+          <span class="text-xs text-muted">{{ history.number }} / {{ history.paginator.num_pages }}</span>
+          {% if history.has_next %}<a class="pager-btn" href="?page={{ history.next_page_number }}">{% icon "chevron-right" "w-3 h-3" %}</a>{% endif %}</div>
+      {% endif %}
+    {% else %}
+      <p class="text-xs text-muted">{% t "실행 기록이 없습니다" "No runs yet" %}</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

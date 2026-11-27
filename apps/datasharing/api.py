@@ -7,7 +7,7 @@ CSRF 는 브라우저가 쿠키를 자동으로 붙이는 요청을 노리는데
 권한: 키 자체에는 허용 유형을 저장하지 않고, **요청할 때마다** 키 소유자의 DAR 승인 상태로 판정한다.
   cases(목록·상세 기본)·lab·cohorts → clinical, include=genomics → genomics, include=imaging·images → imaging.
 응답 코드: 키 없음/잘못됨/폐기 401, 미승인 유형 403, 잘못된 파라미터 400, 없는 대상 404, 요청 과다 429,
-  변이 목록(4단계 이월) 503. 어떤 입력에도 500 을 내지 않는다.
+  어떤 입력에도 500 을 내지 않는다. GET genomics/variants 는 4단계에서 구현(카탈로그 + DB 집계).
 비식별: 화면(케이스 에디터)이 보여주는 항목만 내보낸다 — 이름·연락처 같은 직접 식별자는 원래 DB 에 없고,
   제출자 계정·업로드 원문 파일명·DICOM 헤더 원값·내부 메모는 응답에 넣지 않는다.
 """
@@ -144,7 +144,7 @@ def _case_detail(p: Patient, include: list[str]) -> dict:
             "hasCxr": p.has_cxr, "hasCt": p.has_ct, "hasPetCt": p.has_pet_ct, "cxrCount": p.cxr_count,
             "ctCount": p.ct_count, "petCtCount": p.pet_ct_count, "cxrFindings": list(p.cxr_findings or []),
             "studies": [{"id": s.pk, "type": s.modality, "date": s.study_date.isoformat()}
-                        for s in p.imaging_studies.all()[:100]],
+                        for s in p.imaging_studies.filter(is_public_sample=False)[:100]],  # 공개 샘플은 외부 공유 제외
         }
     if "lab" in include:
         out["lab"] = {
@@ -219,7 +219,9 @@ def image_detail(request, pk):
     fmt = request.GET.get("format") or "metadata"
     if fmt not in FORMATS:
         return _err(400, "bad_request", "'format' must be one of metadata, dicom, jpg", allowed=list(FORMATS))
-    study = ImagingStudy.objects.select_related("patient").filter(pk=int(pk)).first() if len(pk) <= 10 else None
+    # 공개 샘플 영상 검사(4단계 시드)는 외부 공유 경로에서 제외 — 없는 검사와 같이 404
+    study = (ImagingStudy.objects.select_related("patient").filter(pk=int(pk), is_public_sample=False).first()
+             if len(pk) <= 10 else None)
     if study is None:
         return _err(404, "not_found", "Image not found")
     if fmt == "metadata":
@@ -329,13 +331,53 @@ def cohorts(request):
                 "patientCount": c.snapshot_count, "createdDate": c.created_date.isoformat()}, status=201)
 
 
+_FREQ = re.compile(r"^(0(\.[0-9]{1,6})?|1(\.0{1,6})?|\.[0-9]{1,6})$")
+
+
 @api_view()
 def variants(request):
-    """유전체 변이 목록 — 변이 모델은 4단계(GAP)에서 생긴다. 그때까지 '준비 중' 응답(문서 화면에는 원본대로 표시)."""
+    """유전체 변이 목록(4단계) — 카탈로그 변이 + DB 집계 빈도·샘플 수. 필터 gene·drug·minFrequency(0~1), page·limit."""
+    from apps.genomics import services as gs
+
     denied = _require(request, "genomics")
     if denied:
         return denied
-    return _err(503, "not_available", "Genomic variant API is not available yet (planned for the genomics module).")
+    page, err = _uint_param(request, "page", 1, 1, MAX_PAGE)
+    if err:
+        return err
+    limit, err = _uint_param(request, "limit", DEFAULT_LIMIT, 1, MAX_LIMIT)
+    if err:
+        return err
+    cat = gs.load_catalog()
+    gene = (request.GET.get("gene") or "").strip()
+    if gene and gene.lower() not in cat.gene_names:
+        return _err(400, "bad_request", "Unknown 'gene'", allowed=[g.gene for g in cat.genes])
+    drug = (request.GET.get("drug") or "").strip()
+    drugs = gs.drug_options(cat)
+    if drug and drug.lower() not in {d.lower() for d in drugs}:
+        return _err(400, "bad_request", "Unknown 'drug'", allowed=drugs)
+    raw = (request.GET.get("minFrequency") or "").strip()
+    min_freq = 0.0
+    if raw:
+        if not _FREQ.match(raw):
+            return _err(400, "bad_request", "'minFrequency' must be a number between 0 and 1")
+        min_freq = float(raw)
+    st = gs.variant_stats(cat)
+    rows = [v for v in cat.variants
+            if (not gene or v.gene.gene.lower() == gene.lower())
+            and (not drug or drug.lower() in {d.lower() for d in gs.variant_drugs(v)})
+            and (not min_freq or st.freq(v) >= min_freq)]
+    total = len(rows)
+    start = (page - 1) * limit
+    data = []
+    for v in rows[start:start + limit]:
+        r = gs.variant_row(v, st)
+        data.append({"id": r["id"], "gene": r["gene"], "position": r["position"], "refAllele": r["ref"],
+                     "altAllele": r["alt"], "aminoAcidChange": r["aa"] or None, "aminoAcidChangeEcoli": r["ecoli"],
+                     "drugResistance": r["drug"], "drugs": r["drugs"], "frequency": round(r["frequency"], 4),
+                     "sampleCount": r["sample_count"], "annotation": r["annotation"]})
+    return _ok({"data": data, "total": total, "pagination": {"page": page, "limit": limit, "total": total},
+                "frequencyDenominator": st.denominator})
 
 
 @csrf_exempt

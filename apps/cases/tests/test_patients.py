@@ -87,4 +87,5 @@ def test_bootstrap_idempotent():
     assert Patient.objects.count() == 50
     assert DictionaryField.objects.count() == 1257
     assert set(SeedLog.objects.values_list("dataset", flat=True)) == {"accounts", "patients", "dictionary", "home_content",
-                                                                      "cohorts", "schemas"}
+                                                                      "cohorts", "schemas", "genomics_catalog",
+                                                                      "imaging_samples"}

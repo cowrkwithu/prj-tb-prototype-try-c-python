@@ -208,7 +208,7 @@ def dataset_stats(slug: str, org: str) -> dict:
                 "mine": DSTResult.objects.filter(patient__site=org).count() if org else 0,
                 "last": P.filter(dst_results__isnull=False).aggregate(m=Max("last_update_date"))["m"], "size": None}
     if slug == "genomics":
-        # 유전체 '변이' 모델은 4단계(GAP)에서 생긴다 — 그때까지는 시퀀스(SequenceRun, 검체 단위) 수를 센다.
+        # 유전체 데이터셋 카드는 시퀀스(SequenceRun, 검체 단위) 수를 센다(3c 헤더 결정 — 4단계 이후에도 유지).
         # 단위 표기는 원본 그대로('건').
         return {"total": SequenceRun.objects.count(),
                 "mine": SequenceRun.objects.filter(submission__submitter__organization=org).count() if org else 0,
@@ -217,12 +217,14 @@ def dataset_stats(slug: str, org: str) -> dict:
     ds = catalog.DATASET_BY_SLUG[slug]
     modality = ds["modality"]
     # 영상 수는 케이스의 영상 수(cxr/ct/pet_ct_count)를 합한다 — 시드 케이스의 영상 수와 승인된 영상 업로드
-    # (apply 가 케이스 영상 수를 올림)를 모두 포함한다. ImagingStudy 는 업로드로 들어온 검사만 있다.
+    # (apply 가 케이스 영상 수를 올림)를 모두 포함한다. 최종 업데이트는 업로드로 들어온 검사만 본다
+    # (공개 샘플 영상 검사 — 4단계 시드 — 의 촬영일은 제외).
     col = {"CXR": "cxr_count", "CT": "ct_count", "PET-CT": "pet_ct_count"}[modality]
     has = {"CXR": "has_cxr", "CT": "has_ct", "PET-CT": "has_pet_ct"}[modality]
     total = P.aggregate(s=Sum(col))["s"] or 0
     mine = (P.filter(site=org).aggregate(s=Sum(col))["s"] or 0) if org else 0
-    last_study = ImagingStudy.objects.filter(modality=modality).aggregate(m=Max("study_date"))["m"]
+    last_study = ImagingStudy.objects.filter(modality=modality, is_public_sample=False).aggregate(
+        m=Max("study_date"))["m"]
     last_case = P.filter(**{has: True}).aggregate(m=Max("last_update_date"))["m"]
     last = max([d for d in (last_study, last_case) if d], default=None)
     return {"total": total, "mine": mine, "last": last,
@@ -298,19 +300,47 @@ def export_filename(slug: str, ext: str) -> str:
     return f"{title}_deidentified.{ext}"
 
 
-def _variant_rows():
-    """유전체 변이(원본 variants 컬럼) — 변이 모델(4단계) 전까지는 케이스의 내성 변이(resistance_mutations)를
-    변이 단위로 모아 빈도·검체 수를 계산한다. 좌표(position·ref·alt)는 아직 DB 에 없어 빈 칸."""
-    sequenced = Patient.objects.filter(has_sequence=True).count()
+def _variant_units():
+    """환자 내성 변이를 변이 단위로 묶은 [(키, 표시 정보, 보유 대상자 수)] — GAP 과 같은 매칭 규칙(apps.genomics.services):
+    카탈로그 변이는 별칭(E. coli 번호·대소문자·괄호 설명)까지 한 행으로, 그 밖은 정규화 표기(없으면 원문) 단위."""
+    from apps.genomics import services as gs
+
+    cat = gs.load_catalog()
     counter: Counter = Counter()
+    info: dict = {}
     for muts in Patient.objects.exclude(resistance_mutations=[]).values_list("resistance_mutations", flat=True).iterator(
             chunk_size=ITER_CHUNK):
-        for m in set(x for x in (muts or []) if isinstance(x, str) and x.strip()):
-            counter[m.strip()] += 1
-    for m, n in sorted(counter.items(), key=lambda kv: (-kv[1], kv[0])):
-        parts = m.split(" ")
-        yield [parts[0], "", "", "", parts[1] if len(parts) > 1 else "", related_drug(m),
-               f"{n / sequenced * 100:.1f}" if sequenced else "0.0", n]
+        units = {}
+        for m in gs.clean_mutations(muts):
+            v = cat.match(m)
+            if v is not None:
+                units[f"v:{v.pk}"] = v
+            else:
+                k = gs.key_of(m)
+                units["k:" + (k or " ".join(m.split()).lower())] = " ".join(m.split())
+        for key, val in units.items():
+            counter[key] += 1
+            info.setdefault(key, val)
+    return cat, sorted(((k, info[k], n) for k, n in counter.items()), key=lambda r: (-r[2], r[0]))
+
+
+def _variant_rows():
+    """유전체 변이(원본 variants 컬럼) — 변이 단위 보유 대상자 수와 빈도. 빈도 분모는 GAP 과 같은
+    '유전체 데이터 보유 대상자'(시퀀스 보유 또는 내성 변이 기록, genomic_patients_q). 카탈로그 변이는 좌표·아미노산
+    변이·연관 약제(대표 + 추가, ';' 구분)를 카탈로그 값으로, 카탈로그 밖 표기는 좌표를 빈 칸으로 둔다."""
+    from apps.genomics import services as gs
+
+    denom = Patient.objects.filter(gs.genomic_patients_q()).count()
+    _, rows = _variant_units()
+    for key, val, n in rows:
+        freq = f"{n / denom * 100:.1f}" if denom else "0.0"
+        if key.startswith("v:"):
+            v = val
+            yield [v.gene.gene, v.position, v.ref_allele, v.alt_allele, v.amino_acid_change,
+                   ";".join(gs.variant_drugs(v)), freq, n]
+            continue
+        parts = val.split(" ")
+        yield [parts[0], "", "", "", parts[1] if len(parts) > 1 else "", related_drug(val), freq, n]
 
 
 def export_rows(slug: str):
@@ -350,11 +380,7 @@ def export_row_count(slug: str) -> int:
     if slug == "dst-results":
         return DSTResult.objects.count()
     if slug == "genomics":
-        seen = set()
-        for muts in P.exclude(resistance_mutations=[]).values_list("resistance_mutations", flat=True).iterator(
-                chunk_size=ITER_CHUNK):
-            seen.update(x.strip() for x in (muts or []) if isinstance(x, str) and x.strip())
-        return len(seen)
+        return len(_variant_units()[1])
     has = {"cxr-images": "has_cxr", "ct-studies": "has_ct", "pet-ct-studies": "has_pet_ct"}[slug]
     return P.filter(**{has: True}).count()
 

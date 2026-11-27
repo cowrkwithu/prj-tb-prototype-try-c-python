@@ -15,7 +15,7 @@ def describe(res: dict) -> str:
 
 
 class Command(BaseCommand):
-    help = ("migrate → 데모 계정 → 표준 데이터사전 → 환자 시드 → 홈 콘텐츠. 데이터셋마다 최초 1회만 적재한다"
+    help = ("migrate → 데모 계정 → 표준 데이터사전 → 환자 시드 → 홈 콘텐츠 → 코호트·데이터 구조 → 변이 카탈로그·샘플 영상. 데이터셋마다 최초 1회만 적재한다"
             "(SeedLog). 여러 번 실행해도 안전하며, 사용자가 지운 레코드를 되살리지 않는다.")
 
     def handle(self, *args, **opts):
@@ -31,4 +31,8 @@ class Command(BaseCommand):
         self.stdout.write("[+] 저장 데이터셋(코호트): " + describe(load_cohorts()))
         from apps.schemas.services import load_sample_schemas  # 데이터사전 뒤에 적재(필드의 사전 참조 FK 연결)
         self.stdout.write("[+] 커스텀 데이터 구조(샘플 4종): " + describe(load_sample_schemas()))
+        from apps.genomics.services import load_genomics  # 4단계 GAP — 유전자·변이 카탈로그
+        self.stdout.write("[+] 유전체 변이 카탈로그: " + describe(load_genomics()))
+        from apps.imaging.services import load_imaging_samples  # 4단계 RAP — 환자 시드 뒤(환자 영상 수 기준)
+        self.stdout.write("[+] 공개 샘플 영상 검사: " + describe(load_imaging_samples()))
         self.stdout.write(self.style.SUCCESS("bootstrap 완료"))

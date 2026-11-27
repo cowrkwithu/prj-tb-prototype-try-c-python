@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% t "GWAS 분석" "GWAS Analysis" %}{% endblock %}
+{% block head %}<script src="{% static 'vendor/chart.umd.min.js' %}" defer></script>{% endblock %}
+{% block content %}
+{# 원본 src/pages/Gap/GwasAnalysis.tsx — generateMockSnps 대신 환자 변이 × DST 표현형(R vs S) Fisher 정확검정 #}
+<div class="gap-page gap-pad stack" data-testid="gap-gwas">
+  <form class="card card-sm" action="/gap/gwas" method="get">
+    <input type="hidden" name="run" value="1">
+    <h3 class="text-xs font-semibold text-navy mb-1">{% t "표현형·대상 선택" "Phenotype & Scope" %}</h3>
+    <div class="grid-2 gap-form">
+      <div><label class="text-10 text-muted" for="g-drug">{% t "약제 (DST 결과 R vs S)" "Drug (DST result R vs S)" %}</label>
+        <select id="g-drug" name="drug" class="input input-sm">
+          {% for d in drugs %}<option value="{{ d.code }}" {% if d.code == drug %}selected{% endif %}>{% if d.name %}{{ d.name }} ({{ d.code }}){% else %}{{ d.code }}{% endif %} · R {{ d.r }} / S {{ d.s }}</option>
+          {% empty %}<option value="">{% t "DST 결과가 없습니다" "No DST results" %}</option>{% endfor %}
+        </select></div>
+      <div><label class="text-10 text-muted" for="g-cohort">{% t "분석 대상 데이터셋 (선택)" "Dataset Scope (optional)" %}</label>
+        <select id="g-cohort" name="cohort" class="input input-sm">
+          <option value="">{% t "전체 대상자" "All subjects" %}</option>
+          {% for c in cohorts %}<option value="{{ c.id }}" {% if cohort and cohort.pk == c.id %}selected{% endif %}>{{ c.name }} ({% if is_en %}{{ c.n }} subjects{% else %}{{ c.n }}명{% endif %})</option>{% endfor %}
+        </select></div>
+    </div>
+    <button type="submit" class="btn btn-teal btn-sm mt-3" {% if not drugs %}disabled{% endif %} data-tip="{% t '선택한 약제의 내성(R)·감수성(S) 대상자를 비교해 내성과 관련된 변이를 찾는 GWAS를 실행합니다.' 'Run GWAS comparing resistant (R) and susceptible (S) subjects for the selected drug to find resistance-associated variants.' %}">{% icon "activity" "w-4 h-4" %} {% t "GWAS 실행" "Run GWAS" %}</button>
+    <p class="text-10 text-muted mt-2">{% if is_en %}Each variant: Fisher's exact test (two-sided) on carriers vs non-carriers × R vs S. Bonferroni threshold 0.05 / number of tests. Analyses the resistance mutations recorded for each subject — not genome-wide SNPs.{% else %}변이마다 보유/비보유 × R/S 2×2 표에 Fisher 정확검정(양측). Bonferroni 기준 0.05 / 검정 수. 대상자별로 기록된 내성 변이를 분석합니다(전장 유전체 SNP 아님).{% endif %}</p>
+    {% if cohort_missing %}<p class="alert alert-warning mt-2">{% t "데이터셋을 찾을 수 없어 전체 대상자로 분석합니다" "Dataset not found — analysing all subjects" %}</p>{% endif %}
+  </form>
+
+  {% if run and result %}
+    {% if result.insufficient %}
+      <div class="alert alert-warning" data-testid="gwas-insufficient">{% icon "triangle-alert" "w-4 h-4 shrink-0" %}
+        <span>{% if is_en %}Not enough samples: R {{ result.n_r }} · S {{ result.n_s }} (each group needs at least {{ min_group }}).{% else %}표본 수가 부족합니다: R {{ result.n_r }}명 · S {{ result.n_s }}명 (각 군 최소 {{ min_group }}명 필요).{% endif %}</span></div>
+    {% else %}
+      <div class="card card-sm" data-testid="gwas-result">
+        <h3 class="text-xs font-semibold text-navy">Manhattan Plot</h3>
+        <p class="text-10 text-muted mb-1">{{ result.drug_name|default:result.drug }} · R {{ result.n_r }} vs S {{ result.n_s }}{% if cohort_name %} · {{ cohort_name }}{% endif %} ·
+          {% if is_en %}{{ result.tests }} tests · Bonferroni p &lt; {{ result.threshold|stringformat:".2e" }}{% else %}검정 {{ result.tests }}건 · Bonferroni p &lt; {{ result.threshold|stringformat:".2e" }}{% endif %}
+          {% if result.truncated %} · {% t "표본 상한으로 일부만 분석" "partially analysed (sample cap)" %}{% endif %}{% if result.skipped_tests %} · {% if is_en %}{{ result.skipped_tests }} rare variants not tested (cap {{ max_tests }}){% else %}희소 변이 {{ result.skipped_tests }}건 미검정(상한 {{ max_tests }}){% endif %}{% endif %}</p>
+        {% if chart %}
+          {{ chart|json_script:"gwas-data" }}
+          <div class="chart-box" style="height:300px"><canvas data-gwas-chart data-x-label="Genome Position (Mb)" data-intergenic="{% t '유전자 간 영역' 'Intergenic' %}" data-approx="{% t '위치 근사(유전자 중앙)' 'approx. position (gene centre)' %}" aria-label="Manhattan plot"></canvas></div>
+        {% else %}<p class="text-xs text-muted">{% t "플롯할 위치가 있는 변이가 없습니다" "No variants with a position to plot" %}</p>{% endif %}
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="gap-result-head"><h3 class="text-xs font-semibold text-navy">{% if is_en %}Significant Variants ({{ result.significant }}) · top {{ table|length }} by p-value{% else %}유의미한 변이 ({{ result.significant }}개) · p 값 상위 {{ table|length }}개{% endif %}</h3></div>
+        <div style="overflow-x:auto"><table class="table table-compact" data-testid="gwas-table">
+          <thead><tr><th>#</th><th>{% t "변이" "Variant" %}</th><th>{% t "유전자" "Gene" %}</th><th>{% t "위치" "Position" %}</th><th>{% t "아미노산 변이 (Codon No.)" "AA Change (Codon No.)" %}</th><th>{% t "아미노산 변이 (E. coli)" "AA Change (E. coli)" %}</th><th>{% t "카탈로그 연관 약제" "Catalogue Drugs" %}</th><th class="text-right">{% t "보유 R/S" "Carriers R/S" %}</th><th class="text-right">OR</th><th class="text-right">p-value</th><th class="text-right">-log₁₀(p)</th></tr></thead>
+          <tbody>{% for s in table %}
+            <tr class="{% if s.significant %}row-sig{% endif %}" data-testid="gwas-row"><td class="text-muted">{{ forloop.counter }}</td><td class="font-mono">{{ s.label }}{% if not s.catalog %} <span class="badge badge-sm badge-neutral">{% t "카탈로그 밖" "off-catalogue" %}</span>{% endif %}</td>
+              <td class="font-mono font-medium text-navy">{{ s.gene|default:"-" }}</td><td class="font-mono">{% if s.position %}{% if s.approx %}~{% endif %}{{ s.position }}{% else %}-{% endif %}</td>
+              <td class="font-mono">{{ s.aa|default:"-" }}</td><td class="font-mono text-muted">{{ s.ecoli|default:"-" }}</td>
+              <td class="text-xs" data-testid="gwas-drugs">{% for d in s.drugs %}<span class="drug-pill" {% if d == result.drug_name %}data-linked="1" style="font-weight:700"{% endif %}>{{ d }}</span> {% empty %}-{% endfor %}</td>
+              <td class="text-right font-mono">{{ s.a }}/{{ s.b }}</td><td class="text-right font-mono">{{ s.odds|floatformat:2 }}</td>
+              <td class="text-right font-mono {% if s.significant %}text-danger{% endif %}">{{ s.p|stringformat:".2e" }}</td><td class="text-right font-mono font-semibold">{{ s.neglog|floatformat:2 }}</td></tr>
+          {% empty %}<tr><td colspan="11" class="text-center text-muted">{% t "검정할 변이가 없습니다" "No variants to test" %}</td></tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/gap.js' %}"></script>{% endblock %}

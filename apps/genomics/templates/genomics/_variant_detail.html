@@ -1,0 +1,49 @@
+{# 변이 상세 모달 (원본 GenomeBrowser Modal) — 보유 대상자 목록(케이스 상세 링크)은 DB #}
+<div class="modal-backdrop" x-data @keydown.escape.window="$el.remove()" @click.self="$el.remove()" data-testid="variant-detail">
+  <div class="modal modal-lg" role="dialog" aria-modal="true">
+    <div class="modal-header"><h3 class="modal-title font-mono">{{ v.gene }} {{ v.aa }}{% if v.ecoli %} (E. coli {{ v.ecoli }}){% endif %}</h3>
+      <button type="button" class="icon-btn sm" @click="$root.remove()" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+    <div class="modal-body stack-sm">
+      <p class="text-xs text-muted">{{ v.annotation }}</p>
+      <div class="grid-4 gap-detail">
+        <div><p class="text-10 text-muted">{% t "유전체 위치" "Genomic Position" %}</p><p class="text-xs font-semibold text-navy">{{ v.position }}</p></div>
+        <div><p class="text-10 text-muted">{% t "참조/대립 유전자" "Ref/Alt Allele" %}</p><p class="text-xs font-semibold text-navy">{{ v.ref }} → {{ v.alt }}</p></div>
+        <div><p class="text-10 text-muted">{% t "아미노산 변화 (Codon No.)" "Amino Acid Change (Codon No.)" %}</p><p class="text-xs font-semibold text-navy">{{ v.aa|default:"N/A" }}</p></div>
+        <div><p class="text-10 text-muted">{% t "아미노산 변화 (E. coli)" "Amino Acid Change (E. coli)" %}</p><p class="text-xs font-semibold text-navy">{{ v.ecoli|default:"N/A" }}</p></div>
+        <div><p class="text-10 text-muted">{% t "관련 약제" "Associated Drug" %}</p><p class="text-xs font-semibold text-navy">{{ v.drugs|join:", " }}</p></div>
+        <div><p class="text-10 text-muted">{% t "빈도" "Frequency" %}</p><p class="text-xs font-semibold text-navy">{{ v.freq_pct|floatformat:1 }}%</p></div>
+        <div><p class="text-10 text-muted">{% t "해당 샘플 수" "Sample Count" %}</p><p class="text-xs font-semibold text-navy" data-testid="sample-count">{% if is_en %}{{ v.sample_count }}{% else %}{{ v.sample_count }}건{% endif %}</p></div>
+        <div><p class="text-10 text-muted">{% t "근거 등급 (카탈로그)" "Confidence (catalogue)" %}</p><p class="text-xs font-semibold text-navy">{% if v.confidence == "high" %}{% t "높음" "High" %}{% elif v.confidence == "uncertain" %}{% t "불확실" "Uncertain" %}{% else %}{% t "중간" "Moderate" %}{% endif %}</p></div>
+        <div><p class="text-10 text-muted">{% t "유전자 전체 이름" "Gene Full Name" %}</p><p class="text-xs font-semibold text-navy">{{ gene.full_name }}</p></div>
+        <div><p class="text-10 text-muted">{% t "알려진 변이 수 (문헌 참고값)" "Known Variants (literature, reference only)" %}</p><p class="text-xs font-semibold text-navy">{% if is_en %}{{ gene.known_variants }}{% else %}{{ gene.known_variants }}개{% endif %}</p></div>
+      </div>
+      <p class="text-10 text-muted">{% if is_en %}Frequency = carriers / {{ denominator }} subjects with genomic data.{% else %}빈도 = 보유 대상자 / 유전체 데이터 보유 대상자 {{ denominator }}명.{% endif %}</p>
+
+      <div>
+        <h4 class="h4">{% t "보유 대상자" "Carriers" %} <span class="text-xs text-muted">{% if is_en %}({{ carrier_total }}){% else %}{{ carrier_total }}명{% endif %}</span></h4>
+        {% if carriers %}
+          <div class="table-wrap sm-scroll" style="max-height:240px;overflow:auto">
+            <table class="table table-compact" data-testid="carrier-table">
+              <thead><tr><th>{% t "케이스 ID" "Case ID" %}</th><th>{% t "약제내성 유형" "Resistance Type" %}</th><th>Lineage</th><th>{% t "국적" "Country" %}</th></tr></thead>
+              <tbody>{% for p in carriers %}
+                <tr><td><a class="link-underline font-mono" href="/cases?id={{ p.pk }}" data-tip="{% t '대상자 등록조회에서 이 케이스 상세를 엽니다.' 'Open this case in Cases.' %}">{{ p.condition_id }}</a></td>
+                  <td>{{ p.diagnosis_type }}</td><td class="font-mono">{{ p.lineage|default:"-" }}</td><td>{{ p.country }}</td></tr>
+              {% endfor %}</tbody>
+            </table>
+          </div>
+          {% if carrier_total > carriers|length %}<p class="text-10 text-muted mt-1">{% if is_en %}Showing the first {{ carriers|length }}.{% else %}앞 {{ carriers|length }}명만 표시합니다.{% endif %}</p>{% endif %}
+        {% else %}
+          <p class="text-xs text-muted">{% if is_en %}No subjects carry the {{ v.label }} mutation{% else %}{{ v.label }} 변이를 보유한 대상자가 없습니다{% endif %}</p>
+        {% endif %}
+      </div>
+
+      <div class="flex gap-2">
+        {% if depot_url %}
+          <a href="{{ depot_url }}" class="btn btn-teal btn-xs" data-testid="build-cohort" data-tip="{% t '이 변이를 보유한 대상자로 데이터 탐색 화면에서 데이터셋을 만듭니다.' 'Build a dataset of subjects with this variant in Data Explorer.' %}">{% icon "arrow-right" "w-3 h-3" %} {% t "데이터 생성" "Generate Data" %}</a>
+        {% else %}
+          <button type="button" class="btn btn-teal btn-xs" disabled>{% icon "arrow-right" "w-3 h-3" %} {% t "데이터 생성" "Generate Data" %}</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% t "영상 분석" "Imaging Analysis" %}{% endblock %}
+{% block content %}
+{# 원본 src/pages/Rap/{index,ImageViewer,VolumeViewer,InfoPanel,ExpertFindings,ExpertOverlay}.tsx — 데이터는 ImagingStudy·ExpertAnnotation(DB) #}
+{{ rap_data|json_script:"rap-data" }}
+{% if not patient %}
+  <div class="container"><div class="card empty-state" data-testid="rap-empty">
+    <span class="icon-circle">{% icon "scan-line" "w-6 h-6" %}</span>
+    <p class="font-semibold text-primary">{% t "영상 검사가 있는 대상자가 없습니다" "No subjects with imaging studies" %}</p>
+    <p class="text-sm mt-1">{% t "영상 데이터 업로드가 승인되면 이 화면에서 볼 수 있습니다." "Approved imaging uploads appear here." %}</p>
+    <a href="/upload/imaging" class="btn btn-secondary btn-sm mt-4">{% t "영상 데이터 업로드" "Upload Imaging Data" %}</a>
+  </div></div>
+{% else %}
+<div class="rap" x-data="rapViewer()" @keydown.window="onKey($event)" data-testid="rap" data-patient="{{ patient.condition_id }}">
+  {# ─── 좌측: 영상 뷰어 ─── #}
+  <section class="rap-left">
+    <div class="rap-toolbar">
+      <button type="button" class="rap-tool" @click="zoomBy(0.2)" aria-label="{% t '확대' 'Zoom In' %}" data-tip="{% t '영상을 20%씩 확대합니다(최대 300%).' 'Zoom in on the image by 20% (up to 300%).' %}">{% icon "zoom-in" "w-3_5 h-3_5" %}</button>
+      <button type="button" class="rap-tool" @click="zoomBy(-0.2)" aria-label="{% t '축소' 'Zoom Out' %}" data-tip="{% t '영상을 20%씩 축소합니다(최소 50%).' 'Zoom out of the image by 20% (down to 50%).' %}">{% icon "zoom-out" "w-3_5 h-3_5" %}</button>
+      <span class="rap-zoom" x-text="Math.round(zoom * 100) + '%'">100%</span>
+      <span class="rap-sep"></span>
+      <span class="rap-ic" title="{% t '밝기' 'Brightness' %}">{% icon "sun" "w-3_5 h-3_5" %}</span>
+      <input type="range" min="50" max="150" x-model.number="bright" class="rap-range" aria-label="{% t '밝기' 'Brightness' %}">
+      <span class="rap-ic" title="{% t '대비' 'Contrast' %}">{% icon "contrast" "w-3_5 h-3_5" %}</span>
+      <input type="range" min="50" max="150" x-model.number="contrast" class="rap-range" aria-label="{% t '대비' 'Contrast' %}">
+      <span class="rap-sep"></span>
+      <button type="button" class="rap-tool" @click="resetView()" aria-label="{% t '리셋' 'Reset' %}" data-tip="{% t '확대·이동·밝기·대비를 처음 값으로 되돌립니다.' 'Reset zoom, pan, brightness and contrast to defaults.' %}">{% icon "rotate-ccw" "w-3_5 h-3_5" %}</button>
+      <span class="rap-sep"></span>
+      <button type="button" class="vt" :class="showAI ? 'on-teal' : ''" @click="showAI = !showAI" data-testid="toggle-ai"
+              :data-tip="showAI ? '{% t "영상 위 AI 판독 영역 표시를 숨깁니다." "Hide the AI-detected regions on the image." %}' : '{% t "영상 위에 AI 판독 영역을 다시 표시합니다." "Show the AI-detected regions on the image." %}'">
+        <span x-show="showAI">{% icon "eye" "w-3 h-3" %}</span><span x-show="!showAI">{% icon "eye-off" "w-3 h-3" %}</span> {% t "AI 어노테이션" "AI Annotation" %}</button>
+      <button type="button" class="vt" :class="showExpert ? 'on-sky' : ''" @click="showExpert = !showExpert" data-testid="toggle-expert"
+              :data-tip="showExpert ? '{% t "영상 위 전문가 소견 표시를 숨깁니다." "Hide expert findings on the image." %}' : '{% t "영상 위에 전문가 소견을 다시 표시합니다." "Show expert findings on the image." %}'">
+        <span x-show="showExpert">{% icon "eye" "w-3 h-3" %}</span><span x-show="!showExpert">{% icon "eye-off" "w-3 h-3" %}</span> {% t "전문가 소견" "Expert Findings" %}</button>
+      <div class="rap-tools" role="group" aria-label="{% t '소견 그리기 도구' 'Drawing tools' %}">
+        <button type="button" class="rap-tool" :class="tool === 'select' && 'on'" @click="setTool('select')" aria-label="{% t '선택·이동' 'Select / Pan' %}" data-tip="{% t '그리기를 끝내고, 영상 위 전문가 소견을 눌러 선택합니다. 확대한 영상은 끌어서 이동합니다.' 'Stop drawing and select expert findings on the image. Drag to pan a zoomed image.' %}">{% icon "mouse-pointer-2" "w-3_5 h-3_5" %}</button>
+        <button type="button" class="rap-tool" :class="tool === 'rect' && 'on'" @click="setTool('rect')" :disabled="!cur.annotatable" aria-label="{% t '네모 영역' 'Rectangle' %}" data-tip="{% t '영상 위를 끌어 네모 영역으로 전문가 소견을 표시합니다.' 'Drag on the image to mark an expert finding as a rectangle.' %}">{% icon "square" "w-3_5 h-3_5" %}</button>
+        <button type="button" class="rap-tool" :class="tool === 'ellipse' && 'on'" @click="setTool('ellipse')" :disabled="!cur.annotatable" aria-label="{% t '동그라미 영역' 'Circle' %}" data-tip="{% t '영상 위를 끌어 동그라미 영역으로 전문가 소견을 표시합니다.' 'Drag on the image to mark an expert finding as an ellipse.' %}">{% icon "circle" "w-3_5 h-3_5" %}</button>
+        <button type="button" class="rap-tool" :class="tool === 'text' && 'on'" @click="setTool('text')" :disabled="!cur.annotatable" aria-label="{% t '텍스트' 'Text' %}" data-tip="{% t '영상 위 원하는 곳을 눌러 텍스트 소견을 붙입니다.' 'Click a spot on the image to place a text note.' %}">{% icon "type" "w-3_5 h-3_5" %}</button>
+        <button type="button" class="rap-tool rap-del" @click="removeSelected()" :disabled="!canDeleteSelected()" aria-label="{% t '선택한 소견 삭제' 'Delete selected' %}" data-tip="{% t '영상에서 선택한 전문가 소견을 삭제합니다(Delete 키). 작성자 본인·관리자만.' 'Delete the selected expert finding (Delete key). Author or admin only.' %}">{% icon "trash-2" "w-3_5 h-3_5" %}</button>
+      </div>
+      <span class="rap-meta" x-text="cur.type + ' · ' + cur.date"></span>
+    </div>
+
+    <div class="rap-stage" x-ref="stage" @pointerdown="stageDown($event)" @pointermove="stageMove($event)" @pointerup="stageUp($event)" @pointercancel="drag = null; pan = null" @wheel="onWheel($event)">
+      {# 볼륨 평면 선택 #}
+      <template x-if="cur.kind === 'volume'">
+        <div class="rap-planes">
+          {% icon "layers" "w-3_5 h-3_5" %}
+          <template x-for="p in cur.volume.planes" :key="p">
+            <button type="button" class="rap-plane" :class="plane === p && 'on'" @click="setPlane(p)" x-text="planeLabel(p)"></button>
+          </template>
+        </div>
+      </template>
+
+      <div class="rap-frame" x-ref="frame" :style="frameStyle()" x-show="cur.image || cur.kind === 'volume'">
+        <img :src="imageSrc()" :alt="cur.type + ' ' + cur.date" draggable="false" class="rap-img" :class="cur.kind === 'volume' && plane === 'mip' ? 'mip' : ''" :style="'filter: brightness(' + bright + '%) contrast(' + contrast + '%)'">
+        <div class="cxr-caption"><p x-text="caption1()"></p><p x-text="caption2()"></p><p x-show="caption3()" x-text="caption3()"></p></div>
+        {# AI 어노테이션: CXR 판독의 합의 ROI / 볼륨 병변 박스 #}
+        <template x-if="showAI && cur.kind === 'cxr'">
+          <div><template x-for="(r, i) in cur.rois" :key="i">
+            <div class="ann-box" :style="boxStyle(r, cur.ai_color)"><span class="ann-label" x-show="i === 0" :style="'color:' + cur.ai_color + ';background:' + cur.ai_color + '30'" x-text="cur.ai_label"></span></div>
+          </template></div>
+        </template>
+        <template x-if="showAI && cur.kind === 'volume' && lesionBox()">
+          <div class="ann-box" :style="boxStyle(lesionBox(), cur.ai_color)"><span class="ann-label" :style="'color:' + cur.ai_color + ';background:' + cur.ai_color + '30'" x-text="cur.ai_label + (cur.type === 'PET-CT' && cur.volume.suv_max ? ' · SUVmax ' + cur.volume.suv_max.toFixed(1) : '')"></span></div>
+        </template>
+        {# 전문가 소견 층 #}
+        <div class="rap-overlay" x-ref="overlay" :class="tool !== 'select' && 'drawing'">
+          <template x-for="a in visibleExpert()" :key="a.id">
+            <div x-show="showExpert" :class="markClass(a)" :style="markStyle(a)" @pointerdown.stop="tool === 'select' && toggleSelect(a.id)">
+              <span x-show="a.shape !== 'text'" class="xm-label" x-text="a.finding_l"></span>
+              <span x-show="a.shape === 'text'" class="xm-text" x-text="a.text"></span>
+            </div>
+          </template>
+          <template x-if="liveDraft()">
+            <div :class="markClass(liveDraft()) + ' dashed'" :style="markStyle(liveDraft())"><span x-show="liveDraft().shape === 'text'" class="xm-text">…</span></div>
+          </template>
+        </div>
+      </div>
+      <template x-if="!cur.image && cur.kind !== 'volume'">
+        <div class="rap-noimg" data-testid="rap-noimg">
+          {% icon "image" "w-8 h-8" %}
+          <p x-show="!cur.can_view">{% t "이 업로드 영상을 보려면 영상 데이터 접근 신청(DAR) 승인이 필요합니다." "Viewing this uploaded image requires an approved imaging Data Access Request (DAR)." %}
+            <a class="link-underline" href="/data?tab=dar&amp;types=imaging">{% t "데이터 접근 신청" "Data Access Request" %}</a></p>
+          <p x-show="cur.can_view">{% t "브라우저에서 미리 볼 수 있는 영상(JPG·PNG)이 없습니다. DICOM 은 미리보기를 지원하지 않습니다." "No browser-viewable image (JPG/PNG). DICOM preview is not supported." %}</p>
+        </div>
+      </template>
+
+      <p class="rap-source" x-text="cur.source"></p>
+      <div class="rap-hint" x-show="tool !== 'select'" x-cloak>
+        <span x-show="tool === 'text'">{% t "텍스트를 넣을 곳을 누르세요 · Esc 로 취소" "Click where the text goes · Esc to cancel" %}</span>
+        <span x-show="tool !== 'text'">{% t "영상 위를 끌어 영역을 그리세요 · Esc 로 취소" "Drag on the image to draw a region · Esc to cancel" %}</span>
+      </div>
+      <div class="rap-legend" x-show="(showAI && hasAI()) || (showExpert && visibleExpert().length)">
+        <template x-if="showAI && hasAI()"><div><p class="rap-legend-title">{% t "AI 소견" "AI Findings" %}</p>
+          <p><span class="swatch" :style="'background:' + cur.ai_color"></span> <span x-text="cur.ai_label"></span></p></div></template>
+        <p x-show="showExpert && visibleExpert().length"><span class="swatch" style="background:#38BDF8"></span>
+          <span x-text="en ? 'Expert findings (' + visibleExpert().length + ')' : '전문가 소견 ' + visibleExpert().length + '건'"></span></p>
+      </div>
+      {# 타임시리즈 재생 #}
+      <div class="rap-play" x-show="tab === 1" x-cloak>
+        <span class="rap-frameno" x-show="playState !== 'stopped'" x-text="(sel + 1) + ' / ' + studies.length"></span>
+        <button type="button" class="rap-play-btn" x-show="playState !== 'playing'" @click="play()" aria-label="{% t '재생' 'Play' %}" data-tip="{% t '촬영 시간 순서대로 영상을 자동으로 넘겨 봅니다.' 'Play through the images automatically in time order.' %}">{% icon "play" "w-5 h-5" %}</button>
+        <button type="button" class="rap-play-btn" x-show="playState === 'playing'" @click="pause()" aria-label="{% t '일시정지' 'Pause' %}" data-tip="{% t '자동 재생을 지금 영상에서 잠시 멈춥니다.' 'Pause playback on the current image.' %}">{% icon "pause" "w-5 h-5" %}</button>
+        <button type="button" class="rap-stop-btn" x-show="playState !== 'stopped'" @click="stop()" aria-label="{% t '정지' 'Stop' %}" data-tip="{% t '재생을 멈추고 첫 영상으로 돌아갑니다.' 'Stop playback and return to the first image.' %}">{% icon "square" "w-4 h-4" %}</button>
+      </div>
+    </div>
+
+    {# 볼륨 단면 슬라이더 + 시네 #}
+    <template x-if="cur.kind === 'volume'">
+      <div class="rap-slicebar">
+        <button type="button" class="rap-tool" @click="toggleCine()" :aria-label="cine ? '{% t "일시정지" "Pause" %}' : '{% t "단면 재생" "Cine" %}'" data-tip="{% t '단면을 처음부터 끝까지 자동으로 넘깁니다(시네 재생). MIP 는 회전합니다.' 'Play through all slices automatically (cine). MIP rotates.' %}">
+          <span x-show="!cine">{% icon "play" "w-3_5 h-3_5" %}</span><span x-show="cine">{% icon "pause" "w-3_5 h-3_5" %}</span></button>
+        <div class="rap-slider" data-tip="{% t '끌어서 단면 위치를 옮깁니다. 영상 위에서 마우스 휠로도 넘길 수 있습니다. 하늘색 눈금은 전문가 소견이 있는 단면입니다.' 'Drag to move between slices, or scroll on the image. Sky-blue ticks mark slices with expert findings.' %}">
+          <template x-for="m in markers()" :key="m"><span class="rap-marker" :style="'left: calc(' + (m / Math.max(1, count() - 1) * 100) + '% - 1px)'"></span></template>
+          <input type="range" min="0" :max="count() - 1" :value="idx[plane]" @input="setSlice(+$event.target.value)" aria-label="{% t '단면 위치' 'Slice position' %}" data-testid="slice-range">
+        </div>
+        <span class="rap-sliceno" x-text="(idx[plane] + 1) + '/' + count()"></span>
+      </div>
+    </template>
+
+    {# 썸네일 #}
+    <div class="rap-thumbs" data-testid="rap-thumbs">
+      <template x-for="(s, i) in studies" :key="s.id">
+        <button type="button" class="rap-thumb" :class="i === sel && 'on'" @click="selectStudy(i)" :data-tip="en ? 'Open the ' + s.type + ' image taken on ' + s.date + ' in the viewer above.' : s.date + ' 촬영한 ' + s.type + ' 영상을 위 화면에 엽니다.'">
+          <img x-show="s.thumb" :src="s.thumb || ''" alt="" loading="lazy">
+          <span x-show="!s.thumb" class="rap-thumb-none">{% icon "image" "w-4 h-4" %}</span>
+          <span class="rap-thumb-type" x-text="s.type"></span><span class="rap-thumb-date" x-text="s.date.slice(5)"></span>
+        </button>
+      </template>
+    </div>
+  </section>
+
+  {# ─── 우측: 정보 패널 ─── #}
+  <section class="rap-right">
+    <div class="rap-patient">
+      <span class="avatar">{% icon "user" "w-4 h-4" %}</span>
+      <div style="min-width:0">
+        <select class="input input-xs font-semibold text-navy" aria-label="{% t '환자 선택' 'Select patient' %}" data-testid="rap-patient-select"
+                @change="location.href = location.pathname + '?patient=' + encodeURIComponent($event.target.value)">
+          {% for p in patients %}<option value="{{ p.condition_id }}" {% if p.pk == patient.pk %}selected{% endif %}>{{ p.condition_id }} · {{ p.diagnosis_type }} · {% if p.n_cxr %}CXR {{ p.n_cxr }}{% endif %}{% if p.n_ct %}{% if p.n_cxr %} · {% endif %}CT {{ p.n_ct }}{% endif %}{% if p.n_pet %}{% if p.n_cxr or p.n_ct %} · {% endif %}PET-CT {{ p.n_pet }}{% endif %}</option>{% endfor %}
+        </select>
+        <p class="text-10 text-muted">{% if is_en %}{{ patient.age }} yrs{% else %}{{ patient.age }}세{% endif %} · {{ sex_label }} · {{ country_label }} · <a class="link-underline" href="/cases?id={{ patient.pk }}&amp;tab=2">{% t "케이스 상세" "Case details" %}</a></p>
+      </div>
+      <span class="badge badge-sm {% if patient.diagnosis_type == 'DS-TB' %}badge-success{% elif patient.diagnosis_type == 'MDR-TB' %}badge-warning{% else %}badge-danger{% endif %} ml-auto">{{ patient.diagnosis_type }}</span>
+    </div>
+    <div class="tabs tabs-sm rap-tabs">
+      {% for tb in tabs %}<a href="{{ tb.href }}?patient={{ patient.condition_id|urlencode }}" class="tab" :class="tab === {{ forloop.counter0 }} && 'active'" @click.prevent="setTab({{ forloop.counter0 }}, '{{ tb.href|escapejs }}')" data-tip="{{ tb.help }}">{{ tb.label }}</a>{% endfor %}
+    </div>
+
+    <div class="rap-panel">
+      {# ── 탭 0: 소견 정보 ── #}
+      <div x-show="tab === 0" {% if tab != 0 %}x-cloak{% endif %} class="stack-sm" data-testid="rap-tab-findings">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-semibold text-navy" x-text="en ? cur.type + ' Findings (' + cur.date + ')' : cur.type + ' 소견 (' + cur.date + ')'"></h3>
+          <span class="text-10 text-muted" x-text="en ? cur.findings.length + ' finding(s) · ' + aiCount() + ' lesion mark(s)' : '판독 소견 ' + cur.findings.length + '개 · 병변 표시 ' + aiCount() + '곳'"></span>
+        </div>
+        <p class="sample-note" x-show="cur.sample">{% icon "info" "w-3 h-3" %} {% t "공개 샘플 영상 — 이 대상자 본인의 영상이 아닙니다(출처는 영상 아래 표시)." "Public sample image — not this subject's own image (source shown under the image)." %}</p>
+        <div class="suv-box" x-show="cur.suv">
+          <p class="text-xs font-semibold" x-text="'{% t "FDG 섭취" "FDG uptake" %} · SUVmax ' + (cur.suv ? cur.suv.toFixed(1) : '')"></p>
+          <p class="text-10" x-text="cur.suv >= 5 ? '{% t "고섭취 — 활동성 병변 의심" "High uptake — suggests active disease" %}' : '{% t "섭취 감소 — 치료 반응 소견" "Reduced uptake — consistent with treatment response" %}'"></p>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <p class="flex items-center gap-1 text-xs font-semibold text-navy"><span class="swatch" style="background:#38BDF8"></span> {% t "전문가 소견" "Expert Findings" %}</p>
+          <span class="text-10 text-muted" x-text="en ? curExpert().length : curExpert().length + '건'"></span>
+        </div>
+
+        <p class="text-10 text-muted" x-show="cur.hidden_expert" data-testid="expert-hidden"
+           x-text="en ? cur.hidden_expert + ' expert finding(s) on this image are hidden (no access to the image)' : '영상 열람 권한이 없어 전문가 소견 ' + cur.hidden_expert + '건의 내용을 숨겼습니다'"></p>
+        {# 입력 폼 #}
+        <template x-if="formGeom">
+          <form class="xf" @submit.prevent="saveForm()" data-testid="expert-form">
+            <p class="text-xs font-semibold text-navy"><span x-text="editingId ? '{% t "전문가 소견 수정" "Edit Expert Finding" %}' : '{% t "전문가 소견 입력" "New Expert Finding" %}'"></span>
+              <span class="text-10 text-muted" x-text="' · ' + shapeLabel(formGeom.shape) + (sliceLabel(formGeom) ? ' · ' + sliceLabel(formGeom) : '')"></span></p>
+            <template x-if="formGeom.shape === 'text'"><div><p class="xf-label">{% t "텍스트 (영상에 표시)" "Text (shown on image)" %}</p>
+              <textarea class="textarea xf-text" rows="2" maxlength="120" x-model="form.text" placeholder="{% t '예: 우상엽 공동 의심, 추적 필요' 'e.g. Suspected RUL cavity, follow up' %}"></textarea></div></template>
+            <div><p class="xf-label" x-text="formGeom.shape === 'text' ? '{% t "소견 유형 (선택)" "Finding type (optional)" %}' : '{% t "소견 유형" "Finding type" %}'"></p>
+              <div class="chips">
+                <template x-if="formGeom.shape === 'text'"><button type="button" class="xchip" :class="form.finding_type === '' && 'on'" @click="form.finding_type = ''">{% t "없음" "None" %}</button></template>
+                <template x-for="f in data.findings" :key="f.value"><button type="button" class="xchip" :class="form.finding_type === f.value && 'on'" @click="form.finding_type = f.value" x-text="f.label"></button></template>
+              </div></div>
+            <div class="grid-2" x-show="form.finding_type !== ''">
+              <div><p class="xf-label">{% t "위치" "Location" %}</p><div class="chips"><template x-for="o in data.locations" :key="o.value"><button type="button" class="xchip" :class="form.location === o.value && 'on'" @click="form.location = o.value" x-text="o.label"></button></template></div></div>
+              <div><p class="xf-label">{% t "중증도" "Severity" %}</p><div class="chips"><template x-for="o in data.severities" :key="o.value"><button type="button" class="xchip" :class="form.severity === o.value && 'on'" @click="form.severity = o.value" x-text="o.label"></button></template></div></div>
+            </div>
+            <template x-if="formGeom.shape !== 'text'"><div><p class="xf-label">{% t "메모 (선택)" "Note (optional)" %}</p>
+              <textarea class="textarea xf-text" rows="2" maxlength="300" x-model="form.text" placeholder="{% t '판독 의견을 적습니다' 'Add your reading comments' %}"></textarea></div></template>
+            <p class="alert alert-error text-xs" x-show="formError" x-text="formError" role="alert"></p>
+            <div class="flex justify-end gap-1">
+              <button type="button" class="btn btn-secondary btn-xs" @click="cancelForm()" data-tip="{% t '입력을 취소하고 영상에 그린 도형을 지웁니다.' 'Cancel and discard the shape drawn on the image.' %}">{% t "취소" "Cancel" %}</button>
+              <button type="submit" class="btn btn-teal btn-xs" :disabled="!formValid() || busy" data-testid="expert-save">{% t "저장" "Save" %}</button>
+            </div>
+          </form>
+        </template>
+
+        {# 목록 #}
+        <p class="xf-empty" x-show="!curExpert().length">{% t "영상 툴바의 네모·동그라미 도구로 영역을 그리거나 텍스트 도구로 영상 위를 누르면 전문가 소견을 입력할 수 있습니다." "Draw a region with the rectangle or circle tool, or click the image with the text tool, to enter an expert finding." %}</p>
+        <template x-for="a in curExpert()" :key="a.id">
+          <div class="xl-item" :class="a.id === selectedId && 'on'">
+            <div class="flex items-center gap-2">
+              <template x-if="a.finding_type"><span class="flex items-center gap-1"><span class="xl-type" x-text="a.finding_l"></span><span class="text-10 text-muted" x-text="a.location_l"></span><span class="sev" :class="'sev-' + a.severity" x-text="a.severity_l"></span></span></template>
+              <template x-if="!a.finding_type"><span class="text-10 text-muted" x-text="shapeLabel(a.shape)"></span></template>
+              <span class="ml-auto flex items-center">
+                <button type="button" class="icon-btn sm" @click="locate(a)" aria-label="{% t '영상에서 보기' 'Show on image' %}" data-tip="{% t '영상에서 이 소견을 선택해 보여주고, 다층 영상은 해당 단면으로 이동합니다.' 'Highlight this finding on the image, jumping to its slice for volumes.' %}">{% icon "crosshair" "w-3_5 h-3_5" %}</button>
+                <button type="button" class="icon-btn sm" x-show="a.can_edit" @click="editAnn(a)" aria-label="{% t '수정' 'Edit' %}" data-tip="{% t '이 소견의 유형·위치·중증도·메모를 고칩니다.' "Edit this finding's type, location, severity and note." %}">{% icon "pencil" "w-3_5 h-3_5" %}</button>
+                <button type="button" class="icon-btn sm hover-danger" x-show="a.can_edit" @click="removeAnn(a)" aria-label="{% t '삭제' 'Delete' %}" data-tip="{% t '이 전문가 소견을 영상과 목록에서 지웁니다.' 'Remove this expert finding from the image and the list.' %}">{% icon "trash-2" "w-3_5 h-3_5" %}</button>
+              </span>
+            </div>
+            <p class="xl-text" x-show="a.text" x-text="a.text"></p>
+            <p class="text-10 text-muted mt-1">{% icon "stethoscope" "w-3 h-3" %} <span x-text="a.author + ' · ' + a.created + (sliceLabel(a) ? ' · ' + sliceLabel(a) : '')"></span></p>
+          </div>
+        </template>
+
+        <div class="pt-2" style="border-top:1px solid var(--color-border)">
+          <p class="flex items-center gap-1 text-xs font-semibold text-navy pt-2"><span class="swatch" style="background:#EF4444"></span> <span x-text="cur.sample ? '{% t "AI 소견" "AI Findings" %}' : '{% t "판독 소견 (업로드)" "Reading Findings (upload)" %}'"></span></p>
+        </div>
+        <p class="text-xs text-muted text-center" x-show="!cur.findings.length" style="padding:12px 0">{% t "소견이 없습니다" "No findings" %}</p>
+        <template x-for="(f, i) in cur.findings" :key="i">
+          <div class="xl-item">
+            <div class="flex items-center gap-2"><span class="finding-chip text-10" x-text="f.type_l"></span><span class="text-10 text-muted" x-text="f.location_l"></span><span class="sev" :class="'sev-' + f.severity" x-show="f.severity" x-text="f.severity_l"></span></div>
+            <div class="flex items-center gap-3 text-10 mt-1" x-show="f.ai !== null || f.confirmed !== null">
+              <span x-show="f.ai !== null"><span class="dot" :class="f.ai ? 'dot-teal' : ''"></span> {% t "AI 검출" "AI Detected" %}: <span x-text="f.ai ? 'Yes' : 'No'"></span></span>
+              <span x-show="f.confirmed !== null"><span class="dot" :class="f.confirmed ? 'dot-green' : ''"></span> {% t "전문의" "Radiologist" %}: <span x-text="f.confirmed ? '{% t "확인" "Confirmed" %}' : '{% t "미확인" "Unconfirmed" %}'"></span></span>
+            </div>
+            <p class="text-10 text-muted" x-show="f.description" x-text="f.description"></p>
+          </div>
+        </template>
+        <template x-if="cur.files.length">
+          <div class="text-10 text-muted"><p class="font-semibold">{% t "업로드 파일" "Uploaded files" %}</p>
+            <template x-for="f in cur.files" :key="f.id"><p class="font-mono" x-text="f.name"></p></template></div>
+        </template>
+      </div>
+
+      {# ── 탭 1: 타임시리즈 ── #}
+      <div x-show="tab === 1" {% if tab != 1 %}x-cloak{% endif %} class="stack-sm" data-testid="rap-tab-timeseries">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-semibold text-navy">{% t "영상 타임라인" "Imaging Timeline" %}</h3>
+          <button type="button" class="btn btn-xs" :class="compare ? 'btn-teal' : 'btn-secondary'" @click="compare = !compare" data-tip="{% t '두 시점의 영상과 소견을 나란히 놓고 비교합니다.' 'Compare images and findings from two time points side by side.' %}">{% icon "git-compare" "w-3 h-3" %} {% t "비교 모드" "Compare Mode" %}</button>
+        </div>
+        <template x-if="compare">
+          <div class="stack-sm">
+            <div class="grid-2">
+              <div><label class="text-10 text-muted">{% t "시점 A" "Time Point A" %}</label><select class="input input-xs" x-model.number="cmpA"><template x-for="(s, i) in studies" :key="s.id"><option :value="i" :selected="i === cmpA" x-text="s.date + ' (' + s.type + ')'"></option></template></select></div>
+              <div><label class="text-10 text-muted">{% t "시점 B" "Time Point B" %}</label><select class="input input-xs" x-model.number="cmpB"><template x-for="(s, i) in studies" :key="s.id"><option :value="i" :selected="i === cmpB" x-text="s.date + ' (' + s.type + ')'"></option></template></select></div>
+            </div>
+            <div class="grid-2">
+              <template x-for="i in [cmpA, cmpB]" :key="'c' + i">
+                <div class="cmp-card" x-show="studies[i]">
+                  <div class="cmp-img"><img x-show="studies[i] && studies[i].thumb" :src="studies[i] ? (studies[i].thumb || '') : ''" alt=""></div>
+                  <p class="text-10 font-medium text-navy" x-text="studies[i] ? studies[i].date + ' · ' + studies[i].type : ''"></p>
+                  <div class="chips"><template x-for="(f, fi) in (studies[i] ? studies[i].findings : [])" :key="fi"><span class="cmp-chip" x-text="f.type_l"></span></template>
+                    <template x-for="a in expertOf(studies[i])" :key="'x' + a.id"><span class="cmp-chip sky" x-text="a.finding_l"></span></template></div>
+                  <p class="text-10 text-muted" x-show="studies[i] && studies[i].suv" x-text="'SUVmax ' + (studies[i] && studies[i].suv ? studies[i].suv.toFixed(1) : '')"></p>
+                </div>
+              </template>
+            </div>
+            <p class="text-10 text-muted" x-text="compareSummary()"></p>
+          </div>
+        </template>
+        <template x-if="!compare">
+          <div class="rap-timeline">
+            <template x-for="(s, i) in studies" :key="s.id">
+              <div class="rt-item"><span class="rt-dot" :class="i === sel && 'on'"></span>
+                <button type="button" class="rt-card" :class="i === sel && 'on'" @click="selectStudy(i)" :aria-current="i === sel ? 'true' : null">
+                  <span class="flex items-center justify-between"><span class="text-xs font-semibold text-navy" x-text="s.date"></span><span class="text-10 text-muted" x-text="s.type + (s.sample ? ' · ' + (en ? 'sample' : '샘플') : '')"></span></span>
+                  <span class="chips mt-1">
+                    <template x-for="(f, fi) in s.findings" :key="fi"><span class="rt-chip" x-text="f.type_l + (f.severity_l ? ' (' + f.severity_l + ')' : '')"></span></template>
+                    <template x-for="a in expertOf(s).filter(x => x.finding_type)" :key="'x' + a.id"><span class="rt-chip sky" x-text="a.finding_l + ' (' + a.severity_l + ')'"></span></template>
+                    <span class="text-10 text-muted" x-show="!s.findings.length && !expertOf(s).length">{% t "소견 없음" "No findings" %}</span>
+                  </span>
+                </button>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      {# ── 탭 2: 데이터 조건 ── #}
+      <div x-show="tab === 2" {% if tab != 2 %}x-cloak{% endif %} class="stack-sm" data-testid="rap-tab-conditions">
+        <h3 class="text-xs font-semibold text-navy">{% t "CXR 소견 기반 데이터 조건" "Data Conditions by CXR Findings" %}</h3>
+        <form hx-get="/rap/conditions" hx-target="#rap-cond-result" hx-trigger="change, load" class="stack-sm">
+          <div><p class="text-10 font-medium text-muted mb-1">{% t "소견 유형" "Finding Type" %}</p>
+            <div class="chips">{% for f in finding_options %}<label class="chip"><input type="checkbox" name="finding" value="{{ f.value }}"><span>{{ f.label }}</span></label>{% endfor %}</div></div>
+          <div><p class="text-10 font-medium text-muted mb-1">{% t "위치" "Location" %}</p>
+            <div class="chips"><label class="chip"><input type="radio" name="location" value="" checked><span>{% t "전체" "All" %}</span></label>{% for o in location_options %}<label class="chip"><input type="radio" name="location" value="{{ o.value }}"><span>{{ o.label }}</span></label>{% endfor %}</div></div>
+          <div><p class="text-10 font-medium text-muted mb-1">{% t "심각도" "Severity" %}</p>
+            <div class="chips"><label class="chip"><input type="radio" name="severity" value="" checked><span>{% t "전체" "All" %}</span></label>{% for o in severity_options %}<label class="chip"><input type="radio" name="severity" value="{{ o.value }}"><span>{{ o.label }}</span></label>{% endfor %}</div></div>
+        </form>
+        <div id="rap-cond-result"></div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/rap.js' %}"></script>{% endblock %}

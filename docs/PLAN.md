@@ -88,3 +88,24 @@
   - NIT: 임상 업로드 삭제 시 참조 검사가 승인 때 건너뛴 행도 셈(보수적 유지). /data 유전체 "최종 업데이트"가 재적용으로 삭제일로 바뀜.
   - PostgreSQL 실행 검증(잠금 순서·approval_seq 재시도는 코드 검토만).
 - pytest 1536 통과.
+
+## 4단계 GAP·RAP — 범위 결정 (헤더)
+원칙: 원본의 mock 수치(mockResults, generateMockSnps, strainPoint, generateMockImages)는 쓰지 않고 DB에서 계산한다. 계산할 근거가 없는 것은 이름을 정직하게 바꾸거나 "참고용" 표시.
+- **genomics 앱(신규)**: ResistanceGene(10, 시드), Variant 카탈로그(원본 20건 시드: 유전자·위치·ref/alt·아미노산 변화·약제·주석). sampleCount/frequency 는 시드 숫자가 아니라 환자 resistance_mutations(및 SequenceRun 보유) 에서 집계. 환자 변이 문자열 ↔ 카탈로그 매칭 규칙을 한 곳(services)에 둔다.
+- **유전체 브라우저(/gap)**: 유전자 트랙(H37Rv 좌표 GENE_SPANS) + DB 변이, 유전자 선택·확대, 변이 클릭 시 보유 환자 목록(케이스 상세 링크).
+- **변이 검색(/gap/search)**: 유전자·약제·아미노산·위치 범위 필터, 페이지네이션, CSV 내보내기는 3c DAR(유전체) 승인 게이트 재사용.
+- **약제내성 예측(/gap/resistance)**: 입력 = 시퀀스 보유 환자 선택 또는 변이 목록 업로드(VCF/CSV/TSV 텍스트, 크기·행수 제한). 카탈로그 규칙 엔진: 카탈로그 변이 검출 → R, 해당 약제 유전자 검사됨·무변이 → S, 근거 없음 → U. 알고리즘 3종은 실제 외부 도구가 아니므로 "카탈로그 기반 규칙" 임을 화면에 명시(원본 이름 유지 시 규칙 차이를 실제로 구현: 예 TB-Profiler=전체 카탈로그, Mykrobe=고빈도 변이만, ResFinder=획득 유전자 없음→대부분 U 등, 헤더는 정직성만 요구). 실행 결과 PredictionRun 으로 DB 저장·이력 조회(본인 것만, 관리자 전체).
+- **GWAS(/gap/gwas)**: 환자 변이 × DST 표현형(R vs S)에 대한 Fisher 정확검정(순수 파이썬, scipy 금지) → −log10 p 맨해튼 플롯(Chart.js scatter), Bonferroni 기준선, 약제 선택, 표본 수 부족 시 안내.
+- **유사도(/gap/similarity)**: 선택 환자(최대 50, 코호트에서 불러오기 가능) 간 거리 행렬을 변이 집합으로 계산. 방법: SNP 거리(대칭차 수), Jaccard 거리, 계통 가중(다른 lineage 면 가산) — cgMLST/Phylogenetic 이라는 이름은 쓰지 않는다. 대칭·대각 0 보장, 히트맵.
+- **API**: /api/v1/genomics/variants 503 → 실제 구현(필터·페이지네이션, 3c 키·레이트리밋 그대로).
+- **RAP(/rap, /rap/timeseries, /rap/annotation)**: 데이터는 ImagingStudy(DB). 시드: 영상 보유 시드 환자에게 static/imaging 공개 자산(CXR 5장 + CT/PET-CT 볼륨)을 가리키는 ImagingStudy 를 멱등 생성하고 "공개 샘플 영상(출처·결핵 아님 표시)" 플래그. 업로드된 영상은 기존 SubmissionFile 을 권한 검사 뷰로 서빙.
+  - 뷰어: 확대·이동·밝기·대비, CXR 판독 ROI(rapImaging.json → DB) 오버레이 토글, CT/PET-CT 평면(axial/coronal/mip) 단면 슬라이더.
+  - 타임시리즈: 환자 검사들을 촬영일순으로 재생/일시정지/정지, 소견 변화 비교.
+  - 전문가 소견(어노테이션): 원본 localStorage → DB 모델(검사·영상/평면/단면·도형 rect/ellipse/text·% 좌표·소견 유형·메모·작성자). 생성/수정/삭제는 POST+CSRF, 작성자 본인 또는 admin 만 수정·삭제, 좌표 범위·필드 서버 검증.
+- 모든 새 뷰 퍼징(500 금지), 권한 테스트, 이중 언어 문구.
+
+### 4단계 합격 (2차 리뷰 PASS, 2026-11-27) — pytest 1696 통과
+- 1차 FAIL(확정 3): 연관 유전자에 다른 약제 카탈로그 변이가 있어도 S 판정 / 케이스 상세 업로드 목록에 공개 샘플 혼입 / API 가 공개 샘플을 실제 검사처럼 노출. 미확정 1: 열람 불가 업로드 영상의 전문가 소견 노출.
+- 헤더 결정: Variant.drugs 다약제 연관(genomics 0002, rrs a1401g→AMK·KAN·CAP, inhA c-15t→INH·ETH, eis c-14t→KAN) + 불변식 "연관 유전자 변이 검출 시 S 금지"(전 조합 테스트). 공개 샘플은 외부 공유 경로(API·내보내기) 전부 제외. 열람 불가 검사 소견은 개수만. 케이스 모달 소견은 seed_key 로 검사 단위 연결. /data 유전체 내보내기 변이 단위 그룹·분모를 GAP 과 통일.
+- 범위 외 소폭 변경(수용): /data 유전체 좌표 채움, 케이스 영상 모달 DB 소견 표시, 업로드 영상 원 파일명은 열람 권한자만.
+- 5단계 이월: 케이스 에디터 영상 탭을 DB 검사 기반으로 통합(현재 generate_images 파생 목록), DICOM 미리보기 없음, 변이 집계 캐시 없음(요청마다 전 환자 스캔), 업로드 영상 메타데이터(촬영일·소견) 로그인 사용자 전체 공개 정책 재검토, NIT: 영상 수만 수동 변경 시 force 재시드가 샘플 추가, fabG1 카탈로그 편입 검토, 소견 500건 상한 동시성. PostgreSQL 실행 미검증. 수정 후 브라우저 수동 확인 미실시.

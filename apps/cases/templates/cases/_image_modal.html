@@ -41,6 +41,12 @@
   {% empty %}<span class="text-sm text-muted">{% t "소견 없음" "No findings" %}</span>{% endfor %}
 </div>
 <div>
-  <h4 class="h4 flex items-center gap-2"><span class="swatch" style="background:#0EA5E9"></span>{% t "전문가 소견" "Expert Findings" %} <span class="text-xs text-muted">{% t "0건" "(0)" %}</span></h4>
-  <p class="text-xs text-muted">{% t "입력된 전문가 소견이 없습니다. 영상 분석 화면에서 영상에 영역을 그려 입력할 수 있습니다." "No expert findings yet. Radiologists can draw on the image in Imaging Analysis to add them." %}</p>
+  <h4 class="h4 flex items-center gap-2"><span class="swatch" style="background:#0EA5E9"></span>{% t "전문가 소견" "Expert Findings" %} <span class="text-xs text-muted" data-testid="expert-count">{% if is_en %}({{ expert|length }}){% else %}{{ expert|length }}건{% endif %}</span></h4>
+  {% for a in expert %}
+    <p class="text-xs">{% if a.finding %}<span class="finding-chip">{{ a.finding }}{% if a.location %} · {{ a.location }}{% endif %}{% if a.severity %} · {{ a.severity }}{% endif %}</span>{% endif %}
+      {% if a.text %}{{ a.text }}{% endif %} <span class="text-muted">— {{ a.author }}{% if a.plane %} · {{ a.plane }} {{ a.slice|add:1 }}{% endif %}</span></p>
+  {% empty %}
+    <p class="text-xs text-muted">{% t "입력된 전문가 소견이 없습니다. 영상 분석 화면에서 영상에 영역을 그려 입력할 수 있습니다." "No expert findings yet. Radiologists can draw on the image in Imaging Analysis to add them." %}</p>
+  {% endfor %}
+  <a class="link-underline text-xs" href="/rap?patient={{ patient.condition_id|urlencode }}">{% t "영상 분석에서 열기" "Open in Imaging Analysis" %}</a>
 </div>

@@ -92,7 +92,8 @@ def _detail_context(p: Patient, lang: str, tab: int) -> dict:
         "image_total": len(images),
         "more_offset": THUMB_PAGE if len(images) > THUMB_PAGE else None,
         "volume": imaging.volume_info(),
-        "studies": list(p.imaging_studies.prefetch_related("files")[:50]),
+        # '업로드된 영상 검사' 목록 — 공개 샘플 검사(4단계 시드)는 나열하지 않는다(영상 수 표시는 그대로)
+        "studies": list(p.imaging_studies.filter(is_public_sample=False).prefetch_related("files")[:50]),
         "sequence_runs": list(p.sequence_runs.prefetch_related("files")[:50]),
         "mutations": services.mutations(p),
         "dst": services.dst_rows(p),
@@ -120,10 +121,28 @@ def case_image_detail(request, pk, image_id):
     """영상 상세 모달 본문(HTMX 지연 로드) — 모달은 화면에 하나만 두고 고른 영상만 그린다."""
     p = get_object_or_404(Patient, pk=pk)
     image_id = int(image_id)
-    im = next((i for i in _image_items(p, get_lang(request)) if i["id"] == image_id), None)
+    items = _image_items(p, get_lang(request))
+    im = next((i for i in items if i["id"] == image_id), None)
     if im is None:
         raise Http404
-    return render(request, "cases/_image_modal.html", {"im": im, "volume": imaging.volume_info()})
+    # 4단계: 영상 분석(RAP)에서 DB 에 저장한 전문가 소견 — 이 썸네일과 **같은 검사**(공개 샘플 검사의 seed_key 로 연결:
+    # 같은 모달리티 안에서 촬영일순 k 번째 = 'sample:<케이스 ID>:<모달리티>:k')에 붙은 것만. 촬영일만 같은 다른 검사의
+    # 소견은 섞지 않는다. 공개 샘플은 로그인 사용자 누구나 볼 수 있는 영상이라 열람 권한 검사가 따로 필요 없다.
+    from apps.cases.models import ImagingStudy
+    from apps.imaging.models import ExpertAnnotation
+
+    k = sum(1 for i in items if i["type"] == im["type"] and i["id"] <= im["id"])
+    study = ImagingStudy.objects.filter(patient=p, is_public_sample=True,
+                                        seed_key=f"sample:{p.condition_id}:{im['type']}:{k}").first()
+    lang = get_lang(request)
+    expert = [{"finding": services.data_label(a.finding_type, lang) if a.finding_type else "",
+               "location": services.data_label(a.location, lang) if a.location else "",
+               "severity": services.data_label(a.severity, lang) if a.severity else "", "text": a.text,
+               "author": a.author_name, "plane": a.plane, "slice": a.slice_index}
+              for a in (ExpertAnnotation.objects.filter(study=study).order_by("created_at", "id")[:100]
+                        if study is not None else [])]
+    return render(request, "cases/_image_modal.html", {"im": im, "volume": imaging.volume_info(), "expert": expert,
+                                                       "patient": p})
 
 
 @login_required

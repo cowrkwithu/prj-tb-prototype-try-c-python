@@ -1,0 +1,7 @@
+{# 데이터 조건 탭 결과 — 조건에 맞는 CXR 검사·대상자 수(DB) #}
+<div class="stack-sm pt-2" data-testid="rap-cond">
+  <p class="text-xs"><strong data-testid="cond-studies">{{ counts.studies }}</strong> {% t "건의 CXR 검사" "CXR studies" %} · <strong data-testid="cond-patients">{{ counts.patients }}</strong>{% t "명의 대상자가 조건에 맞습니다" " subjects match" %}</p>
+  <a href="{{ depot_url }}" class="btn btn-teal btn-sm btn-block" data-testid="cond-depot" data-tip="{% t '데이터 탐색 화면으로 이동해 고른 소견 유형으로 데이터를 만듭니다.' 'Go to Data Explorer to generate data with the selected finding types.' %}">{% icon "external-link" "w-3 h-3" %} {% t "데이터 생성 (데이터 탐색으로 이동)" "Generate Data (go to Data Explorer)" %}</a>
+  <p class="text-10 text-muted text-center">{% t "선택 조건" "Selected" %}: {% if selected %}{{ selected|join:", " }}{% else %}{% t "없음" "None" %}{% endif %}{% if location %} · {{ location }}{% endif %}{% if severity %} · {{ severity }}{% endif %}</p>
+  <p class="text-10 text-muted">{% t "데이터 탐색은 대상자 단위 CXR 소견 유형만 조건으로 받습니다 — 위치·심각도는 위 건수(영상 단위)에만 반영됩니다." "Data Explorer filters on subject-level CXR finding types only — location and severity apply to the counts above (per image)." %}</p>
+</div>

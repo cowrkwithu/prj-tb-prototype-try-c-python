@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% t "데이터 구조 관리" "Data Schema Management" %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/schemas.css' %}">{% endblock %}
+{% block content %}
+{# 원본 src/pages/Admin/SchemaManager.tsx #}
+<div class="container stack" style="max-width:1152px">
+  <div><h1 class="text-xl font-bold">{% t "데이터 구조 관리" "Data Schema Management" %}</h1>
+    <p class="text-sm text-muted mt-1">{% t "연구자가 정의한 데이터 구조를 검토하고 발행·보관·공개 범위·삭제를 관리합니다" "Review researcher-defined data schemas and manage publishing, archiving, visibility and deletion" %}</p></div>
+  <div class="adm-sum" data-testid="admin-summary">
+    {% for c in summary %}
+      <a href="{{ c.url }}" class="sum-card {{ c.cls }}{% if state.status == c.key and c.key %} on{% endif %}" data-tip="{% t '이 상태의 구조만 목록에 보이도록 거릅니다.' 'Filter the list to this status.' %}"><b>{{ c.value }}</b><span class="text-xs">{{ c.label }}</span></a>
+    {% endfor %}
+    <div class="static sum-card sum-purple" data-tip="{% t '모든 데이터 구조에 입력된 데이터 행의 합계입니다.' 'Total data rows entered across all schemas.' %}"><b>{{ counts.records }}</b><span class="text-xs">{% t "입력 데이터 건수" "Data Records" %}</span></div>
+  </div>
+  <form class="sc-toolbar" style="margin-bottom:0" action="/admin/schemas" method="get" hx-get="/admin/schemas" hx-target="#schema-admin-list" hx-swap="outerHTML" hx-push-url="true"
+        hx-trigger="input changed delay:300ms from:input[name=q], change from:select, submit">
+    <div class="input-icon">{% icon "search" "w-4 h-4" %}<input class="input input-sm" type="search" name="q" value="{{ state.q }}" placeholder="{% t '구조명, 작성자, 기관, 태그 검색...' 'Search name, owner, institution, tag...' %}" aria-label="{% t '검색' 'Search' %}"></div>
+    {% icon "sliders-horizontal" "w-4 h-4 text-muted" %}
+    <select name="status" class="sc-select" aria-label="{% t '상태' 'Status' %}"><option value="">{% t "전체 상태" "All Statuses" %}</option>{% for v, l in statuses %}<option value="{{ v }}"{% if state.status == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    <select name="category" class="sc-select" aria-label="{% t '카테고리' 'Category' %}"><option value="">{% t "전체 카테고리" "All Categories" %}</option>{% for v, l in categories %}<option value="{{ v }}"{% if state.category == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    <select name="visibility" class="sc-select" aria-label="{% t '공개 범위' 'Visibility' %}"><option value="">{% t "전체 공개 범위" "All Visibility" %}</option>{% for v, l in visibilities %}<option value="{{ v }}"{% if state.visibility == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    <noscript><button class="btn btn-secondary btn-sm">{% t "적용" "Apply" %}</button></noscript>
+  </form>
+  {% include "schemas/admin/_list.html" %}
+  <div id="modal-root"></div>
+</div>
+{% endblock %}

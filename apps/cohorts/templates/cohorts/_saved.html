@@ -1,0 +1,47 @@
+{# 원본 SavedCohorts — 우측 '저장된 데이터셋' 패널(300px, 접기) #}
+<aside class="depot-right" x-show="saved" {% if not panel_saved %}x-cloak{% endif %} data-testid="saved-panel">
+  <div class="depot-head flex items-center justify-between">
+    <h2 class="depot-title">{% icon "folder" "w-4 h-4" %} {% t "저장된 데이터셋" "Saved Datasets" %}</h2>
+    <button type="button" class="icon-btn" @click="saved = false" aria-label="{% t '패널 닫기' 'Close panel' %}"
+            data-tip="{% t '저장된 데이터셋 패널을 닫고 분석 화면을 넓게 봅니다.' 'Close the saved datasets panel to widen the analysis view.' %}">{% icon "x" "w-4 h-4" %}</button>
+  </div>
+  <div class="depot-scroll depot-saved-list">
+    {% for c in saved %}
+    <div class="saved-card" data-testid="saved-card" data-id="{{ c.obj.pk }}" x-data="{ edit: false }">
+      <div class="flex items-start justify-between gap-1">
+        <h3 class="saved-name" data-testid="saved-name">{{ c.name }}</h3>
+        <a href="{{ c.load_url }}" class="icon-btn" data-testid="load-link" aria-label="{% t '데이터셋 불러오기' 'Load Dataset' %}"
+           data-tip="{% if is_en %}Load the conditions of “{{ c.name }}” into the builder and analyse the subjects matching them now.{% else %}'{{ c.name }}'의 조건을 좌측 빌더에 복원하고, 지금 그 조건에 맞는 대상자를 분석합니다.{% endif %}">{% icon "chevron-right" "w-4 h-4" %}</a>
+      </div>
+      <p class="text-10 text-muted clamp-2 mt-1">{{ c.description }}</p>
+      <div class="flex items-center gap-3 mt-1 text-10 text-muted">
+        <span class="flex items-center gap-1" data-tip="{% t '저장 시점의 대상자 수' 'Subjects when saved' %}">{% icon "users" "w-3 h-3" %} <span data-testid="saved-count">{% if is_en %}{{ c.count }} subjects{% else %}{{ c.count }}명{% endif %}</span></span>
+        <span class="flex items-center gap-1">{% icon "calendar" "w-3 h-3" %} {{ c.obj.created_date|date:"Y-m-d" }}</span>
+        <span class="flex items-center gap-1 truncate">{% icon "user" "w-3 h-3" %} {{ c.owner_name }}</span>
+      </div>
+      {% if c.countries %}<div class="flex flex-wrap gap-1 mt-1">{% for x in c.countries %}<span class="saved-tag">{{ x }}</span>{% endfor %}</div>{% endif %}
+      <div class="mt-1">{% for l in c.lines %}<p class="saved-cond">{{ l }}</p>{% endfor %}</div>
+      {% if c.mine %}
+      <div class="saved-actions">
+        <button type="button" class="btn btn-ghost btn-xs" @click="edit = !edit" data-tip="{% t '데이터셋 이름을 바꿉니다.' 'Rename this dataset.' %}">{% icon "pencil" "w-3 h-3" %} {% t "이름 변경" "Rename" %}</button>
+        <a class="btn btn-ghost btn-xs" href="/depot/cohorts/{{ c.obj.pk }}/export.csv" data-testid="export-link" data-tip="{% t '지금 조건에 맞는 대상자 목록을 CSV 로 내려받습니다.' 'Download the subjects matching the conditions now as CSV.' %}">{% icon "download" "w-3 h-3" %} CSV</a>
+        <form method="post" action="/depot/cohorts/{{ c.obj.pk }}/delete" class="inline-flex"
+              @submit="if (!confirm('{% t "이 데이터셋을 삭제할까요?" "Delete this dataset?" %}')) $event.preventDefault()">{% csrf_token %}
+          <input type="hidden" name="next" value="/depot?panel=saved">
+          <button type="submit" class="btn btn-ghost btn-xs hover-danger" data-tip="{% t '이 데이터셋을 삭제합니다.' 'Delete this dataset.' %}">{% icon "trash-2" "w-3 h-3" %} {% t "삭제" "Delete" %}</button>
+        </form>
+      </div>
+      <form method="post" action="/depot/cohorts/{{ c.obj.pk }}/rename" class="stack-xs mt-1" x-show="edit" x-cloak>{% csrf_token %}
+        <input type="hidden" name="next" value="/depot?panel=saved">
+        <input class="input input-xs" name="name" maxlength="200" required value="{{ c.obj.name }}" aria-label="{% t '이름' 'Name' %}">
+        <input class="input input-xs" name="name_en" maxlength="200" value="{{ c.obj.name_en }}" placeholder="{% t '영문 이름(선택)' 'English name (optional)' %}" aria-label="{% t '영문 이름' 'English name' %}">
+        <button type="submit" class="btn btn-teal btn-xs">{% t "저장" "Save" %}</button>
+      </form>
+      {% endif %}
+    </div>
+    {% empty %}
+    <p class="text-xs text-muted text-center">{% t "저장된 데이터셋이 없습니다" "No saved datasets" %}</p>
+    {% endfor %}
+  </div>
+  <div class="depot-foot"><p class="text-10 text-muted text-center" data-testid="saved-total">{% if is_en %}{{ saved|length }} datasets saved{% else %}총 {{ saved|length }}개 데이터셋 저장됨{% endif %}</p></div>
+</aside>

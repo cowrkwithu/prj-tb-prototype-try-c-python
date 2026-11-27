@@ -1,0 +1,10 @@
+{# 원본 components/upload/UploadStepIndicator.tsx #}
+<div class="steps" data-testid="step-indicator">
+  {% for s in steps %}
+    <div class="step {{ s.state }}"{% if s.state == "current" %} aria-current="step"{% endif %}>
+      <div class="step-circle">{% if s.state == "done" %}{% icon "check" "w-4 h-4" %}{% else %}{{ forloop.counter }}{% endif %}</div>
+      <span class="step-label">{{ s.label }}</span>
+    </div>
+    {% if not forloop.last %}<div class="step-line{% if s.state == 'done' %} done{% endif %}"></div>{% endif %}
+  {% endfor %}
+</div>

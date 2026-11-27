@@ -1,0 +1,10 @@
+<div class="stack" data-testid="tab-clinical">
+  <div class="card card-sm"><p class="h4">{% t "약제내성 유형 분포" "Drug Resistance Type Distribution" %}</p><div class="chart-box" style="height:250px"><canvas data-chart="diag"></canvas></div></div>
+  <div class="card card-sm"><p class="h4">{% t "치료결과 분포 (내성 유형별)" "Treatment Outcome by Resistance Type" %}</p><div class="chart-box" style="height:250px"><canvas data-chart="outcome"></canvas></div></div>
+  <div class="card card-sm">
+    <div class="table-wrap"><table class="table table-compact" data-testid="clinical-table">
+      <thead><tr><th>{% t "내성 유형" "Resistance Type" %}</th>{% for s in a.outcome.series %}<th class="text-right">{{ s.label }}</th>{% endfor %}<th class="text-right">{% t "합계" "Total" %}</th></tr></thead>
+      <tbody>{% for r in a.table %}<tr data-testid="clinical-row"><td>{{ r.type }}</td>{% for c in r.counts %}<td class="text-right">{{ c }}</td>{% endfor %}<td class="text-right font-medium">{{ r.total }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+</div>

@@ -1,0 +1,20 @@
+<form method="post" action="/upload/{{ domain }}/mode" class="stack-sm" x-data="{ mode: '{{ mode|default:'' }}' }">
+  {% csrf_token %}
+  {% if sub %}<input type="hidden" name="id" value="{{ sub.upload_id }}">{% endif %}
+  <input type="hidden" name="conditionId" value="{{ prefill_cid }}">
+  <input type="hidden" name="mode" :value="mode">
+  <h2 class="font-semibold">{% t "업로드 방식을 선택하세요" "Select an upload method" %}</h2>
+  <div class="grid-2">
+    <button type="button" class="choice" :class="mode === 'individual' && 'on'" @click="mode = 'individual'" data-mode="individual" data-tip="{% t '시퀀스 파일 몇 개와 메타데이터를 직접 입력하는 방식을 선택합니다.' 'Choose to upload a few sequence files and enter metadata by hand.' %}">
+      <p class="font-semibold">{% t "개별 시퀀스 업로드" "Individual Sequence Upload" %}</p>
+      <p class="text-sm text-muted mt-1">{% t "시퀀스 파일 1~5개 + 메타데이터 직접 입력" "1–5 sequence files + manual metadata entry" %}</p>
+    </button>
+    <button type="button" class="choice" :class="mode === 'batch' && 'on'" @click="mode = 'batch'" data-mode="batch" data-tip="{% t '여러 시퀀스 파일과 메타데이터 CSV를 한 번에 올리는 방식을 선택합니다.' 'Choose to upload many sequence files with a metadata CSV at once.' %}">
+      <p class="font-semibold">{% t "일괄 업로드" "Batch Upload" %}</p>
+      <p class="text-sm text-muted mt-1">{% t "시퀀스 파일 다수 + 메타데이터 CSV" "Multiple sequence files + metadata CSV" %}</p>
+    </button>
+  </div>
+  <div class="flex justify-end">
+    <button type="submit" class="btn btn-teal" :disabled="!mode" :data-tip="mode ? '{% t "선택한 방식으로 시퀀스 파일 업로드 단계로 넘어갑니다." "Continue to sequence file upload with the selected method." %}' : '{% t "업로드 방식을 먼저 선택해야 다음 단계로 넘어갈 수 있습니다." "Select an upload method first to continue." %}'">{% t "다음" "Next" %} {% icon "arrow-right" "w-4 h-4" %}</button>
+  </div>
+</form>

@@ -1,0 +1,61 @@
+{# 데이터 단계(CSV) — 원본 components/upload/CsvUploader.tsx + ValidationReport. 파싱·검증은 서버. #}
+<div class="stack-sm">
+  <h2 class="font-semibold">{% if domain == "genomic" %}{% t "메타데이터 CSV 업로드" "Upload Metadata CSV" %}{% else %}{% t "CSV 업로드" "CSV Upload" %}{% endif %}</h2>
+  <div class="flex items-center justify-between">
+    <a href="/upload/{{ domain }}/template.csv" class="inline-flex items-center gap-1 text-sm text-teal link-underline" data-tip="{% t '필수 컬럼이 들어 있는 CSV 템플릿 파일을 내려받습니다.' 'Download a CSV template file with the required columns.' %}">{% icon "download" "w-3_5 h-3_5" %} {% t "CSV 템플릿 다운로드" "Download CSV Template" %}</a>
+    <span class="text-xs text-muted">{% t "인코딩 자동 판별: UTF-8 · UTF-8(BOM) · CP949(엑셀)" "Encoding auto-detected: UTF-8 · UTF-8 (BOM) · CP949 (Excel)" %}</span>
+  </div>
+  <form method="post" action="/upload/{{ domain }}/csv" enctype="multipart/form-data" class="stack-sm" x-data="{ chosen: false }" @change="chosen = true">
+    {% csrf_token %}
+    {% if sub %}<input type="hidden" name="id" value="{{ sub.upload_id }}">{% else %}<input type="hidden" name="mode" value="{{ mode }}"><input type="hidden" name="condition_id" value="{{ prefill_cid }}">{% endif %}
+    {% include "uploads/steps/_dropzone.html" with multiple=False accept=".csv,.tsv,text/csv" max_files=1 max_size="50.0 MB" label=csv_label hint=csv_hint %}
+    <div class="flex justify-end"><button type="submit" class="btn btn-secondary btn-sm" :disabled="!chosen" data-testid="csv-validate"
+      data-tip="{% t '선택한 CSV 파일을 서버로 보내 형식·값을 검증합니다.' 'Send the selected CSV file to the server to validate its format and values.' %}">{% icon "upload" "w-4 h-4" %} {% t "검증하기" "Validate" %}</button></div>
+  </form>
+
+  {% if parsed %}
+    {% if file_errors %}
+      <div class="alert alert-error" data-testid="file-errors">{% icon "circle-alert" "w-4 h-4" %} <span>{% for e in file_errors %}{{ e }}{% if not forloop.last %} · {% endif %}{% endfor %}</span></div>
+    {% endif %}
+    {% if sub.total_records %}
+      <p class="text-xs text-muted">{% t "파일" "File" %}: <span class="font-mono">{{ sub.source_filename }}</span>{% if encoding %} · {% t "인코딩" "Encoding" %}: <span class="font-mono" data-testid="encoding">{{ encoding }}</span>{% endif %}</p>
+      <div class="flex flex-wrap gap-3 text-sm" data-testid="csv-summary">
+        <span class="pill">{% if is_en %}Total {{ sub.total_records }} rows{% else %}전체 {{ sub.total_records }}행{% endif %}</span>
+        <span class="pill pill-success">{% if is_en %}Valid {{ sub.valid_records }} rows{% else %}유효 {{ sub.valid_records }}행{% endif %}</span>
+        {% if sub.warning_records %}<span class="pill pill-warning">{% if is_en %}Warnings {{ sub.warning_records }} rows{% else %}경고 {{ sub.warning_records }}행{% endif %}</span>{% endif %}
+        {% if sub.error_records %}<span class="pill pill-danger">{% if is_en %}Errors {{ sub.error_records }} rows{% else %}오류 {{ sub.error_records }}행{% endif %}</span>{% endif %}
+      </div>
+      <div class="table-wrap">
+        <table class="table table-compact">
+          <thead><tr><th>{% t "상태" "Status" %}</th><th>#</th>{% for c in display_cols %}<th>{{ c }}</th>{% endfor %}{% if more_cols %}<th class="text-slate-400">+{{ more_cols }}</th>{% endif %}</tr></thead>
+          <tbody>{% for r in preview_rows %}
+            <tr class="{% if r.rec.status == 'error' %}row-error{% elif r.rec.status == 'warning' %}row-warning{% endif %}">
+              <td>{% if r.rec.status == 'valid' %}{% icon "circle-check" "w-3_5 h-3_5 text-success" %}{% elif r.rec.status == 'warning' %}{% icon "triangle-alert" "w-3_5 h-3_5 text-warning" %}{% else %}{% icon "circle-x" "w-3_5 h-3_5 text-danger" %}{% endif %}</td>
+              <td class="text-slate-400">{{ r.rec.row_no }}</td>
+              {% for v in r.cells %}<td class="truncate" style="max-width:140px">{{ v }}</td>{% endfor %}
+              {% if more_cols %}<td class="text-slate-400">…</td>{% endif %}
+            </tr>{% endfor %}</tbody>
+        </table>
+      </div>
+      {% if sub.total_records > 10 %}<p class="text-xs text-slate-400 text-center">{% if is_en %}Showing first 10 rows only ({{ sub.total_records }} rows total){% else %}상위 10행만 표시됩니다 (전체 {{ sub.total_records }}행){% endif %}</p>{% endif %}
+      {% include "uploads/_validation_report.html" %}
+    {% endif %}
+  {% endif %}
+
+  <form method="post" action="/upload/{{ domain }}/proceed" x-data="{ ignore: {{ sub.ignore_errors|yesno:'true,false' }} }">
+    {% csrf_token %}
+    <input type="hidden" name="from" value="data">
+    {% if sub %}<input type="hidden" name="id" value="{{ sub.upload_id }}">{% endif %}
+    <div class="step-actions">
+      {% if domain == "genomic" %}{% include "uploads/steps/_back.html" with help_ko="시퀀스 파일 업로드 단계로 돌아갑니다." help_en="Go back to sequence file upload." %}
+      {% else %}{% include "uploads/steps/_back.html" with help_ko="업로드 방식 선택 단계로 돌아갑니다." help_en="Go back to upload method selection." %}{% endif %}
+      <div class="flex items-center gap-3">
+        {% if sub.error_records %}<label class="check-line text-sm"><input type="checkbox" name="ignore_errors" value="1" x-model="ignore" data-testid="ignore-errors"> {% t "오류 무시하고 진행" "Ignore errors and proceed" %}</label>{% endif %}
+        <button type="submit" class="btn btn-teal" data-testid="next" {% if not sub or not sub.total_records or file_errors %}disabled{% endif %}
+                {% if sub.error_records %}:disabled="!ignore"{% endif %}
+                data-tip="{% if sub.error_records %}{% t 'CSV에 오류가 있어 넘어갈 수 없습니다. 오류를 고친 뒤 다시 업로드하거나 오류 무시를 체크해야 합니다. 오류 행은 반영되지 않습니다.' 'The CSV has errors. Fix them and upload again, or check "Ignore errors" to proceed. Error rows are not applied.' %}{% else %}{% t '업로드한 CSV로 비식별화 확인 단계로 넘어갑니다.' 'Continue to the de-identification check with the uploaded CSV.' %}{% endif %}">
+          {% if domain == "genomic" %}{% t "다음 (비식별화 확인)" "Next (De-identification)" %}{% else %}{% t "다음 (비식별화 확인)" "Next (De-identification)" %}{% endif %} {% icon "arrow-right" "w-4 h-4" %}</button>
+      </div>
+    </div>
+  </form>
+</div>

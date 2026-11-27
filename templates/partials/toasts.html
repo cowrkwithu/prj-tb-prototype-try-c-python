@@ -1,0 +1,18 @@
+{# Django messages → 토스트 (원본 ToastProvider: 우하단, 3초 후 자동 닫힘) #}
+<div class="toast-stack" id="toast-stack" aria-live="polite">
+  {% for m in messages %}
+    <div class="toast toast-{% if m.level_tag == 'success' %}success{% elif m.level_tag == 'error' or m.level_tag == 'warning' %}error{% else %}info{% endif %}"
+         data-toast role="status">
+      {% if m.level_tag == 'success' %}{% icon "circle-check" "w-4 h-4 shrink-0" %}{% elif m.level_tag == 'error' or m.level_tag == 'warning' %}{% icon "circle-alert" "w-4 h-4 shrink-0" %}{% else %}{% icon "info" "w-4 h-4 shrink-0" %}{% endif %}
+      <span class="toast-msg">{{ m.message }}</span>
+      <button type="button" class="toast-close" data-toast-close aria-label="{% t '알림 닫기' 'Dismiss notification' %}"
+              data-tip="{% t '이 알림을 바로 닫습니다. 그대로 두면 잠시 후 자동으로 사라집니다.' 'Close this notification now. It also disappears on its own shortly.' %}">{% icon "x" "w-3 h-3" %}</button>
+    </div>
+  {% endfor %}
+</div>
+<template id="toast-icons">
+  <span data-type="success">{% icon "circle-check" "w-4 h-4 shrink-0" %}</span>
+  <span data-type="error">{% icon "circle-alert" "w-4 h-4 shrink-0" %}</span>
+  <span data-type="info">{% icon "info" "w-4 h-4 shrink-0" %}</span>
+  <span data-type="close">{% icon "x" "w-3 h-3" %}</span>
+</template>

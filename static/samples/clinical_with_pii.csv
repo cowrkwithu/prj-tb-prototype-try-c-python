@@ -1,0 +1,4 @@
+condition_id,patient_name,rrn,phone,address,email,age,sex,country,site,diagnosis_type,diagnosis_date,registration_date,treatment_outcome,site_of_disease
+TB-KR-101,홍길동,900101-1234567,010-1234-5678,서울시 강남구 테헤란로 152,hong@hospital.kr,45,Male,Korea,Seoul National University Hospital,MDR-TB,2024-01-10,2024-01-15,Cured,Pulmonary
+TB-KR-102,김철수,850315-2345678,02-2072-1234,부산시 해운대구 센텀로 99,,62,Female,Korea,National Masan Hospital,DS-TB,2024-02-03,2024-02-08,Completed,Pulmonary
+TB-KR-103,박영희,780722-2456789,010-9876-5432,대구시 수성구 동대구로 45,park.yh@clinic.co.kr,53,Female,Korea,Seoul National University Hospital,Pre-XDR-TB,2024-03-11,2024-03-14,Failed,Both

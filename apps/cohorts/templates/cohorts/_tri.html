@@ -1,0 +1,7 @@
+{# 원본 TriToggle — 전체 / Yes / No #}
+<div class="flex items-center justify-between mt-2">
+  <span class="filter-label" style="margin:0">{% if is_en %}{{ label_en }}{% else %}{{ label_ko }}{% endif %}</span>
+  <div class="pill-toggle pill-toggle-sm" role="radiogroup" aria-label="{% if is_en %}{{ label_en }}{% else %}{{ label_ko }}{% endif %}">
+    {% for o in opts %}<label><input type="radio" name="{{ name }}" value="{{ o.value }}" {% if o.on %}checked{% endif %}><span>{{ o.label }}</span></label>{% endfor %}
+  </div>
+</div>

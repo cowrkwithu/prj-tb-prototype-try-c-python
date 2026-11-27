@@ -1,0 +1,449 @@
+{
+ "clinicalCsvTemplate": {
+  "type": "clinical",
+  "requiredColumns": [
+   "condition_id",
+   "age",
+   "sex",
+   "country",
+   "site",
+   "diagnosis_type",
+   "diagnosis_date",
+   "registration_date",
+   "site_of_disease",
+   "treatment_outcome"
+  ],
+  "optionalColumns": [
+   "outcome_date",
+   "previous_treatment",
+   "comorbidities"
+  ],
+  "sampleData": [
+   {
+    "condition_id": "TB-KR-051",
+    "age": "45",
+    "sex": "Male",
+    "country": "Korea",
+    "site": "SNUBH",
+    "diagnosis_type": "MDR-TB",
+    "diagnosis_date": "2025-08-15",
+    "registration_date": "2025-08-20",
+    "site_of_disease": "Pulmonary",
+    "previous_treatment": "true",
+    "treatment_outcome": "Ongoing",
+    "outcome_date": "",
+    "comorbidities": "Diabetes"
+   },
+   {
+    "condition_id": "TB-KR-052",
+    "age": "32",
+    "sex": "Female",
+    "country": "Korea",
+    "site": "SNUBH",
+    "diagnosis_type": "DS-TB",
+    "diagnosis_date": "2025-09-01",
+    "registration_date": "2025-09-05",
+    "site_of_disease": "Pulmonary",
+    "previous_treatment": "false",
+    "treatment_outcome": "Cured",
+    "outcome_date": "2026-02-28",
+    "comorbidities": "None"
+   },
+   {
+    "condition_id": "TB-MN-021",
+    "age": "58",
+    "sex": "Male",
+    "country": "Mongolia",
+    "site": "NCCD",
+    "diagnosis_type": "XDR-TB",
+    "diagnosis_date": "2025-07-10",
+    "registration_date": "2025-07-15",
+    "site_of_disease": "Both",
+    "previous_treatment": "true",
+    "treatment_outcome": "Failed",
+    "outcome_date": "2026-01-20",
+    "comorbidities": "HIV,Hepatitis B"
+   }
+  ],
+  "validationRules": {
+   "age": {
+    "$expr": "isValidAge"
+   },
+   "sex": {
+    "$expr": "isValidSex"
+   },
+   "country": {
+    "$expr": "isValidCountry"
+   },
+   "diagnosis_type": {
+    "$expr": "isValidDiagnosisType"
+   },
+   "diagnosis_date": {
+    "$expr": "isValidDate"
+   },
+   "registration_date": {
+    "$expr": "isValidDate"
+   },
+   "treatment_outcome": {
+    "$expr": "isValidOutcome"
+   },
+   "outcome_date": {
+    "$expr": "isValidDate"
+   }
+  }
+ },
+ "regimenCsvTemplate": {
+  "type": "regimen",
+  "requiredColumns": [
+   "condition_id",
+   "drug_name",
+   "drug_code",
+   "start_day",
+   "end_day"
+  ],
+  "optionalColumns": [
+   "dosage",
+   "route"
+  ],
+  "sampleData": [
+   {
+    "condition_id": "TB-KR-051",
+    "drug_name": "Isoniazid",
+    "drug_code": "H",
+    "start_day": "0",
+    "end_day": "180",
+    "dosage": "300mg",
+    "route": "Oral"
+   },
+   {
+    "condition_id": "TB-KR-051",
+    "drug_name": "Rifampicin",
+    "drug_code": "R",
+    "start_day": "0",
+    "end_day": "180",
+    "dosage": "600mg",
+    "route": "Oral"
+   },
+   {
+    "condition_id": "TB-KR-051",
+    "drug_name": "Ethambutol",
+    "drug_code": "E",
+    "start_day": "0",
+    "end_day": "60",
+    "dosage": "1200mg",
+    "route": "Oral"
+   },
+   {
+    "condition_id": "TB-KR-051",
+    "drug_name": "Pyrazinamide",
+    "drug_code": "Z",
+    "start_day": "0",
+    "end_day": "60",
+    "dosage": "1500mg",
+    "route": "Oral"
+   },
+   {
+    "condition_id": "TB-KR-051",
+    "drug_name": "Bedaquiline",
+    "drug_code": "Bdq",
+    "start_day": "0",
+    "end_day": "168",
+    "dosage": "400mg",
+    "route": "Oral"
+   }
+  ],
+  "validationRules": {
+   "drug_code": {
+    "$expr": "isValidDrugCode"
+   },
+   "start_day": {
+    "$expr": "(v) => Number.isInteger(Number(v)) && Number(v) >= 0"
+   },
+   "end_day": {
+    "$expr": "(v) => Number.isInteger(Number(v)) && Number(v) > 0"
+   },
+   "route": {
+    "$expr": "(v) => ['Oral', 'Injectable', 'IV'].includes(v)"
+   }
+  }
+ },
+ "labCsvTemplate": {
+  "type": "lab",
+  "requiredColumns": [
+   "condition_id",
+   "specimen_id",
+   "specimen_date",
+   "specimen_type"
+  ],
+  "optionalColumns": [
+   "microscopy_result",
+   "culture_method",
+   "culture_result",
+   "genexpert_mtb",
+   "genexpert_rif",
+   "dst_method",
+   "isoniazid",
+   "rifampicin",
+   "ethambutol",
+   "pyrazinamide",
+   "streptomycin",
+   "levofloxacin",
+   "moxifloxacin",
+   "amikacin",
+   "kanamycin",
+   "capreomycin",
+   "bedaquiline",
+   "linezolid"
+  ],
+  "sampleData": [
+   {
+    "condition_id": "TB-KR-051",
+    "specimen_id": "SP-001",
+    "specimen_date": "2025-08-15",
+    "specimen_type": "Sputum",
+    "microscopy_result": "2+",
+    "culture_method": "MGIT",
+    "culture_result": "Positive",
+    "genexpert_mtb": "Detected",
+    "genexpert_rif": "Detected",
+    "dst_method": "Phenotypic",
+    "isoniazid": "R",
+    "rifampicin": "R",
+    "ethambutol": "S",
+    "pyrazinamide": "S",
+    "streptomycin": "R",
+    "levofloxacin": "S",
+    "moxifloxacin": "S",
+    "amikacin": "S",
+    "kanamycin": "",
+    "capreomycin": "",
+    "bedaquiline": "S",
+    "linezolid": "S"
+   },
+   {
+    "condition_id": "TB-KR-051",
+    "specimen_id": "SP-002",
+    "specimen_date": "2025-11-15",
+    "specimen_type": "Sputum",
+    "microscopy_result": "Scanty",
+    "culture_method": "MGIT",
+    "culture_result": "Positive",
+    "genexpert_mtb": "Detected",
+    "genexpert_rif": "Detected",
+    "dst_method": "Phenotypic",
+    "isoniazid": "R",
+    "rifampicin": "R",
+    "ethambutol": "S",
+    "pyrazinamide": "S",
+    "streptomycin": "R",
+    "levofloxacin": "S",
+    "moxifloxacin": "S",
+    "amikacin": "S",
+    "kanamycin": "",
+    "capreomycin": "",
+    "bedaquiline": "S",
+    "linezolid": "S"
+   },
+   {
+    "condition_id": "TB-KR-051",
+    "specimen_id": "SP-003",
+    "specimen_date": "2026-02-15",
+    "specimen_type": "Sputum",
+    "microscopy_result": "Negative",
+    "culture_method": "MGIT",
+    "culture_result": "Negative",
+    "genexpert_mtb": "",
+    "genexpert_rif": "",
+    "dst_method": "",
+    "isoniazid": "",
+    "rifampicin": "",
+    "ethambutol": "",
+    "pyrazinamide": "",
+    "streptomycin": "",
+    "levofloxacin": "",
+    "moxifloxacin": "",
+    "amikacin": "",
+    "kanamycin": "",
+    "capreomycin": "",
+    "bedaquiline": "",
+    "linezolid": ""
+   }
+  ],
+  "validationRules": {
+   "specimen_date": {
+    "$expr": "isValidDate"
+   },
+   "specimen_type": {
+    "$expr": "(v) => ['Sputum', 'BAL', 'Tissue', 'Other'].includes(v)"
+   },
+   "microscopy_result": {
+    "$expr": "isValidMicroscopy"
+   },
+   "culture_method": {
+    "$expr": "(v) => ['LJ', 'MGIT', 'Both'].includes(v)"
+   },
+   "culture_result": {
+    "$expr": "(v) => ['Negative', 'Positive', 'Contaminated'].includes(v)"
+   },
+   "genexpert_mtb": {
+    "$expr": "(v) => ['Detected', 'Not detected', 'Invalid'].includes(v)"
+   },
+   "genexpert_rif": {
+    "$expr": "(v) => ['Detected', 'Not detected', 'Indeterminate'].includes(v)"
+   },
+   "dst_method": {
+    "$expr": "(v) => ['Phenotypic', 'LPA-FirstLine', 'LPA-SecondLine'].includes(v)"
+   },
+   "isoniazid": {
+    "$expr": "isValidDstResult"
+   },
+   "rifampicin": {
+    "$expr": "isValidDstResult"
+   },
+   "ethambutol": {
+    "$expr": "isValidDstResult"
+   },
+   "pyrazinamide": {
+    "$expr": "isValidDstResult"
+   },
+   "streptomycin": {
+    "$expr": "isValidDstResult"
+   },
+   "levofloxacin": {
+    "$expr": "isValidDstResult"
+   },
+   "moxifloxacin": {
+    "$expr": "isValidDstResult"
+   },
+   "amikacin": {
+    "$expr": "isValidDstResult"
+   },
+   "kanamycin": {
+    "$expr": "isValidDstResult"
+   },
+   "capreomycin": {
+    "$expr": "isValidDstResult"
+   },
+   "bedaquiline": {
+    "$expr": "isValidDstResult"
+   },
+   "linezolid": {
+    "$expr": "isValidDstResult"
+   }
+  }
+ },
+ "genomicMetaCsvTemplate": {
+  "type": "genomic_meta",
+  "requiredColumns": [
+   "condition_id",
+   "specimen_id",
+   "platform",
+   "method"
+  ],
+  "optionalColumns": [
+   "coverage",
+   "sra_accession",
+   "lineage"
+  ],
+  "sampleData": [
+   {
+    "condition_id": "TB-KR-051",
+    "specimen_id": "SP-001",
+    "platform": "Illumina",
+    "method": "WGS",
+    "coverage": "100",
+    "sra_accession": "SRR12345678",
+    "lineage": "Beijing"
+   },
+   {
+    "condition_id": "TB-MN-021",
+    "specimen_id": "SP-010",
+    "platform": "ONT",
+    "method": "WGS",
+    "coverage": "50",
+    "sra_accession": "",
+    "lineage": "LAM"
+   }
+  ],
+  "validationRules": {
+   "platform": {
+    "$expr": "(v) => ['Illumina', 'ONT', 'PacBio', 'Other'].includes(v)"
+   },
+   "method": {
+    "$expr": "(v) => ['WGS', 'Targeted'].includes(v)"
+   },
+   "coverage": {
+    "$expr": "(v) => !isNaN(Number(v)) && Number(v) > 0"
+   },
+   "sra_accession": {
+    "$expr": "(v) => /^(SRR|ERR)\\d+$/.test(v)"
+   }
+  }
+ },
+ "imagingMetaCsvTemplate": {
+  "type": "imaging_meta",
+  "requiredColumns": [
+   "condition_id",
+   "modality",
+   "study_date"
+  ],
+  "optionalColumns": [
+   "study_description",
+   "findings",
+   "location",
+   "severity"
+  ],
+  "sampleData": [
+   {
+    "condition_id": "TB-KR-051",
+    "modality": "CXR",
+    "study_date": "2025-08-16",
+    "study_description": "Initial CXR",
+    "findings": "Cavity",
+    "location": "Right",
+    "severity": "Severe"
+   },
+   {
+    "condition_id": "TB-KR-051",
+    "modality": "CXR",
+    "study_date": "2025-11-20",
+    "study_description": "Follow-up CXR",
+    "findings": "Infiltrate",
+    "location": "Right",
+    "severity": "Moderate"
+   },
+   {
+    "condition_id": "TB-MN-021",
+    "modality": "CT",
+    "study_date": "2025-07-12",
+    "study_description": "Baseline CT",
+    "findings": "Consolidation",
+    "location": "Bilateral",
+    "severity": "Severe"
+   },
+   {
+    "condition_id": "TB-MN-021",
+    "modality": "PET-CT",
+    "study_date": "2025-10-08",
+    "study_description": "FDG PET-CT response assessment",
+    "findings": "Cavity",
+    "location": "Right",
+    "severity": "Moderate"
+   }
+  ],
+  "validationRules": {
+   "modality": {
+    "$expr": "(v) => ['CXR', 'CT', 'PET-CT'].includes(v)"
+   },
+   "study_date": {
+    "$expr": "isValidDate"
+   },
+   "location": {
+    "$expr": "(v) => ['Left', 'Right', 'Bilateral'].includes(v)"
+   },
+   "severity": {
+    "$expr": "(v) => ['Mild', 'Moderate', 'Severe'].includes(v)"
+   }
+  }
+ }
+}

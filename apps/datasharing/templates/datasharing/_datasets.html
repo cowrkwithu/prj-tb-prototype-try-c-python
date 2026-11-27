@@ -1,0 +1,78 @@
+{# 원본 DatasetsTab.tsx — 건수·기여·최종 업데이트·크기는 DB 집계, 다운로드는 DAR 게이트(none→신청, pending→심사 중, approved→다운로드) #}
+<div class="stack" x-data="{ gate: null }" data-testid="tab-datasets">
+  <div class="grid-2">
+    {% for ds in datasets %}
+      <div class="ds-card" data-dataset="{{ ds.slug }}" data-gate="{{ ds.gate }}">
+        <div class="flex items-start gap-3">
+          <div class="ds-icon">{% icon ds.icon "w-5 h-5" %}</div>
+          <div class="flex-1" style="min-width:0"><h3 class="text-sm font-bold text-navy">{{ ds.title }}</h3><p class="text-muted" style="font-size:10px">{{ ds.subtitle_text }}</p></div>
+        </div>
+        <p class="text-xs text-muted mt-2" style="line-height:1.6">{{ ds.description_text }}</p>
+        <div class="ds-contrib">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-muted" data-testid="contrib">{% if is_en %}Total {{ ds.total_fmt }} · My institution: <span class="font-semibold text-teal">{{ ds.mine_fmt }}</span>{% else %}총 {{ ds.total_fmt }}건 중 내 기관 기여: <span class="font-semibold text-teal">{{ ds.mine_fmt }}건</span>{% endif %}</span>
+            <span class="font-medium">{{ ds.pct }}%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width: {{ ds.pct }}%"></div></div>
+        </div>
+        <div class="ds-info">
+          <div><span class="k">{% t "레코드" "Records" %}: </span><span class="v" data-testid="records">{{ ds.records }}</span></div>
+          <div><span class="k">{% t "포맷" "Format" %}: </span><span class="v">{{ ds.format }}</span></div>
+          <div><span class="k">{% t "최종 업데이트" "Last Updated" %}: </span><span class="v">{{ ds.last }}</span></div>
+          <div><span class="k">{% t "크기" "Size" %}: </span><span class="v">{{ ds.size }}</span></div>
+        </div>
+        <div class="ds-actions">
+          <button type="button" class="ds-btn primary" @click="gate = '{{ ds.slug|escapejs }}'" data-testid="request-download"
+                  data-tip="{% if is_en %}Check access approval for {{ ds.title }} and download it if approved.{% else %}{{ ds.title }} 데이터셋의 접근 승인 상태를 확인하고, 승인됐으면 내려받습니다.{% endif %}">{% icon "download" "w-3 h-3" %} {% t "다운로드 요청" "Request Download" %}</button>
+          <a href="{{ ds.upload_path }}" class="ds-btn outline" data-tip="{% if is_en %}Go to the upload screen to add more {{ ds.title }} data.{% else %}{{ ds.title }} 데이터를 추가로 올릴 수 있는 업로드 화면으로 이동합니다.{% endif %}">{% icon "upload" "w-3 h-3" %} {% t "데이터 추가" "Add Data" %}</a>
+          <button type="button" class="ds-btn" hx-get="/data/datasets/{{ ds.slug }}/schema" hx-target="#schema-modal" hx-swap="innerHTML"
+                  data-tip="{% if is_en %}Open the data schema of the {{ ds.title }} dataset: a table of each field's ID, display name, data type, allowed values and description from the standard data dictionary.{% else %}{{ ds.subtitle_text }} 데이터셋의 구조를 봅니다. 표준 데이터사전에 정의된 필드별 ID·표시명·데이터 타입·허용값·설명을 표로 보여줍니다.{% endif %}">{% icon "table-properties" "w-3 h-3" %} {% t "데이터 구조" "Data Schema" %}</button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {# Custom Datasets #}
+  <div>
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold text-navy flex items-center gap-1">{% icon "blocks" "w-4 h-4" %} {% t "커스텀 데이터셋" "Custom Datasets" %}</h3>
+      <a href="/schemas" class="text-xs text-teal link-underline flex items-center gap-1" data-tip="{% t '등록된 데이터 구조 목록을 보는 데이터 구조 탐색 화면으로 이동합니다.' 'Go to Browse Data Schemas to see the registered data schemas.' %}">{% t "데이터 구조 탐색" "Browse Data Schemas" %} {% icon "arrow-right" "w-3 h-3" %}</a>
+    </div>
+    <div class="grid-2">
+      {% for c in custom_datasets %}
+        <div class="ds-card" style="padding:12px" data-custom="{{ c.s.schema_id }}" data-gate="{{ c.gate }}">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-xs font-semibold">{{ c.name }}</span>
+            <span class="badge badge-sm badge-neutral">{{ c.category }}</span>
+            <span class="badge badge-sm badge-info">v{{ c.s.version }}</span>
+          </div>
+          <p class="text-muted clamp-2 mb-2" style="font-size:10px">{{ c.description }}</p>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-muted" style="font-size:10px">{% if is_en %}{{ c.data_count }} records · {{ c.field_count }} fields{% else %}{{ c.data_count }}건 · {{ c.field_count }}개 필드{% endif %}</span>
+            <div class="flex items-center gap-2">
+              <button type="button" class="ds-link indigo" @click="gate = 'custom-{{ c.s.schema_id|escapejs }}'" data-tip="{% if is_en %}Check access approval for {{ c.name }} and download its CSV template if approved.{% else %}{{ c.name }}의 접근 승인 상태를 확인하고, 승인됐으면 CSV 서식을 내려받습니다.{% endif %}">{% icon "download" "w-3 h-3" %} CSV</button>
+              <button type="button" class="ds-link" hx-get="/data/custom/{{ c.s.schema_id }}/schema" hx-target="#schema-modal" hx-swap="innerHTML" data-tip="{% if is_en %}View the link key and field definitions (ID, type, required, allowed values) of {{ c.name }} in a table here.{% else %}{{ c.name }}의 연결 키와 필드 정의(ID·타입·필수 여부·허용값)를 이 화면에서 표로 봅니다.{% endif %}">{% icon "table-properties" "w-3 h-3" %} {% t "데이터 구조" "Data Schema" %}</button>
+              <a href="/schemas/{{ c.s.schema_id }}" class="ds-link teal" data-tip="{% if is_en %}View the fields and details of the {{ c.name }} data schema.{% else %}{{ c.name }} 데이터 구조의 필드 구성과 상세 정보를 봅니다.{% endif %}">{% t "상세보기" "Details" %}</a>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-xs text-muted">{% t "공개된 커스텀 데이터셋이 없습니다." "No custom datasets are published." %}</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="ds-note">{% t "데이터 다운로드를 위해서는 " "To download data, you must complete a " %}<span class="font-semibold text-teal">{% t "데이터 접근 신청(DAR)" "Data Access Request (DAR)" %}</span>{% t "을 완료해야 합니다." "." %}</div>
+
+  <div id="schema-modal"></div>
+
+  {# 다운로드 요청 → DAR 게이트 #}
+  {% for ds in datasets %}
+    {% include "datasharing/_gate_modal.html" with key=ds.slug label=ds.label state=ds.gate dar_type=ds.dar_type custom=False slug=ds.slug records=ds.records rows=ds.rows %}
+  {% endfor %}
+  {% for c in custom_datasets %}
+    {% with key="custom-"|add:c.s.schema_id %}
+      {% include "datasharing/_gate_modal.html" with key=key label=c.label state=c.gate dar_type=c.dar_type custom=True schema_id=c.s.schema_id field_count=c.field_count %}
+    {% endwith %}
+  {% endfor %}
+</div>

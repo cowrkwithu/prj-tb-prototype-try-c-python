@@ -1,0 +1,12 @@
+<div class="stack" data-testid="tab-genomic">
+  <div class="card card-sm"><p class="h4" data-testid="seq-count">{% if is_en %}Lineage Distribution ({{ a.seq_count }} sequenced){% else %}Lineage 분포 (시퀀스 보유 {{ a.seq_count }}건){% endif %}</p><div class="chart-box" style="height:200px"><canvas data-chart="lineage"></canvas></div></div>
+  <div class="card card-sm">
+    <p class="h4">{% t "주요 내성 변이 빈도" "Top Resistance Mutation Frequency" %}</p>
+    {% if not a.mutations %}<p class="text-xs text-muted text-center">{% t "내성 변이 데이터가 없습니다" "No resistance mutation data" %}</p>{% else %}
+    <div class="table-wrap"><table class="table table-compact" data-testid="mutation-table">
+      <thead><tr><th>{% t "변이" "Mutation" %}</th><th class="text-right">{% t "빈도" "Count" %}</th><th class="text-right">{% t "비율" "Ratio" %}</th><th style="width:160px">{% t "히트맵" "Heatmap" %}</th></tr></thead>
+      <tbody>{% for m in a.mutations %}<tr><td class="font-mono">{{ m.mutation }}</td><td class="text-right" data-testid="mut-count">{{ m.count }}</td><td class="text-right">{{ m.ratio|floatformat:1 }}%</td>
+        <td><div class="heat" style="background:rgba(42,127,142,{{ m.alpha|stringformat:'s' }});width:{{ m.width|stringformat:'s' }}%"></div></td></tr>{% endfor %}</tbody>
+    </table></div>{% endif %}
+  </div>
+</div>

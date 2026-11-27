@@ -1,0 +1,34 @@
+{# 원본 components/upload/ValidationReport.tsx — 오류/경고 아코디언 + 리포트 CSV 다운로드 #}
+{% if error_count or warning_count %}
+<div class="stack-sm" x-data="{ errOpen: true, warnOpen: false }" data-testid="validation-report">
+  <div class="flex flex-wrap items-center gap-3">
+    {% if error_count %}<div class="alert alert-error">{% icon "circle-x" "w-4 h-4" %} <span class="font-medium">{% if is_en %}{{ error_count }} errors{% else %}에러 {{ error_count }}건{% endif %}</span></div>{% endif %}
+    {% if warning_count %}<div class="alert alert-warning">{% icon "triangle-alert" "w-4 h-4" %} <span class="font-medium">{% if is_en %}{{ warning_count }} warnings{% else %}경고 {{ warning_count }}건{% endif %}</span></div>{% endif %}
+    {% if sub %}<a href="/upload/report/{{ sub.upload_id }}.csv" class="ml-auto inline-flex items-center gap-1 text-sm text-muted link-underline" data-tip="{% t '검증 결과의 에러·경고 목록을 CSV 파일로 내려받습니다.' 'Download the error and warning list as a CSV file.' %}">{% icon "download" "w-3_5 h-3_5" %} {% t "리포트 다운로드 (CSV)" "Download Report (CSV)" %}</a>{% endif %}
+  </div>
+  {% if error_count %}
+    <div class="acc acc-error">
+      <button type="button" class="acc-head" @click="errOpen = !errOpen" :data-tip="errOpen ? '{% t "에러 목록을 접습니다." "Collapse the error list." %}' : '{% t "행·항목별 에러 상세 목록을 펼칩니다." "Expand the detailed error list by row and field." %}'">
+        <span x-show="errOpen">{% icon "chevron-down" "w-4 h-4" %}</span><span x-show="!errOpen" x-cloak>{% icon "chevron-right" "w-4 h-4" %}</span>
+        {% if is_en %}Errors ({{ error_count }}){% else %}에러 목록 ({{ error_count }}건){% endif %}</button>
+      <ul class="acc-list" x-show="errOpen">
+        {% for e in errors %}<li>{% if e.row %}<span class="row-tag">{% if is_en %}Row {{ e.row }}{% else %}행 {{ e.row }}{% endif %}</span>{% endif %}
+          <span class="font-medium">{{ e.field }}</span><span class="text-danger">"{{ e.value }}"</span><span class="ml-auto text-danger">{{ e.text }}</span></li>{% endfor %}
+        {% if error_count > errors|length %}<li class="text-xs text-muted">{% if is_en %}... and {{ error_count|add:0 }} total — download the report for the full list{% else %}... 전체 {{ error_count }}건 — 전체 목록은 리포트를 내려받아 확인하세요{% endif %}</li>{% endif %}
+      </ul>
+    </div>
+  {% endif %}
+  {% if warning_count %}
+    <div class="acc acc-warning">
+      <button type="button" class="acc-head" @click="warnOpen = !warnOpen" :data-tip="warnOpen ? '{% t "경고 목록을 접습니다." "Collapse the warning list." %}' : '{% t "행·항목별 경고 상세 목록을 펼칩니다." "Expand the detailed warning list by row and field." %}'">
+        <span x-show="warnOpen" x-cloak>{% icon "chevron-down" "w-4 h-4" %}</span><span x-show="!warnOpen">{% icon "chevron-right" "w-4 h-4" %}</span>
+        {% if is_en %}Warnings ({{ warning_count }}){% else %}경고 목록 ({{ warning_count }}건){% endif %}</button>
+      <ul class="acc-list" x-show="warnOpen" x-cloak>
+        {% for w in warnings %}<li>{% if w.row %}<span class="row-tag">{% if is_en %}Row {{ w.row }}{% else %}행 {{ w.row }}{% endif %}</span>{% endif %}
+          <span class="font-medium">{{ w.field }}</span><span class="text-warning">"{{ w.value }}"</span><span class="ml-auto text-warning">{{ w.text }}</span></li>{% endfor %}
+        {% if warning_count > warnings|length %}<li class="text-xs text-muted">{% if is_en %}{{ warning_count }} total — download the report for the full list{% else %}전체 {{ warning_count }}건 — 전체 목록은 리포트를 내려받아 확인하세요{% endif %}</li>{% endif %}
+      </ul>
+    </div>
+  {% endif %}
+</div>
+{% endif %}

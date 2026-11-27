@@ -1,0 +1,1724 @@
+{
+ "SAMPLE_SCHEMAS": [
+  {
+   "schemaId": "schema-001",
+   "name": "약물 부작용 추적 데이터",
+   "description": "결핵 치료 중 발생하는 약물 부작용을 체계적으로 추적하고 기록하는 데이터 구조. CTCAE v5.0 기준의 등급 분류를 포함합니다.",
+   "nameEn": "Adverse Drug Reaction Tracking Data",
+   "descriptionEn": "A data schema for systematically tracking and recording adverse drug reactions that occur during tuberculosis treatment. Includes severity grading based on CTCAE v5.0.",
+   "category": "clinical_ext",
+   "version": "1.2",
+   "status": "published",
+   "visibility": "public",
+   "owner": {
+    "userId": "user-001",
+    "userName": "김연구",
+    "userNameEn": "Kim Yeon-gu",
+    "institution": "분당서울대병원"
+   },
+   "linkField": {
+    "fieldName": "condition_id",
+    "displayName": "케이스 ID",
+    "description": "환자 케이스 연결 키",
+    "displayNameEn": "Case ID",
+    "descriptionEn": "Key linking to the patient case"
+   },
+   "fields": [
+    {
+     "fieldId": "f-ae-001",
+     "fieldName": "adverse_event_id",
+     "displayName": "부작용 ID",
+     "description": "부작용 사례 고유 식별자",
+     "displayNameEn": "Adverse Event ID",
+     "descriptionEn": "Unique identifier of the adverse event case",
+     "dataType": "TEXT",
+     "constraints": {
+      "maxLength": 50
+     },
+     "isRequired": true,
+     "isUnique": true,
+     "order": 1,
+     "group": "basic_info"
+    },
+    {
+     "fieldId": "f-ae-002",
+     "fieldName": "event_date",
+     "displayName": "발생일",
+     "description": "부작용이 발생한 날짜",
+     "displayNameEn": "Onset Date",
+     "descriptionEn": "Date on which the adverse event occurred",
+     "dataType": "DATE",
+     "constraints": {},
+     "isRequired": true,
+     "isUnique": false,
+     "order": 2,
+     "group": "basic_info",
+     "sourceRef": {
+      "dictionaryId": "TB.U.TX.006.005",
+      "fieldId": "TB.U.TX.006.005",
+      "fieldName": "treatment_start_date",
+      "isModified": true
+     }
+    },
+    {
+     "fieldId": "f-ae-003",
+     "fieldName": "onset_day",
+     "displayName": "발생일(등록일 기준)",
+     "description": "등록일 기준 부작용 발생일 (일 수)",
+     "displayNameEn": "Onset Day (from Enrollment)",
+     "descriptionEn": "Number of days from enrollment to adverse event onset",
+     "dataType": "INTEGER",
+     "constraints": {
+      "min": 0,
+      "max": 1000
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 3,
+     "group": "basic_info"
+    },
+    {
+     "fieldId": "f-ae-004",
+     "fieldName": "drug_suspected",
+     "displayName": "원인 의심 약물",
+     "description": "부작용의 원인으로 의심되는 약물",
+     "displayNameEn": "Suspected Drug",
+     "descriptionEn": "Drug suspected of causing the adverse event",
+     "dataType": "REFERENCE",
+     "constraints": {
+      "refDictionary": "tx",
+      "refField": "treatment"
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 4,
+     "group": "basic_info"
+    },
+    {
+     "fieldId": "f-ae-005",
+     "fieldName": "event_category",
+     "displayName": "부작용 분류",
+     "description": "부작용의 기관계별 분류",
+     "displayNameEn": "Event Category",
+     "descriptionEn": "Classification of the adverse event by organ system",
+     "dataType": "SELECT",
+     "constraints": {
+      "options": [
+       {
+        "value": "hepatotoxicity",
+        "label": "간독성",
+        "labelEn": "Hepatotoxicity"
+       },
+       {
+        "value": "nephrotoxicity",
+        "label": "신독성",
+        "labelEn": "Nephrotoxicity"
+       },
+       {
+        "value": "ototoxicity",
+        "label": "이독성",
+        "labelEn": "Ototoxicity"
+       },
+       {
+        "value": "neuropathy",
+        "label": "말초신경병증",
+        "labelEn": "Peripheral Neuropathy"
+       },
+       {
+        "value": "gi_upset",
+        "label": "위장장애",
+        "labelEn": "Gastrointestinal Upset"
+       },
+       {
+        "value": "rash",
+        "label": "피부발진",
+        "labelEn": "Skin Rash"
+       },
+       {
+        "value": "qt_prolongation",
+        "label": "QT 연장",
+        "labelEn": "QT Prolongation"
+       },
+       {
+        "value": "hematologic",
+        "label": "혈액학적",
+        "labelEn": "Hematologic"
+       },
+       {
+        "value": "optic_neuritis",
+        "label": "시신경염",
+        "labelEn": "Optic Neuritis"
+       },
+       {
+        "value": "arthralgia",
+        "label": "관절통",
+        "labelEn": "Arthralgia"
+       },
+       {
+        "value": "other",
+        "label": "기타",
+        "labelEn": "Other"
+       }
+      ]
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 5,
+     "group": "detail"
+    },
+    {
+     "fieldId": "f-ae-006",
+     "fieldName": "severity_grade",
+     "displayName": "중증도 등급",
+     "description": "CTCAE v5.0 기준 중증도 등급",
+     "displayNameEn": "Severity Grade",
+     "descriptionEn": "Severity grade per CTCAE v5.0",
+     "dataType": "SELECT",
+     "constraints": {
+      "options": [
+       {
+        "value": "grade1",
+        "label": "Grade 1 (경증)",
+        "labelEn": "Grade 1 (Mild)"
+       },
+       {
+        "value": "grade2",
+        "label": "Grade 2 (중등도)",
+        "labelEn": "Grade 2 (Moderate)"
+       },
+       {
+        "value": "grade3",
+        "label": "Grade 3 (중증)",
+        "labelEn": "Grade 3 (Severe)"
+       },
+       {
+        "value": "grade4",
+        "label": "Grade 4 (생명위협)",
+        "labelEn": "Grade 4 (Life-threatening)"
+       },
+       {
+        "value": "grade5",
+        "label": "Grade 5 (사망)",
+        "labelEn": "Grade 5 (Death)"
+       }
+      ]
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 6,
+     "group": "detail"
+    },
+    {
+     "fieldId": "f-ae-007",
+     "fieldName": "ctcae_code",
+     "displayName": "CTCAE 코드",
+     "description": "CTCAE v5.0 표준 코드",
+     "displayNameEn": "CTCAE Code",
+     "descriptionEn": "CTCAE v5.0 standard code",
+     "dataType": "CODED",
+     "constraints": {
+      "codeSystem": "CTCAE v5.0"
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 7,
+     "group": "detail"
+    },
+    {
+     "fieldId": "f-ae-008",
+     "fieldName": "description",
+     "displayName": "상세 설명",
+     "description": "부작용의 구체적인 증상 및 경과 기술",
+     "displayNameEn": "Detailed Description",
+     "descriptionEn": "Specific symptoms and clinical course of the adverse event",
+     "dataType": "TEXTAREA",
+     "constraints": {
+      "maxLength": 2000
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 8,
+     "group": "detail"
+    },
+    {
+     "fieldId": "f-ae-009",
+     "fieldName": "action_taken",
+     "displayName": "조치 사항",
+     "description": "부작용 발생 후 취한 조치",
+     "displayNameEn": "Action Taken",
+     "descriptionEn": "Action taken in response to the adverse event",
+     "dataType": "SELECT",
+     "constraints": {
+      "options": [
+       {
+        "value": "maintain",
+        "label": "용량 유지",
+        "labelEn": "Dose Maintained"
+       },
+       {
+        "value": "reduce",
+        "label": "용량 감량",
+        "labelEn": "Dose Reduced"
+       },
+       {
+        "value": "suspend",
+        "label": "일시 중단",
+        "labelEn": "Temporarily Interrupted"
+       },
+       {
+        "value": "stop",
+        "label": "영구 중단",
+        "labelEn": "Permanently Discontinued"
+       },
+       {
+        "value": "change",
+        "label": "약물 변경",
+        "labelEn": "Drug Switched"
+       }
+      ]
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 9,
+     "group": "followup"
+    },
+    {
+     "fieldId": "f-ae-010",
+     "fieldName": "outcome",
+     "displayName": "전귀",
+     "description": "부작용의 최종 전귀",
+     "displayNameEn": "Outcome",
+     "descriptionEn": "Final outcome of the adverse event",
+     "dataType": "SELECT",
+     "constraints": {
+      "options": [
+       {
+        "value": "recovered",
+        "label": "회복",
+        "labelEn": "Recovered"
+       },
+       {
+        "value": "recovering",
+        "label": "회복 중",
+        "labelEn": "Recovering"
+       },
+       {
+        "value": "sequelae",
+        "label": "후유증 남음",
+        "labelEn": "Recovered with Sequelae"
+       },
+       {
+        "value": "not_recovered",
+        "label": "미회복",
+        "labelEn": "Not Recovered"
+       },
+       {
+        "value": "death",
+        "label": "사망",
+        "labelEn": "Death"
+       }
+      ]
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 10,
+     "group": "followup"
+    },
+    {
+     "fieldId": "f-ae-011",
+     "fieldName": "recovery_days",
+     "displayName": "회복 소요일",
+     "description": "부작용 발생부터 회복까지 소요 일수",
+     "displayNameEn": "Days to Recovery",
+     "descriptionEn": "Number of days from onset to recovery",
+     "dataType": "INTEGER",
+     "constraints": {
+      "min": 0
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 11,
+     "group": "followup"
+    },
+    {
+     "fieldId": "f-ae-012",
+     "fieldName": "lab_values",
+     "displayName": "관련 검사수치",
+     "description": "부작용 관련 검사 수치 기록 (예: ALT, AST, Cr 등)",
+     "displayNameEn": "Related Lab Values",
+     "descriptionEn": "Lab values related to the adverse event (e.g., ALT, AST, Cr)",
+     "dataType": "TEXTAREA",
+     "constraints": {
+      "maxLength": 1000
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 12,
+     "group": "followup"
+    }
+   ],
+   "fieldGroups": [
+    {
+     "groupName": "basic_info",
+     "displayName": "부작용 기본정보",
+     "displayNameEn": "Adverse Event Basics",
+     "order": 1
+    },
+    {
+     "groupName": "detail",
+     "displayName": "부작용 상세",
+     "displayNameEn": "Adverse Event Details",
+     "order": 2
+    },
+    {
+     "groupName": "followup",
+     "displayName": "추적 관찰",
+     "displayNameEn": "Follow-up",
+     "order": 3
+    }
+   ],
+   "validationRules": [
+    {
+     "ruleId": "rule-ae-001",
+     "name": "회복일 검증",
+     "nameEn": "Recovery days check",
+     "expression": "recovery_days >= 0",
+     "message": "회복 소요일은 0 이상이어야 합니다",
+     "messageEn": "Days to recovery must be 0 or greater"
+    }
+   ],
+   "createdAt": "2025-09-15",
+   "updatedAt": "2026-01-20",
+   "publishedAt": "2025-10-01",
+   "usageCount": 1,
+   "dataCount": 5,
+   "tags": [
+    "부작용",
+    "ADR",
+    "CTCAE",
+    "약물안전성",
+    "치료추적"
+   ],
+   "tagsEn": [
+    "Adverse Events",
+    "ADR",
+    "CTCAE",
+    "Drug Safety",
+    "Treatment Follow-up"
+   ]
+  },
+  {
+   "schemaId": "schema-002",
+   "name": "Mtb 전사체 발현량 데이터",
+   "description": "결핵균(M. tuberculosis) 전사체(transcriptome) 발현량 데이터를 기록하는 데이터 구조. RNA-seq 기반 유전자 발현 분석 결과를 체계적으로 관리합니다.",
+   "nameEn": "Mtb Transcriptome Expression Data",
+   "descriptionEn": "A data schema for recording M. tuberculosis transcriptome expression data. Systematically manages RNA-seq-based gene expression analysis results.",
+   "category": "genomic_ext",
+   "version": "1.0",
+   "status": "published",
+   "visibility": "shared",
+   "owner": {
+    "userId": "user-002",
+    "userName": "박유전",
+    "userNameEn": "Park Yu-jeon",
+    "institution": "한국생명공학연구원"
+   },
+   "linkField": {
+    "fieldName": "condition_id",
+    "displayName": "케이스 ID",
+    "description": "환자 케이스 연결 키",
+    "displayNameEn": "Case ID",
+    "descriptionEn": "Key linking to the patient case"
+   },
+   "fields": [
+    {
+     "fieldId": "f-tx-001",
+     "fieldName": "sample_id",
+     "displayName": "샘플 ID",
+     "description": "RNA 추출 샘플 고유 식별자",
+     "displayNameEn": "Sample ID",
+     "descriptionEn": "Unique identifier of the RNA extraction sample",
+     "dataType": "TEXT",
+     "constraints": {
+      "maxLength": 50
+     },
+     "isRequired": true,
+     "isUnique": true,
+     "order": 1,
+     "group": "sample_info"
+    },
+    {
+     "fieldId": "f-tx-002",
+     "fieldName": "specimen_id",
+     "displayName": "검체 ID",
+     "description": "원본 검체 식별자 (검사실 데이터 참조)",
+     "displayNameEn": "Specimen ID",
+     "descriptionEn": "Source specimen identifier (references lab data)",
+     "dataType": "REFERENCE",
+     "constraints": {
+      "refDictionary": "lab",
+      "refField": "specimen_type"
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 2,
+     "group": "sample_info",
+     "sourceRef": {
+      "dictionaryId": "TB.U.LAB.001.012",
+      "fieldId": "TB.U.LAB.001.012",
+      "fieldName": "specimen_type",
+      "isModified": true
+     }
+    },
+    {
+     "fieldId": "f-tx-003",
+     "fieldName": "extraction_method",
+     "displayName": "RNA 추출 방법",
+     "description": "RNA 추출에 사용된 방법",
+     "displayNameEn": "RNA Extraction Method",
+     "descriptionEn": "Method used for RNA extraction",
+     "dataType": "SELECT",
+     "constraints": {
+      "options": [
+       {
+        "value": "TRIzol",
+        "label": "TRIzol"
+       },
+       {
+        "value": "Column-based",
+        "label": "Column-based"
+       },
+       {
+        "value": "FFPE",
+        "label": "FFPE"
+       },
+       {
+        "value": "Other",
+        "label": "Other"
+       }
+      ]
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 3,
+     "group": "sample_info"
+    },
+    {
+     "fieldId": "f-tx-004",
+     "fieldName": "rna_quality_rin",
+     "displayName": "RIN 값",
+     "description": "RNA Integrity Number (RNA 품질 지표)",
+     "displayNameEn": "RIN Value",
+     "descriptionEn": "RNA Integrity Number (RNA quality metric)",
+     "dataType": "DECIMAL",
+     "constraints": {
+      "min": 0,
+      "max": 10,
+      "precision": 1
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 4,
+     "group": "sample_info"
+    },
+    {
+     "fieldId": "f-tx-005",
+     "fieldName": "sequencing_depth_m",
+     "displayName": "시퀀싱 깊이(M reads)",
+     "description": "시퀀싱 깊이 (백만 reads 단위)",
+     "displayNameEn": "Sequencing Depth (M reads)",
+     "descriptionEn": "Sequencing depth (in millions of reads)",
+     "dataType": "DECIMAL",
+     "constraints": {
+      "min": 0,
+      "precision": 1,
+      "unit": "M reads"
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 5,
+     "group": "sample_info"
+    },
+    {
+     "fieldId": "f-tx-006",
+     "fieldName": "gene_id",
+     "displayName": "유전자 ID",
+     "description": "M. tuberculosis 유전자 Rv 번호",
+     "displayNameEn": "Gene ID",
+     "descriptionEn": "M. tuberculosis gene Rv number",
+     "dataType": "TEXT",
+     "constraints": {
+      "maxLength": 20,
+      "pattern": "^Rv\\d{4}[a-c]?$",
+      "patternMessage": "Rv 번호 형식이어야 합니다 (예: Rv0667)",
+      "patternMessageEn": "Must be in Rv number format (e.g., Rv0667)"
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 6,
+     "group": "expression"
+    },
+    {
+     "fieldId": "f-tx-007",
+     "fieldName": "gene_name",
+     "displayName": "유전자명",
+     "description": "유전자의 일반명",
+     "displayNameEn": "Gene Name",
+     "descriptionEn": "Common name of the gene",
+     "dataType": "TEXT",
+     "constraints": {
+      "maxLength": 50
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 7,
+     "group": "expression"
+    },
+    {
+     "fieldId": "f-tx-008",
+     "fieldName": "expression_tpm",
+     "displayName": "TPM 발현량",
+     "description": "Transcripts Per Million 정규화 발현량",
+     "displayNameEn": "TPM Expression",
+     "descriptionEn": "Expression level normalized as Transcripts Per Million",
+     "dataType": "DECIMAL",
+     "constraints": {
+      "min": 0,
+      "precision": 2,
+      "unit": "TPM"
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 8,
+     "group": "expression"
+    },
+    {
+     "fieldId": "f-tx-009",
+     "fieldName": "log2_fold_change",
+     "displayName": "log2 FC",
+     "description": "log2 변화량 (대조군 대비)",
+     "displayNameEn": "log2 FC",
+     "descriptionEn": "log2 fold change (vs. control)",
+     "dataType": "DECIMAL",
+     "constraints": {
+      "precision": 3
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 9,
+     "group": "analysis"
+    },
+    {
+     "fieldId": "f-tx-010",
+     "fieldName": "adjusted_p_value",
+     "displayName": "adj. p-value",
+     "description": "Benjamini-Hochberg 보정 p-value",
+     "displayNameEn": "adj. p-value",
+     "descriptionEn": "Benjamini-Hochberg adjusted p-value",
+     "dataType": "DECIMAL",
+     "constraints": {
+      "min": 0,
+      "max": 1,
+      "precision": 6
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 10,
+     "group": "analysis"
+    }
+   ],
+   "fieldGroups": [
+    {
+     "groupName": "sample_info",
+     "displayName": "샘플 정보",
+     "displayNameEn": "Sample Information",
+     "order": 1
+    },
+    {
+     "groupName": "expression",
+     "displayName": "발현량 데이터",
+     "displayNameEn": "Expression Data",
+     "order": 2
+    },
+    {
+     "groupName": "analysis",
+     "displayName": "분석 결과",
+     "displayNameEn": "Analysis Results",
+     "order": 3
+    }
+   ],
+   "createdAt": "2025-11-01",
+   "updatedAt": "2026-02-10",
+   "publishedAt": "2025-12-01",
+   "usageCount": 1,
+   "dataCount": 4,
+   "tags": [
+    "전사체",
+    "RNA-seq",
+    "TPM",
+    "유전자발현",
+    "Mtb"
+   ],
+   "tagsEn": [
+    "Transcriptome",
+    "RNA-seq",
+    "TPM",
+    "Gene Expression",
+    "Mtb"
+   ]
+  },
+  {
+   "schemaId": "schema-003",
+   "name": "환자 삶의 질(QoL) 설문 데이터",
+   "description": "결핵 환자의 치료 전후 삶의 질을 종합적으로 평가하는 설문 도구. 신체적, 심리적, 사회적 영역을 포괄하며 표준화된 점수 체계를 사용합니다.",
+   "nameEn": "Patient Quality of Life (QoL) Survey Data",
+   "descriptionEn": "A survey instrument that comprehensively assesses the quality of life of tuberculosis patients before and after treatment. It covers the physical, psychological, and social domains and uses a standardized scoring system.",
+   "category": "survey",
+   "version": "2.0",
+   "status": "published",
+   "visibility": "public",
+   "owner": {
+    "userId": "user-003",
+    "userName": "이임상",
+    "userNameEn": "Lee Im-sang",
+    "institution": "국립중앙의료원"
+   },
+   "linkField": {
+    "fieldName": "condition_id",
+    "displayName": "케이스 ID",
+    "description": "환자 케이스 연결 키",
+    "displayNameEn": "Case ID",
+    "descriptionEn": "Key linking to the patient case"
+   },
+   "fields": [
+    {
+     "fieldId": "f-qol-001",
+     "fieldName": "survey_date",
+     "displayName": "설문 날짜",
+     "description": "설문 수행 날짜",
+     "displayNameEn": "Survey Date",
+     "descriptionEn": "Date the survey was administered",
+     "dataType": "DATE",
+     "constraints": {},
+     "isRequired": true,
+     "isUnique": false,
+     "order": 1,
+     "group": "survey_basic"
+    },
+    {
+     "fieldId": "f-qol-002",
+     "fieldName": "survey_timepoint",
+     "displayName": "설문 시점",
+     "description": "치료 과정 중 설문 수행 시점",
+     "displayNameEn": "Survey Timepoint",
+     "descriptionEn": "Point in the course of treatment at which the survey was administered",
+     "dataType": "SELECT",
+     "constraints": {
+      "options": [
+       {
+        "value": "baseline",
+        "label": "치료 시작",
+        "labelEn": "Treatment Start"
+       },
+       {
+        "value": "3m",
+        "label": "치료 3개월",
+        "labelEn": "Treatment Month 3"
+       },
+       {
+        "value": "6m",
+        "label": "치료 6개월",
+        "labelEn": "Treatment Month 6"
+       },
+       {
+        "value": "eot",
+        "label": "치료 종료",
+        "labelEn": "End of Treatment"
+       },
+       {
+        "value": "fu_6m",
+        "label": "추적 6개월",
+        "labelEn": "Follow-up Month 6"
+       },
+       {
+        "value": "fu_12m",
+        "label": "추적 12개월",
+        "labelEn": "Follow-up Month 12"
+       }
+      ]
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 2,
+     "group": "survey_basic"
+    },
+    {
+     "fieldId": "f-qol-003",
+     "fieldName": "physical_function",
+     "displayName": "신체 기능 점수",
+     "description": "전반적 신체 기능 수준 (0~100)",
+     "displayNameEn": "Physical Function Score",
+     "descriptionEn": "Overall level of physical function (0–100)",
+     "dataType": "INTEGER",
+     "constraints": {
+      "min": 0,
+      "max": 100
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 3,
+     "group": "physical"
+    },
+    {
+     "fieldId": "f-qol-004",
+     "fieldName": "pain_level",
+     "displayName": "통증 수준 (VAS)",
+     "description": "시각적 아날로그 척도 통증 수준 (0~10)",
+     "displayNameEn": "Pain Level (VAS)",
+     "descriptionEn": "Pain level on a visual analog scale (0–10)",
+     "dataType": "INTEGER",
+     "constraints": {
+      "min": 0,
+      "max": 10
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 4,
+     "group": "physical"
+    },
+    {
+     "fieldId": "f-qol-005",
+     "fieldName": "fatigue_score",
+     "displayName": "피로도",
+     "description": "피로도 수준 (0~10)",
+     "displayNameEn": "Fatigue Score",
+     "descriptionEn": "Fatigue level (0–10)",
+     "dataType": "INTEGER",
+     "constraints": {
+      "min": 0,
+      "max": 10
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 5,
+     "group": "physical"
+    },
+    {
+     "fieldId": "f-qol-006",
+     "fieldName": "appetite_score",
+     "displayName": "식욕 점수",
+     "description": "식욕 수준 (0~10)",
+     "displayNameEn": "Appetite Score",
+     "descriptionEn": "Appetite level (0–10)",
+     "dataType": "INTEGER",
+     "constraints": {
+      "min": 0,
+      "max": 10
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 6,
+     "group": "physical"
+    },
+    {
+     "fieldId": "f-qol-007",
+     "fieldName": "sleep_quality",
+     "displayName": "수면의 질",
+     "description": "주관적 수면의 질 평가",
+     "displayNameEn": "Sleep Quality",
+     "descriptionEn": "Subjective rating of sleep quality",
+     "dataType": "SELECT",
+     "constraints": {
+      "options": [
+       {
+        "value": "very_good",
+        "label": "매우 좋음",
+        "labelEn": "Very Good"
+       },
+       {
+        "value": "good",
+        "label": "좋음",
+        "labelEn": "Good"
+       },
+       {
+        "value": "fair",
+        "label": "보통",
+        "labelEn": "Fair"
+       },
+       {
+        "value": "poor",
+        "label": "나쁨",
+        "labelEn": "Poor"
+       },
+       {
+        "value": "very_poor",
+        "label": "매우 나쁨",
+        "labelEn": "Very Poor"
+       }
+      ]
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 7,
+     "group": "physical"
+    },
+    {
+     "fieldId": "f-qol-008",
+     "fieldName": "anxiety_score",
+     "displayName": "불안 점수 (GAD-7)",
+     "description": "GAD-7 불안 점수 (0~21)",
+     "displayNameEn": "Anxiety Score (GAD-7)",
+     "descriptionEn": "GAD-7 anxiety score (0–21)",
+     "dataType": "INTEGER",
+     "constraints": {
+      "min": 0,
+      "max": 21
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 8,
+     "group": "psychological"
+    },
+    {
+     "fieldId": "f-qol-009",
+     "fieldName": "depression_score",
+     "displayName": "우울 점수 (PHQ-9)",
+     "description": "PHQ-9 우울 점수 (0~27)",
+     "displayNameEn": "Depression Score (PHQ-9)",
+     "descriptionEn": "PHQ-9 depression score (0–27)",
+     "dataType": "INTEGER",
+     "constraints": {
+      "min": 0,
+      "max": 27
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 9,
+     "group": "psychological"
+    },
+    {
+     "fieldId": "f-qol-010",
+     "fieldName": "daily_activity",
+     "displayName": "일상 활동 수준",
+     "description": "일상 활동 수행 능력",
+     "displayNameEn": "Daily Activity Level",
+     "descriptionEn": "Ability to perform daily activities",
+     "dataType": "SELECT",
+     "constraints": {
+      "options": [
+       {
+        "value": "normal",
+        "label": "정상 생활",
+        "labelEn": "Normal Activity"
+       },
+       {
+        "value": "mild",
+        "label": "경증 제한",
+        "labelEn": "Mildly Limited"
+       },
+       {
+        "value": "moderate",
+        "label": "중등도 제한",
+        "labelEn": "Moderately Limited"
+       },
+       {
+        "value": "severe",
+        "label": "중증 제한",
+        "labelEn": "Severely Limited"
+       },
+       {
+        "value": "bedridden",
+        "label": "침상 생활",
+        "labelEn": "Bedridden"
+       }
+      ]
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 10,
+     "group": "social"
+    },
+    {
+     "fieldId": "f-qol-011",
+     "fieldName": "work_status",
+     "displayName": "근무 상태",
+     "description": "현재 근무/직업 상태",
+     "displayNameEn": "Employment Status",
+     "descriptionEn": "Current work/employment status",
+     "dataType": "SELECT",
+     "constraints": {
+      "options": [
+       {
+        "value": "normal",
+        "label": "정상 근무",
+        "labelEn": "Working Normally"
+       },
+       {
+        "value": "limited",
+        "label": "제한 근무",
+        "labelEn": "Working with Restrictions"
+       },
+       {
+        "value": "leave",
+        "label": "휴직",
+        "labelEn": "On Leave"
+       },
+       {
+        "value": "retired",
+        "label": "퇴직",
+        "labelEn": "Retired"
+       },
+       {
+        "value": "na",
+        "label": "해당없음",
+        "labelEn": "Not Applicable"
+       }
+      ]
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 11,
+     "group": "social"
+    },
+    {
+     "fieldId": "f-qol-012",
+     "fieldName": "social_support",
+     "displayName": "사회적 지지",
+     "description": "주관적 사회적 지지 수준 (0~10)",
+     "displayNameEn": "Social Support",
+     "descriptionEn": "Subjective level of social support (0–10)",
+     "dataType": "INTEGER",
+     "constraints": {
+      "min": 0,
+      "max": 10
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 12,
+     "group": "social"
+    },
+    {
+     "fieldId": "f-qol-013",
+     "fieldName": "treatment_satisfaction",
+     "displayName": "치료 만족도",
+     "description": "현재 치료에 대한 만족도 (0~10)",
+     "displayNameEn": "Treatment Satisfaction",
+     "descriptionEn": "Satisfaction with the current treatment (0–10)",
+     "dataType": "INTEGER",
+     "constraints": {
+      "min": 0,
+      "max": 10
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 13,
+     "group": "social"
+    },
+    {
+     "fieldId": "f-qol-014",
+     "fieldName": "overall_qol",
+     "displayName": "전반적 삶의 질",
+     "description": "전반적인 삶의 질 점수 (0~100)",
+     "displayNameEn": "Overall Quality of Life",
+     "descriptionEn": "Overall quality of life score (0–100)",
+     "dataType": "INTEGER",
+     "constraints": {
+      "min": 0,
+      "max": 100
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 14,
+     "group": "social"
+    },
+    {
+     "fieldId": "f-qol-015",
+     "fieldName": "notes",
+     "displayName": "비고",
+     "description": "추가 메모 사항",
+     "displayNameEn": "Notes",
+     "descriptionEn": "Additional notes",
+     "dataType": "TEXTAREA",
+     "constraints": {
+      "maxLength": 1000
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 15,
+     "group": "social"
+    }
+   ],
+   "fieldGroups": [
+    {
+     "groupName": "survey_basic",
+     "displayName": "설문 기본정보",
+     "displayNameEn": "Survey Basics",
+     "order": 1
+    },
+    {
+     "groupName": "physical",
+     "displayName": "신체적 영역",
+     "displayNameEn": "Physical Domain",
+     "order": 2
+    },
+    {
+     "groupName": "psychological",
+     "displayName": "심리적 영역",
+     "displayNameEn": "Psychological Domain",
+     "order": 3
+    },
+    {
+     "groupName": "social",
+     "displayName": "사회적 영역",
+     "displayNameEn": "Social Domain",
+     "order": 4
+    }
+   ],
+   "createdAt": "2025-06-01",
+   "updatedAt": "2026-02-25",
+   "publishedAt": "2025-07-15",
+   "usageCount": 1,
+   "dataCount": 5,
+   "tags": [
+    "QoL",
+    "삶의질",
+    "설문",
+    "PHQ-9",
+    "GAD-7",
+    "치료추적"
+   ],
+   "tagsEn": [
+    "QoL",
+    "Quality of Life",
+    "Survey",
+    "PHQ-9",
+    "GAD-7",
+    "Treatment Follow-up"
+   ]
+  },
+  {
+   "schemaId": "schema-004",
+   "name": "폐기능검사(PFT) 추적 데이터",
+   "description": "결핵 치료 전후 폐기능 변화를 추적하는 데이터 구조. 폐활량(spirometry) 및 확산능(DLCO) 검사 결과를 체계적으로 기록합니다.",
+   "nameEn": "Pulmonary Function Test (PFT) Tracking Data",
+   "descriptionEn": "A data schema for tracking changes in lung function before and after tuberculosis treatment. Systematically records spirometry and diffusing capacity (DLCO) test results.",
+   "category": "clinical_ext",
+   "version": "1.0",
+   "status": "draft",
+   "visibility": "private",
+   "owner": {
+    "userId": "user-004",
+    "userName": "최영상",
+    "userNameEn": "Choi Young-sang",
+    "institution": "서울아산병원"
+   },
+   "linkField": {
+    "fieldName": "condition_id",
+    "displayName": "케이스 ID",
+    "description": "환자 케이스 연결 키",
+    "displayNameEn": "Case ID",
+    "descriptionEn": "Key linking to the patient case"
+   },
+   "fields": [
+    {
+     "fieldId": "f-pft-001",
+     "fieldName": "pft_date",
+     "displayName": "검사일",
+     "description": "폐기능검사 시행 날짜",
+     "displayNameEn": "Test Date",
+     "descriptionEn": "Date the pulmonary function test was performed",
+     "dataType": "DATE",
+     "constraints": {},
+     "isRequired": true,
+     "isUnique": false,
+     "order": 1,
+     "group": "test_info"
+    },
+    {
+     "fieldId": "f-pft-002",
+     "fieldName": "pft_timepoint",
+     "displayName": "검사 시점",
+     "description": "치료 과정 중 폐기능검사 시행 시점",
+     "displayNameEn": "Test Timepoint",
+     "descriptionEn": "Point in the course of treatment at which the PFT was performed",
+     "dataType": "SELECT",
+     "constraints": {
+      "options": [
+       {
+        "value": "pre_treatment",
+        "label": "치료 전",
+        "labelEn": "Pre-treatment"
+       },
+       {
+        "value": "during_treatment",
+        "label": "치료 중",
+        "labelEn": "During Treatment"
+       },
+       {
+        "value": "eot",
+        "label": "치료 종료",
+        "labelEn": "End of Treatment"
+       },
+       {
+        "value": "fu_3m",
+        "label": "추적 3개월",
+        "labelEn": "Follow-up Month 3"
+       },
+       {
+        "value": "fu_6m",
+        "label": "추적 6개월",
+        "labelEn": "Follow-up Month 6"
+       },
+       {
+        "value": "fu_12m",
+        "label": "추적 12개월",
+        "labelEn": "Follow-up Month 12"
+       }
+      ]
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 2,
+     "group": "test_info"
+    },
+    {
+     "fieldId": "f-pft-003",
+     "fieldName": "fvc_L",
+     "displayName": "FVC (L)",
+     "description": "노력성 폐활량 (Forced Vital Capacity)",
+     "displayNameEn": "FVC (L)",
+     "descriptionEn": "Forced Vital Capacity",
+     "dataType": "DECIMAL",
+     "constraints": {
+      "min": 0,
+      "max": 10,
+      "precision": 2,
+      "unit": "L"
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 3,
+     "group": "spirometry"
+    },
+    {
+     "fieldId": "f-pft-004",
+     "fieldName": "fvc_percent",
+     "displayName": "FVC 예측치 %",
+     "description": "FVC 예측치 대비 실측치 백분율",
+     "displayNameEn": "FVC % Predicted",
+     "descriptionEn": "Measured FVC as a percentage of the predicted value",
+     "dataType": "DECIMAL",
+     "constraints": {
+      "min": 0,
+      "max": 200,
+      "precision": 1,
+      "unit": "%"
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 4,
+     "group": "spirometry"
+    },
+    {
+     "fieldId": "f-pft-005",
+     "fieldName": "fev1_L",
+     "displayName": "FEV1 (L)",
+     "description": "1초간 노력성 호기량",
+     "displayNameEn": "FEV1 (L)",
+     "descriptionEn": "Forced expiratory volume in 1 second",
+     "dataType": "DECIMAL",
+     "constraints": {
+      "min": 0,
+      "max": 10,
+      "precision": 2,
+      "unit": "L"
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 5,
+     "group": "spirometry"
+    },
+    {
+     "fieldId": "f-pft-006",
+     "fieldName": "fev1_percent",
+     "displayName": "FEV1 예측치 %",
+     "description": "FEV1 예측치 대비 실측치 백분율",
+     "displayNameEn": "FEV1 % Predicted",
+     "descriptionEn": "Measured FEV1 as a percentage of the predicted value",
+     "dataType": "DECIMAL",
+     "constraints": {
+      "min": 0,
+      "max": 200,
+      "precision": 1,
+      "unit": "%"
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 6,
+     "group": "spirometry"
+    },
+    {
+     "fieldId": "f-pft-007",
+     "fieldName": "fev1_fvc_ratio",
+     "displayName": "FEV1/FVC 비율",
+     "description": "FEV1/FVC 비율 (자동 계산)",
+     "displayNameEn": "FEV1/FVC Ratio",
+     "descriptionEn": "FEV1/FVC ratio (auto-calculated)",
+     "dataType": "CALCULATED",
+     "constraints": {
+      "formula": "fev1_L / fvc_L * 100",
+      "precision": 1,
+      "unit": "%"
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 7,
+     "group": "spirometry"
+    },
+    {
+     "fieldId": "f-pft-008",
+     "fieldName": "dlco_percent",
+     "displayName": "DLco 예측치 %",
+     "description": "일산화탄소 확산능 예측치 대비 백분율",
+     "displayNameEn": "DLco % Predicted",
+     "descriptionEn": "Diffusing capacity for carbon monoxide (DLCO) as a percentage of the predicted value",
+     "dataType": "DECIMAL",
+     "constraints": {
+      "min": 0,
+      "max": 200,
+      "precision": 1,
+      "unit": "%"
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 8,
+     "group": "diffusion"
+    },
+    {
+     "fieldId": "f-pft-009",
+     "fieldName": "interpretation",
+     "displayName": "해석",
+     "description": "폐기능검사 결과 해석",
+     "displayNameEn": "Interpretation",
+     "descriptionEn": "Interpretation of the PFT results",
+     "dataType": "SELECT",
+     "constraints": {
+      "options": [
+       {
+        "value": "normal",
+        "label": "정상",
+        "labelEn": "Normal"
+       },
+       {
+        "value": "mild",
+        "label": "경도 제한",
+        "labelEn": "Mild Restriction"
+       },
+       {
+        "value": "moderate",
+        "label": "중등도 제한",
+        "labelEn": "Moderate Restriction"
+       },
+       {
+        "value": "severe",
+        "label": "중증 제한",
+        "labelEn": "Severe Restriction"
+       },
+       {
+        "value": "mixed",
+        "label": "혼합형 장애",
+        "labelEn": "Mixed Defect"
+       }
+      ]
+     },
+     "isRequired": true,
+     "isUnique": false,
+     "order": 9,
+     "group": "interpretation"
+    },
+    {
+     "fieldId": "f-pft-010",
+     "fieldName": "bronchodilator_response",
+     "displayName": "기관지확장제 반응",
+     "description": "기관지확장제 투여 후 가역성 여부",
+     "displayNameEn": "Bronchodilator Response",
+     "descriptionEn": "Whether airflow is reversible after bronchodilator administration",
+     "dataType": "BOOLEAN",
+     "constraints": {},
+     "isRequired": false,
+     "isUnique": false,
+     "order": 10,
+     "group": "interpretation"
+    },
+    {
+     "fieldId": "f-pft-011",
+     "fieldName": "comments",
+     "displayName": "비고",
+     "description": "검사 관련 추가 코멘트",
+     "displayNameEn": "Notes",
+     "descriptionEn": "Additional comments about the test",
+     "dataType": "TEXTAREA",
+     "constraints": {
+      "maxLength": 1000
+     },
+     "isRequired": false,
+     "isUnique": false,
+     "order": 11,
+     "group": "interpretation"
+    }
+   ],
+   "fieldGroups": [
+    {
+     "groupName": "test_info",
+     "displayName": "검사 정보",
+     "displayNameEn": "Test Information",
+     "order": 1
+    },
+    {
+     "groupName": "spirometry",
+     "displayName": "폐활량",
+     "displayNameEn": "Spirometry",
+     "order": 2
+    },
+    {
+     "groupName": "diffusion",
+     "displayName": "확산능",
+     "displayNameEn": "Diffusing Capacity",
+     "order": 3
+    },
+    {
+     "groupName": "interpretation",
+     "displayName": "해석",
+     "displayNameEn": "Interpretation",
+     "order": 4
+    }
+   ],
+   "createdAt": "2026-02-01",
+   "updatedAt": "2026-02-28",
+   "usageCount": 0,
+   "dataCount": 0,
+   "tags": [
+    "PFT",
+    "폐기능",
+    "FEV1",
+    "FVC",
+    "DLCO",
+    "폐활량"
+   ],
+   "tagsEn": [
+    "PFT",
+    "Lung Function",
+    "FEV1",
+    "FVC",
+    "DLCO",
+    "Spirometry"
+   ]
+  }
+ ],
+ "SAMPLE_DYNAMIC_DATA": [
+  {
+   "rowId": "row-ae-001",
+   "schemaId": "schema-001",
+   "conditionId": "COND-2024-KR-0001",
+   "data": {
+    "adverse_event_id": "AE-001",
+    "event_date": "2025-10-15",
+    "onset_day": 45,
+    "drug_suspected": "Isoniazid",
+    "event_category": "hepatotoxicity",
+    "severity_grade": "grade2",
+    "ctcae_code": "HEP-002",
+    "description": "ALT 상승 (정상 상한치의 3배), 피로감 동반",
+    "action_taken": "suspend",
+    "outcome": "recovered",
+    "recovery_days": 14,
+    "lab_values": "ALT 152 U/L, AST 98 U/L"
+   },
+   "createdBy": "user-001",
+   "createdAt": "2025-10-16",
+   "updatedAt": "2025-11-01"
+  },
+  {
+   "rowId": "row-ae-002",
+   "schemaId": "schema-001",
+   "conditionId": "COND-2024-KR-0001",
+   "data": {
+    "adverse_event_id": "AE-002",
+    "event_date": "2025-11-20",
+    "onset_day": 81,
+    "drug_suspected": "Pyrazinamide",
+    "event_category": "arthralgia",
+    "severity_grade": "grade1",
+    "description": "양측 무릎 관절통, 보행 시 악화",
+    "action_taken": "maintain",
+    "outcome": "recovering",
+    "lab_values": "Uric acid 8.2 mg/dL"
+   },
+   "createdBy": "user-001",
+   "createdAt": "2025-11-21",
+   "updatedAt": "2025-11-21"
+  },
+  {
+   "rowId": "row-ae-003",
+   "schemaId": "schema-001",
+   "conditionId": "COND-2024-MN-0015",
+   "data": {
+    "adverse_event_id": "AE-003",
+    "event_date": "2025-12-05",
+    "onset_day": 120,
+    "drug_suspected": "Bedaquiline",
+    "event_category": "qt_prolongation",
+    "severity_grade": "grade3",
+    "ctcae_code": "CARD-005",
+    "description": "QTc 510ms로 연장, 부정맥 증상 없음",
+    "action_taken": "stop",
+    "outcome": "recovered",
+    "recovery_days": 21,
+    "lab_values": "ECG QTc 510ms → 450ms"
+   },
+   "createdBy": "user-001",
+   "createdAt": "2025-12-06",
+   "updatedAt": "2025-12-27"
+  },
+  {
+   "rowId": "row-ae-004",
+   "schemaId": "schema-001",
+   "conditionId": "COND-2024-VN-0042",
+   "data": {
+    "adverse_event_id": "AE-004",
+    "event_date": "2026-01-10",
+    "onset_day": 30,
+    "drug_suspected": "Linezolid",
+    "event_category": "neuropathy",
+    "severity_grade": "grade2",
+    "description": "양하지 저린감 및 감각 저하, 보행 불안정",
+    "action_taken": "reduce",
+    "outcome": "recovering"
+   },
+   "createdBy": "user-001",
+   "createdAt": "2026-01-11",
+   "updatedAt": "2026-01-11"
+  },
+  {
+   "rowId": "row-ae-005",
+   "schemaId": "schema-001",
+   "conditionId": "COND-2024-IN-0023",
+   "data": {
+    "adverse_event_id": "AE-005",
+    "event_date": "2026-02-01",
+    "onset_day": 60,
+    "drug_suspected": "Rifampicin",
+    "event_category": "rash",
+    "severity_grade": "grade1",
+    "description": "전신 홍반성 발진, 가려움증 동반",
+    "action_taken": "maintain",
+    "outcome": "recovered",
+    "recovery_days": 7
+   },
+   "createdBy": "user-001",
+   "createdAt": "2026-02-02",
+   "updatedAt": "2026-02-09"
+  },
+  {
+   "rowId": "row-tx-001",
+   "schemaId": "schema-002",
+   "conditionId": "COND-2024-KR-0005",
+   "data": {
+    "sample_id": "RNA-KR-001",
+    "specimen_id": "SPEC-2024-0005",
+    "extraction_method": "TRIzol",
+    "rna_quality_rin": 8.5,
+    "sequencing_depth_m": 25.3,
+    "gene_id": "Rv0667",
+    "gene_name": "rpoB",
+    "expression_tpm": 1542.8,
+    "log2_fold_change": 2.35,
+    "adjusted_p_value": 0.00012
+   },
+   "createdBy": "user-002",
+   "createdAt": "2026-01-15",
+   "updatedAt": "2026-01-15"
+  },
+  {
+   "rowId": "row-tx-002",
+   "schemaId": "schema-002",
+   "conditionId": "COND-2024-KR-0005",
+   "data": {
+    "sample_id": "RNA-KR-001",
+    "specimen_id": "SPEC-2024-0005",
+    "extraction_method": "TRIzol",
+    "rna_quality_rin": 8.5,
+    "sequencing_depth_m": 25.3,
+    "gene_id": "Rv1908c",
+    "gene_name": "katG",
+    "expression_tpm": 856.4,
+    "log2_fold_change": -1.82,
+    "adjusted_p_value": 0.00045
+   },
+   "createdBy": "user-002",
+   "createdAt": "2026-01-15",
+   "updatedAt": "2026-01-15"
+  },
+  {
+   "rowId": "row-tx-003",
+   "schemaId": "schema-002",
+   "conditionId": "COND-2024-MN-0008",
+   "data": {
+    "sample_id": "RNA-MN-001",
+    "specimen_id": "SPEC-2024-0008",
+    "extraction_method": "Column-based",
+    "rna_quality_rin": 7.2,
+    "sequencing_depth_m": 30.1,
+    "gene_id": "Rv2043c",
+    "gene_name": "pncA",
+    "expression_tpm": 234.1,
+    "log2_fold_change": 0.45,
+    "adjusted_p_value": 0.1253
+   },
+   "createdBy": "user-002",
+   "createdAt": "2026-02-01",
+   "updatedAt": "2026-02-01"
+  },
+  {
+   "rowId": "row-tx-004",
+   "schemaId": "schema-002",
+   "conditionId": "COND-2024-IN-0012",
+   "data": {
+    "sample_id": "RNA-IN-001",
+    "specimen_id": "SPEC-2024-0012",
+    "extraction_method": "TRIzol",
+    "rna_quality_rin": 9.1,
+    "sequencing_depth_m": 28.7,
+    "gene_id": "Rv0678",
+    "gene_name": "mmpR5",
+    "expression_tpm": 45.6,
+    "log2_fold_change": 3.12,
+    "adjusted_p_value": 3e-06
+   },
+   "createdBy": "user-002",
+   "createdAt": "2026-02-10",
+   "updatedAt": "2026-02-10"
+  },
+  {
+   "rowId": "row-qol-001",
+   "schemaId": "schema-003",
+   "conditionId": "COND-2024-KR-0001",
+   "data": {
+    "survey_date": "2025-09-01",
+    "survey_timepoint": "baseline",
+    "physical_function": 45,
+    "pain_level": 6,
+    "fatigue_score": 7,
+    "appetite_score": 4,
+    "sleep_quality": "poor",
+    "anxiety_score": 14,
+    "depression_score": 16,
+    "daily_activity": "moderate",
+    "work_status": "leave",
+    "social_support": 5,
+    "treatment_satisfaction": 6,
+    "overall_qol": 35
+   },
+   "createdBy": "user-003",
+   "createdAt": "2025-09-02",
+   "updatedAt": "2025-09-02"
+  },
+  {
+   "rowId": "row-qol-002",
+   "schemaId": "schema-003",
+   "conditionId": "COND-2024-KR-0001",
+   "data": {
+    "survey_date": "2025-12-01",
+    "survey_timepoint": "3m",
+    "physical_function": 62,
+    "pain_level": 4,
+    "fatigue_score": 5,
+    "appetite_score": 6,
+    "sleep_quality": "fair",
+    "anxiety_score": 10,
+    "depression_score": 11,
+    "daily_activity": "mild",
+    "work_status": "limited",
+    "social_support": 6,
+    "treatment_satisfaction": 7,
+    "overall_qol": 55
+   },
+   "createdBy": "user-003",
+   "createdAt": "2025-12-02",
+   "updatedAt": "2025-12-02"
+  },
+  {
+   "rowId": "row-qol-003",
+   "schemaId": "schema-003",
+   "conditionId": "COND-2024-KR-0001",
+   "data": {
+    "survey_date": "2026-03-01",
+    "survey_timepoint": "6m",
+    "physical_function": 78,
+    "pain_level": 2,
+    "fatigue_score": 3,
+    "appetite_score": 7,
+    "sleep_quality": "good",
+    "anxiety_score": 6,
+    "depression_score": 7,
+    "daily_activity": "normal",
+    "work_status": "limited",
+    "social_support": 7,
+    "treatment_satisfaction": 8,
+    "overall_qol": 72
+   },
+   "createdBy": "user-003",
+   "createdAt": "2026-03-02",
+   "updatedAt": "2026-03-02"
+  },
+  {
+   "rowId": "row-qol-004",
+   "schemaId": "schema-003",
+   "conditionId": "COND-2024-MN-0015",
+   "data": {
+    "survey_date": "2025-11-15",
+    "survey_timepoint": "baseline",
+    "physical_function": 55,
+    "pain_level": 5,
+    "fatigue_score": 6,
+    "appetite_score": 5,
+    "sleep_quality": "fair",
+    "anxiety_score": 12,
+    "depression_score": 13,
+    "daily_activity": "mild",
+    "work_status": "leave",
+    "social_support": 4,
+    "treatment_satisfaction": 5,
+    "overall_qol": 42
+   },
+   "createdBy": "user-003",
+   "createdAt": "2025-11-16",
+   "updatedAt": "2025-11-16"
+  },
+  {
+   "rowId": "row-qol-005",
+   "schemaId": "schema-003",
+   "conditionId": "COND-2024-VN-0042",
+   "data": {
+    "survey_date": "2026-01-20",
+    "survey_timepoint": "eot",
+    "physical_function": 85,
+    "pain_level": 1,
+    "fatigue_score": 2,
+    "appetite_score": 8,
+    "sleep_quality": "very_good",
+    "anxiety_score": 3,
+    "depression_score": 4,
+    "daily_activity": "normal",
+    "work_status": "normal",
+    "social_support": 8,
+    "treatment_satisfaction": 9,
+    "overall_qol": 88,
+    "notes": "치료 완료 후 전반적 회복 양호"
+   },
+   "createdBy": "user-003",
+   "createdAt": "2026-01-21",
+   "updatedAt": "2026-01-21"
+  }
+ ]
+}

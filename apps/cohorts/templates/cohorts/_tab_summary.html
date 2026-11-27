@@ -1,0 +1,22 @@
+<div class="stack" data-testid="tab-summary">
+  <div class="depot-stats">
+    <div class="mini-stat"><p>{% t "환자 수" "Patients" %}</p><strong data-testid="stat-n">{{ a.n }}{% if not is_en %}명{% endif %}</strong></div>
+    <div class="mini-stat"><p>{% t "평균 연령" "Mean Age" %}</p><strong data-testid="stat-age">{{ a.avg_age }}{% if is_en %} yrs{% else %}세{% endif %}</strong></div>
+    <div class="mini-stat"><p>{% t "남성 비율" "Male Ratio" %}</p><strong data-testid="stat-male">{{ a.male_ratio }}%</strong></div>
+    <div class="mini-stat"><p>{% t "시퀀스 보유" "With Sequence" %}</p><strong data-testid="stat-seq">{{ a.seq }}{% if not is_en %}건{% endif %}</strong></div>
+  </div>
+  <div class="grid grid-2">
+    <div class="card card-sm"><p class="h4">{% t "성별 분포" "Sex Distribution" %}</p><div class="chart-box" style="height:220px"><canvas data-chart="sex"></canvas></div></div>
+    <div class="card card-sm"><p class="h4">{% t "국적 분포" "Nationality Distribution" %}</p><div class="chart-box" style="height:220px"><canvas data-chart="country"></canvas></div></div>
+  </div>
+  <div class="card card-sm">
+    <p class="h4">{% t "대상자 목록" "Subjects" %} <span class="text-xs text-muted">{% t "(행을 누르면 대상자 등록조회로 이동)" "(click a row to open it in Cases)" %}</span></p>
+    <div class="table-wrap"><table class="table table-compact table-clickable" data-testid="patient-table">
+      <thead><tr><th>{% t "케이스 ID" "Case ID" %}</th><th>{% t "나이" "Age" %}</th><th>{% t "성별" "Sex" %}</th><th>{% t "국적" "Nationality" %}</th><th>{% t "진단 유형" "Diagnosis" %}</th><th>{% t "치료결과" "Outcome" %}</th></tr></thead>
+      <tbody>{% for p in a.patients %}
+        <tr><td><a class="font-mono link-underline" href="/cases?id={{ p.id }}" data-testid="patient-link">{{ p.condition_id }}</a></td><td>{{ p.age }}</td><td>{{ p.sex }}</td><td>{{ p.country }}</td><td>{{ p.diagnosis_type }}</td><td>{{ p.outcome }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% if a.more %}<p class="text-xs text-muted mt-1">{% if is_en %}Showing the first 50 — {{ a.more }} more. Export the saved dataset as CSV for the full list.{% else %}처음 50명만 표시 — 외 {{ a.more }}명. 전체 목록은 데이터셋 저장 후 CSV 로 내보내세요.{% endif %}</p>{% endif %}
+  </div>
+</div>

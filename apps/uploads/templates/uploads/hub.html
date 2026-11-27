@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{% t "데이터 업로드 센터" "Data Upload Center" %}{% endblock %}
+{% block content %}
+{# 원본 src/pages/Upload/index.tsx — 이력은 DB(본인 업로드) #}
+<div class="container stack">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-navy">{% t "데이터 업로드 센터" "Data Upload Center" %}</h1>
+      <p class="text-muted mt-1">{% t "협력기관 데이터를 표준화된 형식으로 업로드하고 관리합니다" "Upload and manage partner institution data in a standardized format" %}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="/upload/mine" class="btn btn-secondary btn-sm" data-tip="{% t '내가 올린 업로드의 검증 상태를 확인하고 임시저장을 이어서 작성합니다.' 'Check the review status of your uploads and continue drafts.' %}">{% icon "history" "w-4 h-4" %} {% t "내 업로드" "My Uploads" %}</a>
+      <a href="/manual" class="btn btn-secondary btn-sm" data-tip="{% t '데이터 유형별 업로드 절차와 형식을 정리한 가이드(사용자 매뉴얼)를 엽니다.' 'Open the guide (user manual) describing upload steps and formats for each data type.' %}">{% icon "download" "w-4 h-4" %} {% t "업로드 가이드 다운로드" "Download Upload Guide" %}</a>
+      <a href="/dictionary" class="btn btn-secondary btn-sm" data-tip="{% t '업로드 항목별 정의와 허용 값을 담은 데이터 사전을 엽니다.' 'Open the data dictionary with field definitions and allowed values.' %}">{% icon "book-open" "w-4 h-4" %} {% t "데이터 사전 보기" "View Data Dictionary" %}</a>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    {% for c in cards %}
+      <a href="{{ c.path }}" class="hub-card" data-testid="hub-card-{{ c.key }}" data-tip="{% if is_en %}Go to the {{ c.name }} upload page to start uploading.{% else %}{{ c.name }} 업로드 화면으로 이동해 업로드를 시작합니다.{% endif %}">
+        <div class="flex items-start gap-4">
+          <div class="upload-icon" style="width:44px;height:44px;background: {{ c.color }}">{% icon c.icon "w-5 h-5" %}</div>
+          <div class="flex-1" style="min-width:0">
+            <h3 class="font-semibold">{{ c.name }}</h3>
+            <p class="text-sm text-muted mt-1">{{ c.desc }}</p>
+            <div class="flex flex-wrap gap-1 mt-2">{% for f in c.formats %}<span class="fmt-tag">{{ f }}</span>{% endfor %}</div>
+          </div>
+        </div>
+        <div class="hub-card-foot">
+          <span class="text-xs text-slate-400">{% if c.latest %}{% t "최근:" "Latest:" %} {{ c.latest|date:"Y-m-d" }}{% else %}{% t "업로드 이력 없음" "No uploads yet" %}{% endif %}</span>
+          <span class="inline-flex items-center gap-1 text-sm text-teal font-medium">{% t "업로드 시작" "Start Upload" %} {% icon "arrow-right" "w-3_5 h-3_5" %}</span>
+        </div>
+      </a>
+    {% endfor %}
+    <a href="/schemas" class="hub-card" hx-get="/schemas/select" hx-target="body" hx-swap="beforeend" data-testid="hub-custom" data-tip="{% t '사용자 정의 데이터 구조를 선택해 해당 데이터 입력 화면으로 이동합니다.' 'Pick a custom schema and go to its data entry page.' %}">
+      <div class="flex items-start gap-4">
+        <div class="upload-icon" style="width:44px;height:44px;background:#6366F1">{% icon "blocks" "w-5 h-5" %}</div>
+        <div class="flex-1"><h3 class="font-semibold">{% t "커스텀 데이터" "Custom Data" %}</h3>
+          <p class="text-sm text-muted mt-1">{% t "연구자가 정의한 커스텀 데이터 구조 기반 데이터" "Data based on researcher-defined custom data schemas" %}</p>
+          <div class="flex gap-1 mt-2"><span class="fmt-tag">CSV</span><span class="fmt-tag">{% t "웹 폼" "Web Form" %}</span></div></div>
+      </div>
+      <div class="hub-card-foot"><span class="text-xs text-slate-400">&nbsp;</span><span class="inline-flex items-center gap-1 text-sm text-teal font-medium">{% t "업로드 시작" "Start Upload" %} {% icon "arrow-right" "w-3_5 h-3_5" %}</span></div>
+    </a>
+  </div>
+
+  <div>
+    <h2 class="text-lg font-semibold text-navy mb-4">{% t "최근 업로드 이력" "Recent Upload History" %}</h2>
+    <div class="table-wrap">
+      <table class="table" data-testid="recent-uploads">
+        <thead><tr><th>{% t "업로드 ID" "Upload ID" %}</th><th>{% t "데이터 유형" "Data Type" %}</th><th>{% t "파일명" "File Name" %}</th><th class="text-right">{% t "레코드 수" "Records" %}</th><th class="text-center">{% t "상태" "Status" %}</th><th>{% t "업로드 일시" "Uploaded At" %}</th><th class="text-center">{% t "작업" "Actions" %}</th></tr></thead>
+        <tbody>
+          {% for r in recent %}
+            <tr><td class="font-mono text-xs">{{ r.sub.upload_id }}</td><td>{{ r.domain_label }}</td><td class="truncate" style="max-width:220px">{{ r.file_name }}</td>
+              <td class="text-right">{{ r.sub.total_records }}</td><td class="text-center">{% include "uploads/_status_badge.html" with status=r.status %}</td>
+              <td class="text-muted">{{ r.sub.created_at|date:"Y-m-d H:i" }}</td>
+              <td class="text-center"><a href="/upload/mine?open={{ r.sub.upload_id }}" class="text-xs text-teal font-medium link-underline" data-tip="{% t '이 업로드 건의 처리 결과와 검증 내역을 자세히 봅니다.' 'View processing results and validation details for this upload.' %}">{% t "상세보기" "Details" %}</a></td></tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-center text-muted" style="padding:32px">{% t "아직 업로드 이력이 없습니다. 위 카드에서 업로드를 시작하세요." "No uploads yet. Start one from the cards above." %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% load static %}{% for im in images %}
+  <button type="button" class="thumb" @click="open = {{ im.id }}; slice = {{ volume.peak }}" data-image="{{ im.id }}"
+          hx-get="/cases/{{ patient.pk }}/images/{{ im.id }}" hx-target="#image-modal-body" hx-swap="innerHTML"
+          data-tip="{% t '누르면 영상을 크게 열어 AI 어노테이션과 전문가 소견을 함께 봅니다.' 'Click to open the image with AI annotations and expert findings.' %}">
+    <div class="thumb-img"><img src="{% static im.src %}" alt="{{ im.type }} {{ im.date }}" loading="lazy">
+      <span class="thumb-type">{{ im.type }}</span>
+      {% if im.suv_max %}<span class="thumb-suv">SUVmax {{ im.suv_max|floatformat:1 }}</span>{% endif %}</div>
+    <div class="thumb-meta"><p class="text-xs text-muted">{{ im.date }}</p><p class="text-xs truncate">{% if im.finding_text %}{{ im.finding_text }}{% else %}{% t "정상" "Normal" %}{% endif %}</p></div>
+  </button>
+{% endfor %}
+{% if more_offset %}
+  <div class="thumb-more" style="grid-column: 1 / -1" id="thumb-more">
+    <button type="button" class="btn btn-secondary btn-sm" hx-get="/cases/{{ patient.pk }}/images?offset={{ more_offset }}" hx-target="#thumb-more" hx-swap="outerHTML" data-testid="thumb-more"
+            data-tip="{% t '다음 영상 썸네일 24개를 더 불러옵니다.' 'Load the next 24 image thumbnails.' %}">{% icon "chevron-down" "w-4 h-4" %} {% if is_en %}Show more ({{ more_offset }} / {{ image_total }}){% else %}더보기 ({{ more_offset }} / {{ image_total }}){% endif %}</button>
+  </div>
+{% endif %}

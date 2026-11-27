@@ -1,0 +1,40 @@
+{# 원본 components/upload/PiiScanReport.tsx — 서버가 계산한 결과(Submission.pii_report)를 그대로 보여 준다 #}
+<div class="stack-sm" x-data="{ expanded: false }" data-testid="pii-report" data-pii-tone="{{ pii.tone }}">
+  <div class="flex items-center gap-2">
+    {% icon "scan-line" "w-5 h-5 text-teal" %}
+    <h3 class="font-semibold">{% t "개인정보 자동 탐지" "Automatic PII Detection" %}</h3>
+    {% if pii.has_rows %}<span class="text-xs text-slate-400">{% if is_en %}{{ pii.report.scanned_rows }} rows · {{ pii.report.scanned_fields }} fields scanned{% else %}{{ pii.report.scanned_rows }}행 · {{ pii.report.scanned_fields }}개 항목 검사{% endif %}</span>{% endif %}
+  </div>
+  {% if not pii.has_rows and not pii.detections %}
+    <div class="soft-box flex items-center gap-2 text-muted">{% icon "scan-line" "w-4 h-4" %} <span class="text-sm">{% t "데이터를 입력하거나 CSV 파일을 업로드하면 개인정보 자동 탐지가 실행됩니다." "Automatic PII detection runs once data is entered or a CSV file is uploaded." %}</span></div>
+  {% else %}
+    <div class="pii-banner {{ pii.tone }}">
+      <div class="flex items-center gap-2">
+        {% if pii.tone == "block" %}{% icon "shield-alert" "w-5 h-5" %}{% elif pii.tone == "clean" %}{% icon "shield-check" "w-5 h-5" %}{% else %}{% icon "triangle-alert" "w-5 h-5" %}{% endif %}
+        <span class="text-sm font-semibold">{{ pii.summary }}</span>
+      </div>
+      {% if pii.counts %}<div class="flex flex-wrap gap-1 mt-3">{% for c in pii.counts %}<span class="pii-chip">{% if is_en %}{{ c.label }} {{ c.count }}{% else %}{{ c.label }} {{ c.count }}건{% endif %}</span>{% endfor %}</div>{% endif %}
+      {% if pii.tone == "block" %}<p class="text-xs mt-3">{% t "개인정보가 포함된 자료는 제출할 수 없습니다. 해당 항목을 제거하거나 비식별 처리한 뒤 다시 업로드하세요." "Data containing personal information cannot be submitted. Remove or de-identify the affected items and upload again." %}</p>
+      {% elif pii.report.medium %}<p class="text-xs mt-3">{% t "서술 항목에서 발견된 값으로 오탐일 수 있습니다. 확인 후 제출을 진행하세요." "These values were found in free-text fields and may be false positives. Review them before submitting." %}</p>{% endif %}
+    </div>
+    {% if pii.detections %}
+      <div class="table-wrap">
+        <table class="table table-compact">
+          <thead><tr><th>{% t "확신도" "Confidence" %}</th><th>{% t "행" "Row" %}</th><th>{% t "항목" "Field" %}</th><th>{% t "유형" "Type" %}</th><th>{% t "탐지 값" "Detected Value" %}</th></tr></thead>
+          <tbody>{% for d in pii.detections %}
+            <tr{% if forloop.counter > 8 %} x-show="expanded" x-cloak{% endif %}{% if d.confidence == "high" %} class="row-error"{% endif %}>
+              <td><span class="conf conf-{{ d.confidence }}">{% if d.confidence == "high" %}{% t "높음" "High" %}{% else %}{% t "검토" "Review" %}{% endif %}</span></td>
+              <td class="text-slate-400">{% if d.row %}{{ d.row }}{% else %}-{% endif %}</td>
+              <td class="font-mono">{{ d.field }}</td><td>{{ d.type_label }}{% if d.type == "dicom" %}<p class="text-11 text-muted" data-testid="pii-reason">{{ d.text }}</p>{% endif %}</td><td class="font-mono" data-masked>{{ d.masked }}</td>
+            </tr>{% endfor %}</tbody>
+        </table>
+        {% if pii.detections|length > 8 %}
+          <button type="button" class="btn btn-ghost btn-sm btn-block" @click="expanded = !expanded"
+                  :data-tip="expanded ? '{% t "추가로 펼친 탐지 항목을 다시 접습니다." "Collapse the extra detection rows again." %}' : '{% t "표시되지 않은 나머지 개인정보 탐지 항목을 모두 보여줍니다." "Show all remaining personal-data detections." %}'">
+            <span x-show="!expanded">{% if is_en %}Show {{ pii.detections|length|add:-8 }} more{% else %}{{ pii.detections|length|add:-8 }}건 더 보기{% endif %}</span><span x-show="expanded" x-cloak>{% t "접기" "Collapse" %}</span></button>
+        {% endif %}
+      </div>
+    {% endif %}
+    <p class="text-11 text-slate-400">{% t "탐지된 값은 원문을 노출하지 않도록 마스킹하여 표시합니다." "Detected values are masked so the original text is not exposed." %}{% if pii.report.high %}{% t ' 확신도 "높음" 항목은 제출이 차단됩니다.' ' Items with "High" confidence block submission.' %}{% endif %}</p>
+  {% endif %}
+</div>

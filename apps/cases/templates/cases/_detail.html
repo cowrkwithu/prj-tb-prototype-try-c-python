@@ -1,0 +1,177 @@
+{% load static %}
+{# 케이스 상세 (원본 CaseDetail.tsx) — HX-Target: case-detail #}
+<div id="case-detail" class="case-detail" x-data="caseDetail({{ tab|default:0 }})">
+{% if not patient %}
+  <div class="empty-state" style="margin:auto">
+    <span class="icon-circle">{% icon "clipboard-list" "w-6 h-6" %}</span>
+    <p class="font-semibold text-primary">{% t "등록된 케이스가 없습니다" "No cases registered" %}</p>
+    <p class="text-sm mt-1">{% t "임상 데이터 업로드로 새 케이스를 등록하세요." "Register a new case via clinical data upload." %}</p>
+  </div>
+{% else %}
+  {% with p=patient %}
+  <div class="case-summary">
+    <span class="font-semibold text-navy" data-testid="detail-id">{{ p.condition_id }}</span>
+    <span class="badge badge-{{ resistance_variant }}">{{ p.diagnosis_type }}</span>
+    <span class="badge badge-{{ outcome_variant }}">{{ p.treatment_outcome }}</span>
+    <span class="text-sm text-muted ml-auto">{% if is_en %}{{ p.age }} y{% else %}{{ p.age }}세{% endif %} · {% if p.sex == "M" %}{% t "남" "M" %}{% else %}{% t "여" "F" %}{% endif %} · {{ country_label }}</span>
+  </div>
+
+  <div class="tabs case-tabs" role="tablist">
+    {% for tb in tabs %}
+      <button type="button" class="tab" role="tab" :aria-selected="tab === {{ forloop.counter0 }}" @click="tab = {{ forloop.counter0 }}" data-tip="{{ tb.help }}">{{ tb.label }}</button>
+    {% endfor %}
+  </div>
+
+  <div class="case-tab-body">
+    {# ═══ 0: 임상정보 ═══ #}
+    <section x-show="tab === 0" {% if tab != 0 %}x-cloak{% endif %} data-tab="clinical">
+      <div class="tab-actions">{% include "cases/_upload_link.html" with path="/upload/clinical" ko="임상 데이터 수정" en="Edit Clinical Data" help_ko="임상 데이터 업로드 화면으로 이동해 이 환자의 임상정보를 수정합니다." help_en="Open clinical data upload to edit this patient's clinical data." %}</div>
+      <div class="stack">
+        <div><h4 class="h4">{% t "환자 기본정보" "Patient Information" %}</h4>
+          <div class="info-grid">
+            <div><span>{% t "나이" "Age" %}</span><strong>{% if is_en %}{{ p.age }} years{% else %}{{ p.age }}세{% endif %}</strong></div>
+            <div><span>{% t "성별" "Sex" %}</span><strong>{% if p.sex == "M" %}{% t "남성" "Male" %}{% else %}{% t "여성" "Female" %}{% endif %}</strong></div>
+            <div><span>{% t "국적" "Nationality" %}</span><strong>{{ country_label }}</strong></div>
+            <div><span>{% t "의료기관" "Institution" %}</span><strong>{{ site_label }}</strong></div>
+            <div><span>{% t "등록일" "Registered" %}</span><strong>{{ p.registration_date|date:"Y-m-d" }}</strong></div>
+            <div><span>{% t "최종 업데이트" "Last Updated" %}</span><strong>{{ p.last_update_date|date:"Y-m-d" }}</strong></div>
+          </div></div>
+        <div><h4 class="h4">{% t "진단 정보" "Diagnosis" %}</h4>
+          <div class="info-grid">
+            <div><span>{% t "진단 유형" "Diagnosis Type" %}</span><strong>{{ p.diagnosis_type }}</strong></div>
+            <div><span>{% t "치료 결과" "Treatment Outcome" %}</span><strong>{{ p.treatment_outcome }}</strong></div>
+            <div><span>{% t "치료 기간" "Treatment Duration" %}</span><strong>{% if is_en %}{{ p.treatment_duration }} days{% else %}{{ p.treatment_duration }}일{% endif %}</strong></div>
+            <div><span>{% t "동반질환" "Comorbidities" %}</span><strong>{% if comorbidities_label %}{{ comorbidities_label }}{% else %}{% t "없음" "None" %}{% endif %}</strong></div>
+            {% if p.diagnosis_date %}<div><span>{% t "진단일" "Diagnosis Date" %}</span><strong>{{ p.diagnosis_date|date:"Y-m-d" }}</strong></div>{% endif %}
+            {% if p.site_of_disease %}<div><span>{% t "질병 부위" "Site of Disease" %}</span><strong>{{ site_of_disease_label }}</strong></div>{% endif %}
+            {% if p.previous_treatment is not None %}<div><span>{% t "이전 치료" "Previously Treated" %}</span><strong>{% if p.previous_treatment %}{% t "있음" "Yes" %}{% if p.previous_treatment_count %} ({{ p.previous_treatment_count }}){% endif %}{% else %}{% t "없음" "No" %}{% endif %}</strong></div>{% endif %}
+            {% if p.outcome_date %}<div><span>{% t "결과 확정일" "Outcome Date" %}</span><strong>{{ p.outcome_date|date:"Y-m-d" }}</strong></div>{% endif %}
+          </div></div>
+        <div><h4 class="h4">{% t "치료 레지멘 타임라인" "Treatment Regimen Timeline" %}{% if regimen_from_upload %} <span class="badge badge-sm badge-teal" data-testid="regimen-source">{% t "업로드된 레지멘" "Uploaded regimen" %}</span>{% endif %}</h4>
+          <div class="chart-box" style="height: {{ regimen_height }}px"><canvas data-regimen-chart data-days-label="{% t '일' 'Days' %}"></canvas></div>
+          {{ regimen|json_script:"regimen-data" }}
+        </div>
+      </div>
+    </section>
+
+    {# ═══ 1: 영상 ═══ #}
+    {# 썸네일은 24개씩(더보기 = HTMX), 상세 모달은 하나만 두고 고른 영상만 지연 로드한다 #}
+    <section x-show="tab === 1" {% if tab != 1 %}x-cloak{% endif %} data-tab="imaging" x-data="{ open: null, showAI: true, showExpert: true, slice: {{ volume.peak }} }">
+      <div class="tab-actions">{% include "cases/_upload_link.html" with path="/upload/imaging" ko="영상 추가" en="Add Images" help_ko="영상 업로드 화면으로 이동해 이 환자의 CXR·CT·PET-CT 영상을 추가합니다." help_en="Open imaging upload to add CXR, CT or PET-CT images for this patient." %}</div>
+      {% if not images %}
+        <p class="text-sm text-muted text-center" style="padding:32px 0">{% t "영상 데이터가 없습니다" "No imaging data" %}</p>
+      {% else %}
+        <p class="text-xs text-muted mb-2" data-testid="image-total">{% if is_en %}{{ image_total }} images{% else %}영상 {{ image_total }}건{% endif %}</p>
+        <div class="thumb-grid" id="thumb-grid">{% include "cases/_thumbs.html" %}</div>
+        <div class="modal-backdrop" x-show="open !== null" x-cloak @keydown.escape.window="open = null" @click.self="open = null" data-testid="image-modal">
+          <div class="modal modal-xl" role="dialog" aria-modal="true">
+            <div class="modal-header"><h3 class="modal-title">{% t "영상 상세" "Image Details" %}</h3>
+              <button type="button" class="icon-btn sm" @click="open = null" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+            <div class="modal-body stack-sm" id="image-modal-body"><p class="text-sm text-muted text-center" style="padding:48px 0">{% t "불러오는 중…" "Loading…" %}</p></div>
+          </div>
+        </div>
+      {% endif %}
+      {% if studies %}
+        <div class="mt-6" data-testid="imaging-studies">
+          <h4 class="h4">{% t "업로드된 영상 검사" "Uploaded Imaging Studies" %}</h4>
+          <ul class="study-list">{% for st in studies %}
+            <li><span class="badge badge-sm badge-teal">{{ st.modality }}</span><span>{{ st.study_date|date:"Y-m-d" }}</span>
+              {% if st.description %}<span class="text-muted">{{ st.description }}</span>{% endif %}
+              {% if st.tb_activity %}<span class="badge badge-sm badge-neutral">{{ st.tb_activity }}</span>{% endif %}
+              {% for f in st.findings %}<span class="finding-chip">{{ f.finding }}{% if f.location %} · {{ f.location }}{% endif %}{% if f.severity %} · {{ f.severity }}{% endif %}</span>{% endfor %}
+              <span class="text-muted ml-auto">{% if is_en %}{{ st.files.all|length }} files{% else %}파일 {{ st.files.all|length }}개{% endif %}</span></li>{% endfor %}</ul>
+        </div>
+      {% endif %}
+    </section>
+
+    {# ═══ 2: 유전체 ═══ #}
+    <section x-show="tab === 2" {% if tab != 2 %}x-cloak{% endif %} data-tab="genomic" x-data="{ mut: null }">
+      <div class="tab-actions">{% include "cases/_upload_link.html" with path="/upload/genomic" ko="유전체 데이터 추가" en="Add Genomic Data" help_ko="유전체 업로드 화면으로 이동해 이 환자의 시퀀스(FASTA·FASTQ)를 추가합니다." help_en="Open genomic upload to add sequence files (FASTA/FASTQ) for this patient." %}</div>
+      {% if not p.has_sequence %}
+        <p class="text-sm text-muted text-center" style="padding:32px 0">{% t "유전체 시퀀싱 데이터가 없습니다" "No genome sequencing data" %}</p>
+      {% else %}
+        <div class="stack">
+          <div><h4 class="h4">{% t "시퀀스 기본정보" "Sequence Information" %}</h4>
+            <div class="info-grid"><div><span>SRA ID</span><strong>{{ p.sra_id|default:"-" }}</strong></div><div><span>Lineage</span><strong>{{ p.lineage|default:"-" }}</strong></div></div></div>
+          {% if sequence_runs %}<div data-testid="sequence-runs"><h4 class="h4">{% t "업로드된 시퀀스" "Uploaded Sequences" %}</h4>
+            <div class="table-wrap"><table class="table table-compact"><thead><tr><th>{% t "검체 ID" "Specimen ID" %}</th><th>{% t "플랫폼" "Platform" %}</th><th>{% t "방법" "Method" %}</th><th>{% t "커버리지" "Coverage" %}</th><th>SRA</th><th>Lineage</th><th>{% t "파일" "Files" %}</th></tr></thead>
+              <tbody>{% for r in sequence_runs %}<tr><td class="font-mono text-xs">{{ r.specimen_id }}</td><td>{{ r.platform }}</td><td>{{ r.method }}</td><td>{% if r.coverage %}{{ r.coverage|floatformat:0 }}x{% else %}-{% endif %}</td><td class="font-mono text-xs">{{ r.sra_accession|default:"-" }}</td><td>{{ r.lineage|default:"-" }}</td>
+                <td class="text-xs">{% for f in r.files.all %}{{ f.original_name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</td></tr>{% endfor %}</tbody></table></div></div>{% endif %}
+          <div><h4 class="h4">{% t "약제내성 변이" "Drug Resistance Mutations" %}</h4>
+            {% if not mutations %}<p class="text-sm text-muted">{% t "검출된 내성 변이 없음" "No resistance mutations detected" %}</p>
+            {% else %}
+              <div class="table-wrap"><table class="table table-clickable">
+                <thead><tr><th>{% t "변이" "Mutation" %}</th><th>{% t "유전자" "Gene" %}</th><th>{% t "변화" "Change" %}</th></tr></thead>
+                <tbody>{% for m in mutations %}
+                  <tr @click="mut = {{ forloop.counter0 }}" data-tip="{% t '행을 누르면 변이의 유전자·변화·관련 약제를 자세히 봅니다.' 'Click the row for the gene, change and related drug of this mutation.' %}"><td class="font-mono text-xs">{{ m.mutation }}</td><td>{{ m.gene }}</td><td>{{ m.change }}</td></tr>
+                {% endfor %}</tbody></table></div>
+              {% for m in mutations %}
+                <div class="modal-backdrop" x-show="mut === {{ forloop.counter0 }}" x-cloak @click.self="mut = null" @keydown.escape.window="mut = null">
+                  <div class="modal modal-sm" role="dialog" aria-modal="true">
+                    <div class="modal-header"><h3 class="modal-title">{% t "변이 상세 정보" "Mutation Details" %}</h3><button type="button" class="icon-btn sm" @click="mut = null" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+                    <div class="modal-body stack-sm text-sm">
+                      <p><span class="text-muted">{% t "변이:" "Mutation:" %}</span> <strong class="font-mono">{{ m.mutation }}</strong></p>
+                      <p><span class="text-muted">{% t "유전자:" "Gene:" %}</span> <strong>{{ m.gene }}</strong></p>
+                      <p><span class="text-muted">{% t "변화:" "Change:" %}</span> <strong>{{ m.change }}</strong></p>
+                      <p><span class="text-muted">{% t "관련 약제:" "Related Drug:" %}</span> <span class="badge badge-danger">{{ m.drug }}</span></p>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            {% endif %}</div>
+        </div>
+      {% endif %}
+    </section>
+
+    {# ═══ 3: DST 결과 ═══ #}
+    <section x-show="tab === 3" {% if tab != 3 %}x-cloak{% endif %} data-tab="dst">
+      <div class="tab-actions">{% include "cases/_upload_link.html" with path="/upload/lab" ko="검사 결과 추가" en="Add Lab Results" help_ko="검사실 데이터 업로드 화면으로 이동해 이 환자의 DST 등 검사 결과를 추가합니다." help_en="Open lab data upload to add DST and other test results for this patient." %}</div>
+      <div class="stack">
+        <div><h4 class="h4">{% t "1차 약제" "First-line Drugs" %}</h4>{% include "cases/_dst_table.html" with rows=dst.first %}</div>
+        <div><h4 class="h4">{% t "2차 약제" "Second-line Drugs" %}</h4>{% include "cases/_dst_table.html" with rows=dst.second %}</div>
+      </div>
+    </section>
+
+    {# ═══ 4: 생화학 ═══ #}
+    <section x-show="tab === 4" {% if tab != 4 %}x-cloak{% endif %} data-tab="biochem">
+      {% if biochem %}
+        <div class="table-wrap"><table class="table">
+          <thead><tr><th>{% t "검사항목" "Test" %}</th><th>{% t "결과" "Result" %}</th><th>{% t "참고범위" "Reference Range" %}</th><th>{% t "판정" "Flag" %}</th></tr></thead>
+          <tbody>{% for r in biochem %}<tr><td class="font-medium">{{ r.test }}</td><td>{{ r.value }}</td><td class="text-muted">{{ r.reference_range }}</td>
+            <td>{% if r.flag == "H" %}<span class="text-xs font-bold text-danger">↑ High</span>{% elif r.flag == "L" %}<span class="text-xs font-bold text-info">↓ Low</span>{% else %}<span class="text-xs text-success">Normal</span>{% endif %}</td></tr>{% endfor %}</tbody>
+        </table></div>
+      {% else %}
+        <div class="empty-state" data-testid="biochem-empty">
+          <span class="icon-circle">{% icon "test-tube-diagonal" "w-6 h-6" %}</span>
+          <p class="text-sm">{% t "등록된 생화학 검사 결과가 없습니다" "No biochemistry results registered" %}</p>
+          <div class="mt-4">{% include "cases/_upload_link.html" with path="/upload/lab" ko="검사 결과 추가" en="Add Lab Results" help_ko="검사실 데이터 업로드 화면으로 이동해 이 환자의 검사 결과를 추가합니다." help_en="Open lab data upload to add test results for this patient." %}</div>
+        </div>
+      {% endif %}
+    </section>
+
+    {# ═══ 5: 타임라인 ═══ #}
+    <section x-show="tab === 5" {% if tab != 5 %}x-cloak{% endif %} data-tab="timeline">
+      <div class="tab-actions">{% include "cases/_upload_link.html" with path="/upload/regimen" ko="치료 레지멘 추가/수정" en="Add/Edit Regimen" help_ko="치료 레지멘 업로드 화면으로 이동해 이 환자의 약제·투약 기간을 추가하거나 수정합니다." help_en="Open regimen upload to add or edit this patient's drugs and treatment periods." %}</div>
+      <div class="timeline">
+        {% for e in events %}
+          <div class="tl-item"><span class="tl-dot {{ e.color }}"></span>
+            <p class="text-xs text-muted">{{ e.date }}</p><p class="text-sm font-medium">{{ e.label }}</p><p class="text-xs text-muted mt-1">{{ e.desc }}</p></div>
+        {% endfor %}
+      </div>
+    </section>
+
+    {# ═══ 6: 커스텀 데이터 구조 (apps.schemas) ═══ #}
+    <section x-show="tab === 6" {% if tab != 6 %}x-cloak{% endif %} data-tab="custom">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-muted">{% if is_en %}Custom data schema data linked to this patient ({{ p.condition_id }}){% else %}이 환자({{ p.condition_id }})에 연결된 커스텀 데이터 구조 데이터{% endif %}</p>
+        <a href="/schemas" class="text-xs text-teal link-underline flex items-center gap-1" data-tip="{% t '데이터 정의의 데이터 구조 탐색 화면으로 이동해 전체 커스텀 데이터 구조를 봅니다.' 'Go to Browse Data Schemas to see all custom data schemas.' %}">{% t "데이터 구조 탐색" "Browse Data Schemas" %} {% icon "chevron-right" "w-3 h-3" %}</a>
+      </div>
+      {# 커스텀 데이터 구조(apps.schemas) — 탭을 열 때 이 condition_id 의 입력 행을 불러온다 #}
+      <div hx-get="/schemas/case/{{ p.condition_id|urlencode }}" hx-trigger="intersect once" hx-swap="outerHTML" data-testid="case-custom-slot">
+        <p class="text-sm text-muted text-center" style="padding:24px">{% t "불러오는 중…" "Loading…" %}</p>
+      </div>
+    </section>
+  </div>
+  {% endwith %}
+{% endif %}
+</div>

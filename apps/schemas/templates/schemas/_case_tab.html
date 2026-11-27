@@ -1,0 +1,22 @@
+{# 케이스 상세 '커스텀' 탭 (원본 CaseDetail.CustomDataTab) — 이 condition_id 로 입력된 SchemaRecord 를 실제로 보여 준다 #}
+<div class="stack" data-testid="case-custom">
+  {% for it in items %}
+    <div class="card card-sm">
+      <div class="sc-between mb-2">
+        <div class="sc-row flex-wrap">{% icon "blocks" "w-4 h-4 text-indigo" %}<a class="text-sm font-semibold link-underline" href="/schemas/{{ it.card.s.schema_id }}">{{ it.card.name }}</a>
+          <span class="badge badge-sm badge-neutral">{{ it.card.category }}</span>
+          {% if it.count %}<span class="badge badge-sm badge-success">{% if is_en %}{{ it.count }} records{% else %}{{ it.count }}건{% endif %}</span>{% endif %}</div>
+        <a href="/schemas/{{ it.card.s.schema_id }}/data?method=form" class="btn-outline-teal" data-tip="{% t '이 데이터 구조의 데이터 입력 화면으로 이동해 레코드를 추가합니다.' "Open this data schema's data screen to add records." %}">{% icon "upload" "w-3 h-3" %} {% t "데이터 입력" "Enter Data" %}</a>
+      </div>
+      <p class="text-xs text-muted">{{ it.card.description }}</p>
+      <div class="sc-row text-10 text-muted mt-2" style="gap:12px"><span>{% if is_en %}{{ it.card.field_count }} fields{% else %}{{ it.card.field_count }}개 필드{% endif %}</span>
+        <span>{% if is_en %}This patient: {{ it.count }} / Total: {{ it.card.data_count }}{% else %}이 환자: {{ it.count }}건 / 전체: {{ it.card.data_count }}건{% endif %}</span><span>v{{ it.card.s.version }}</span></div>
+      {% if it.rows %}
+        <div class="table-wrap mt-3"><table class="table table-compact"><thead><tr>{% for col in it.columns %}<th>{{ col }}</th>{% endfor %}<th>{% t "등록일" "Created" %}</th></tr></thead>
+          <tbody>{% for row in it.rows %}<tr>{% for c in row.cells %}<td>{% include "schemas/_cell.html" %}</td>{% endfor %}<td class="text-xs text-muted">{{ row.r.created_at|date:"Y-m-d" }}</td></tr>{% endfor %}</tbody></table></div>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="empty-state"><span class="icon-circle">{% icon "blocks" "w-6 h-6" %}</span><p class="text-sm">{% t "등록된 커스텀 데이터 구조가 없습니다" "No custom data schemas registered" %}</p></div>
+  {% endfor %}
+</div>

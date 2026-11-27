@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{# 원본 src/pages/Upload/{Clinical,Regimen,Lab,Genomic,Imaging}Upload.tsx — 단계별 화면은 steps/*.html #}
+<div class="container-md stack" data-domain="{{ domain }}" data-step="{{ step_key }}">
+  <div class="fade-in-now">
+    <div class="upload-head">
+      <div class="upload-icon" style="background: {{ meta.color }}">{% icon meta.icon "w-5 h-5" %}</div>
+      <div class="flex-1">
+        <h1 class="text-xl font-bold text-navy">{{ title }}</h1>
+        <p class="text-sm text-muted">{{ subtitle }}</p>
+      </div>
+      {% if sub %}<div class="text-right"><p class="text-xs text-muted">{% t "업로드 ID" "Upload ID" %}</p><p class="font-mono text-xs" data-testid="upload-id">{{ sub.upload_id }}</p>{% include "uploads/_status_badge.html" with status=status %}</div>{% endif %}
+    </div>
+    {% include "uploads/_step_indicator.html" %}
+  </div>
+  {% if sub and sub.revision_requested and sub.is_draft %}
+    <div class="alert alert-warning" data-testid="revision-note">{% icon "message-square" "w-4 h-4" %}
+      <span><strong>{% t "검증자 수정 요청:" "Reviewer revision request:" %}</strong> {{ sub.review_comment }}</span></div>
+  {% endif %}
+  <div class="card card-lg">
+    {% include step_template %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/uploads.js' %}"></script>{% endblock %}

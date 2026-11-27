@@ -1,0 +1,96 @@
+{# 원본 DataSharing/MyUploadsTab.tsx — 3단계에서 /data?tab=uploads 탭에 이 partial 을 그대로 포함한다(my_uploads_context). #}
+<div class="stack-sm" x-data="{ detail: '{{ my_open|escapejs }}', del: null }" data-testid="my-uploads">
+  <form method="get" class="flex flex-wrap gap-3" x-ref="filters">
+    {% for k, v in my_hidden %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <label class="flex items-center gap-2 text-xs text-muted">{% t "유형:" "Type:" %}
+      <select name="type" class="select input select-xs" @change="$refs.filters.submit()">{% for v, l in my_type_options %}<option value="{{ v }}"{% if my_filters.type == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></label>
+    <label class="flex items-center gap-2 text-xs text-muted">{% t "상태:" "Status:" %}
+      <select name="status" class="select input select-xs" @change="$refs.filters.submit()">{% for v, l in my_status_options %}<option value="{{ v }}"{% if my_filters.status == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></label>
+    <noscript><button class="btn btn-secondary btn-xs">{% t "적용" "Apply" %}</button></noscript>
+  </form>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>{% t "업로드 ID" "Upload ID" %}</th><th>{% t "유형" "Type" %}</th><th class="text-right">{% t "레코드 수" "Records" %}</th><th>{% t "상태" "Status" %}</th><th>{% t "제출일" "Submitted" %}</th><th>{% t "검증완료일" "Reviewed" %}</th><th class="text-center">{% t "작업" "Actions" %}</th></tr></thead>
+      <tbody>
+        {% for r in my_rows %}{% with s=r.sub %}
+          <tr data-upload="{{ s.upload_id }}">
+            <td class="font-mono text-xs">{{ s.upload_id }}</td><td class="text-xs">{{ r.domain_label }}</td><td class="text-xs text-right">{{ s.total_records }}</td>
+            <td>{% include "uploads/_status_badge.html" with status=r.status %}{% if s.deletion_pending %} <span class="badge badge-sm badge-neutral">{% t "삭제 요청됨" "Deletion requested" %}</span>{% endif %}</td>
+            <td class="text-xs text-muted">{{ s.submitted_at|date:"Y-m-d"|default:"-" }}</td><td class="text-xs text-muted">{{ s.reviewed_at|date:"Y-m-d"|default:"-" }}</td>
+            <td><div class="flex items-center justify-center gap-1">
+              <button type="button" class="icon-btn sm" @click="detail = '{{ s.upload_id }}'" aria-label="{% t '상세 보기' 'View Details' %}" data-tip="{% if is_en %}Open details and reviewer comments for upload {{ s.upload_id }}.{% else %}{{ s.upload_id }} 업로드의 상세 정보와 리뷰어 코멘트를 창으로 봅니다.{% endif %}">{% icon "eye" "w-3_5 h-3_5" %}</button>
+              {% if s.status == "draft" %}
+                <a class="icon-btn sm" href="{{ r.path }}?id={{ s.upload_id }}" aria-label="{% t '이어서 작성' 'Continue' %}" data-testid="continue-{{ s.upload_id }}" data-tip="{% t '임시저장한 단계부터 이어서 작성합니다.' 'Continue this draft from the step where you saved it.' %}">{% icon "pencil" "w-3_5 h-3_5" %}</a>
+              {% else %}
+                <a class="icon-btn sm" href="{{ r.path }}" aria-label="{% t '수정' 'Edit' %}" data-tip="{% t '이 업로드 유형의 업로드 화면으로 이동해 데이터를 수정합니다. 제출된 업로드는 그대로 두고 새 업로드로 올립니다.' 'Go to the upload screen for this data type to edit the data. The submitted upload stays as is; you upload a new one.' %}">{% icon "pencil" "w-3_5 h-3_5" %}</a>
+              {% endif %}
+              {% if not s.deletion_pending %}
+                <button type="button" class="icon-btn sm hover-danger" @click="del = '{{ s.upload_id }}'" aria-label="{% if s.status == 'draft' %}{% t '삭제' 'Delete' %}{% else %}{% t '삭제 요청' 'Request Deletion' %}{% endif %}"
+                        data-tip="{% if s.status == 'draft' %}{% t '이 임시저장 업로드를 삭제합니다.' 'Delete this draft upload.' %}{% elif is_en %}Open the deletion request for upload {{ s.upload_id }}. Deleted after admin approval.{% else %}{{ s.upload_id }} 업로드의 삭제 요청 확인 창을 엽니다. 관리자 승인 후 삭제됩니다.{% endif %}">{% icon "trash-2" "w-3_5 h-3_5" %}</button>
+              {% endif %}
+            </div></td>
+          </tr>
+        {% endwith %}{% empty %}
+          <tr><td colspan="7" class="text-center text-muted" style="padding:32px">{% t "조건에 맞는 업로드 이력이 없습니다" "No uploads match the selected filters" %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if my_page.paginator.num_pages > 1 %}
+    <div class="pager">
+      {% if my_prev_url %}<a class="pager-btn" href="{{ my_prev_url }}">{% icon "chevron-left" "w-3_5 h-3_5" %} {% t "이전" "Previous" %}</a>{% else %}<span class="pager-btn disabled">{% t "이전" "Previous" %}</span>{% endif %}
+      <span class="text-xs text-muted">{{ my_page.number }} / {{ my_page.paginator.num_pages }}</span>
+      {% if my_next_url %}<a class="pager-btn" href="{{ my_next_url }}">{% t "다음" "Next" %} {% icon "chevron-right" "w-3_5 h-3_5" %}</a>{% else %}<span class="pager-btn disabled">{% t "다음" "Next" %}</span>{% endif %}
+    </div>
+  {% endif %}
+
+  {% for r in my_rows %}{% with s=r.sub %}
+    <div class="modal-backdrop" x-show="detail === '{{ s.upload_id }}'" x-cloak @click.self="detail = ''" @keydown.escape.window="detail = ''" data-detail="{{ s.upload_id }}">
+      <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-header"><h3 class="modal-title">{% t "업로드 상세" "Upload Details" %}</h3><button type="button" class="icon-btn sm" @click="detail = ''" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+        <div class="modal-body stack-sm">
+          <div class="form-grid-2 text-sm">
+            <div><span class="text-muted">{% t "업로드 ID:" "Upload ID:" %}</span> <strong class="font-mono">{{ s.upload_id }}</strong></div>
+            <div><span class="text-muted">{% t "유형:" "Type:" %}</span> <strong>{{ r.domain_label }}</strong></div>
+            <div><span class="text-muted">{% t "레코드 수:" "Records:" %}</span> <strong>{% if is_en %}{{ s.total_records }}{% else %}{{ s.total_records }}건{% endif %}</strong></div>
+            <div><span class="text-muted">{% t "상태:" "Status:" %}</span> {% include "uploads/_status_badge.html" with status=r.status %}</div>
+            <div><span class="text-muted">{% t "제출일:" "Submitted:" %}</span> <strong>{{ s.submitted_at|date:"Y-m-d"|default:"-" }}</strong></div>
+            <div><span class="text-muted">{% t "검증완료일:" "Reviewed:" %}</span> <strong>{{ s.reviewed_at|date:"Y-m-d"|default:"-" }}</strong></div>
+            <div><span class="text-muted">{% t "검증 결과:" "Validation:" %}</span> <strong>{% if is_en %}{{ s.valid_records }} valid · {{ s.warning_records }} warn · {{ s.error_records }} error{% else %}유효 {{ s.valid_records }} · 경고 {{ s.warning_records }} · 오류 {{ s.error_records }}{% endif %}</strong></div>
+            <div><span class="text-muted">{% t "파일:" "File:" %}</span> <strong class="truncate">{{ r.file_name }}</strong></div>
+          </div>
+          {% if s.deletion_pending %}<div class="alert alert-info" data-testid="deletion-pending">{% t "삭제 요청이 접수되어 관리자 처리를 기다리고 있습니다." "Your deletion request is waiting for administrator processing." %}</div>
+          {% elif s.deletion_rejected_at %}<div class="alert alert-error" style="display:block" data-testid="deletion-rejected"><p class="text-xs font-semibold">{% t "삭제 요청 반려" "Deletion request rejected" %} · {{ s.deletion_rejected_at|date:"Y-m-d" }}</p><p class="text-sm mt-1">{% t "반려 사유: " "Rejection reason: " %}{{ s.deletion_reject_reason }}</p></div>{% endif %}
+          {% if s.review_comment and s.status != "rejected" %}
+            <div class="alert alert-warning" style="display:block"><p class="text-xs font-semibold flex items-center gap-1">{% icon "message-square" "w-3_5 h-3_5" %} {% t "리뷰어 코멘트" "Reviewer Comment" %}</p><p class="text-sm mt-1">{{ s.review_comment }}</p></div>
+          {% endif %}
+          {% if s.status == "pending" %}<div class="alert alert-warning">{% t "관리자 검증을 기다리고 있습니다." "Awaiting administrator review." %}</div>
+          {% elif s.status == "draft" %}
+            <div class="alert alert-info">{% if s.revision_requested %}{% t "검증자가 수정을 요청했습니다. 고친 뒤 다시 제출하세요." "The reviewer requested revisions. Fix and submit again." %}{% else %}{% t "아직 제출하지 않은 임시저장입니다." "This draft has not been submitted yet." %}{% endif %}</div>
+            <a href="{{ r.path }}?id={{ s.upload_id }}" class="btn btn-teal btn-sm">{% icon "pencil" "w-4 h-4" %} {% t "이어서 작성" "Continue" %}</a>
+          {% elif s.status == "rejected" %}
+            <div class="alert alert-error">{% t "반려 사유: " "Rejection reason: " %}{{ s.review_comment }}</div>
+            <form method="post" action="/upload/mine/{{ s.upload_id }}/resubmit">{% csrf_token %}<input type="hidden" name="next" value="{{ my_back }}">
+              <button type="submit" class="btn btn-teal btn-sm" data-tip="{% t '반려 사유를 반영해 데이터를 고친 뒤 다시 제출합니다.' 'Fix the data based on the rejection reason and submit it again.' %}">{% icon "refresh-cw" "w-4 h-4" %} {% t "수정 후 재제출" "Edit and Resubmit" %}</button></form>
+          {% elif s.status == "approved" %}
+            <div class="alert alert-success">{% t "데이터가 포털에 반영되었습니다. 반영일: " "The data has been published to the portal. Published on: " %}{{ s.reviewed_at|date:"Y-m-d" }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="modal-backdrop" x-show="del === '{{ s.upload_id }}'" x-cloak @click.self="del = null" @keydown.escape.window="del = null">
+      <div class="modal modal-sm" role="dialog" aria-modal="true">
+        <div class="modal-header"><h3 class="modal-title">{% if s.status == "draft" %}{% t "임시저장 삭제" "Delete Draft" %}{% else %}{% t "삭제 요청 확인" "Confirm Deletion Request" %}{% endif %}</h3></div>
+        <form method="post" action="/upload/mine/{{ s.upload_id }}/delete" class="modal-body stack-sm">{% csrf_token %}<input type="hidden" name="next" value="{{ my_back }}">
+          {% if s.status == "draft" %}<p class="text-sm">{% if is_en %}Delete draft <strong class="font-mono">{{ s.upload_id }}</strong>? This cannot be undone.{% else %}임시저장 <strong class="font-mono">{{ s.upload_id }}</strong> 을(를) 삭제하시겠습니까? 되돌릴 수 없습니다.{% endif %}</p>
+          {% else %}<p class="text-sm">{% if is_en %}Request deletion of upload <strong class="font-mono">{{ s.upload_id }}</strong>?{% else %}업로드 <strong class="font-mono">{{ s.upload_id }}</strong>에 대한 삭제 요청을 진행하시겠습니까?{% endif %}</p>
+            <p class="text-xs text-muted">{% t "삭제 요청은 관리자 승인 후 처리됩니다." "Deletion requests are processed after administrator approval." %}</p>{% endif %}
+          <div class="flex justify-end gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" @click="del = null" data-tip="{% t '삭제하지 않고 창을 닫습니다.' 'Close this dialog without deleting.' %}">{% icon "x" "w-4 h-4" %} {% t "취소" "Cancel" %}</button>
+            <button type="submit" class="btn btn-danger btn-sm">{% icon "trash-2" "w-4 h-4" %} {% if s.status == "draft" %}{% t "삭제" "Delete" %}{% else %}{% t "삭제 요청" "Request Deletion" %}{% endif %}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endwith %}{% endfor %}
+</div>

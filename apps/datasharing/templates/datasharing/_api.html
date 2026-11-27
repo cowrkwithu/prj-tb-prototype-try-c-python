@@ -1,0 +1,79 @@
+{# 원본 ApiTab.tsx — 문서는 원본 그대로, Base URL 은 현재 요청 호스트 기준. API 키는 승인된 DAR 이 있을 때 발급(해시 저장·1회 표시) #}
+<div class="stack" x-data="{ open: null }" data-testid="tab-api">
+  <div class="api-intro">
+    <h3 class="text-sm font-bold text-navy mb-1">TBRS Platform REST API</h3>
+    <p class="text-xs text-muted" style="line-height:1.6">{% t "프로그래밍 방식으로 포털 데이터에 접근할 수 있는 RESTful API를 제공합니다." "A RESTful API for programmatic access to portal data." %} {% t "모든 API 요청에는 인증 토큰이 필요하며, 데이터 접근 승인 후 API 키를 발급받을 수 있습니다." "All API requests require an authentication token; an API key can be issued after data access is approved." %}</p>
+    <div class="api-meta">
+      <span>Base URL: <code data-testid="base-url">{{ base_url }}</code></span>
+      <span>{% t "인증:" "Auth:" %} <code>Bearer Token</code></span>
+      <span>{% t "응답 형식:" "Response Format:" %} <code>JSON</code></span>
+    </div>
+  </div>
+
+  <div>
+    <h3 class="text-xs font-semibold text-navy mb-3">{% t "API 엔드포인트" "API Endpoints" %}</h3>
+    <div class="stack-xs" style="--gap:8px">
+      {% for ep in endpoints %}
+        <div class="ep" style="margin-top:8px" data-endpoint="{{ ep.method }} {{ ep.path }}">
+          <button type="button" class="ep-head" @click="open = open === {{ forloop.counter0 }} ? null : {{ forloop.counter0 }}" :aria-expanded="open === {{ forloop.counter0 }}"
+                  data-tip="{% if is_en %}Expand {{ ep.method }} {{ ep.path }} to see its parameters and example response.{% else %}{{ ep.method }} {{ ep.path }} 엔드포인트의 파라미터와 응답 예시를 펼쳐 봅니다.{% endif %}">
+            <span class="m-badge {{ ep.method_cls }}">{{ ep.method }}</span>
+            <code class="text-xs font-mono text-navy flex-1">{{ ep.path }}</code>
+            <span class="text-muted" style="font-size:10px;margin-right:8px">{{ ep.description_text }}</span>
+            {% if ep.auth %}{% icon "lock" "w-3 h-3 text-warning" %}{% else %}{% icon "lock-open" "w-3 h-3 text-success" %}{% endif %}
+            {% icon "chevron-down" "w-3_5 h-3_5 text-muted" %}
+          </button>
+          <div class="ep-body" x-show="open === {{ forloop.counter0 }}" x-cloak>
+            <div>
+              <h4 class="text-muted font-semibold mb-1" style="font-size:10px">{% t "파라미터" "Parameters" %}</h4>
+              <table class="table table-compact"><thead><tr><th>{% t "이름" "Name" %}</th><th>{% t "타입" "Type" %}</th><th>{% t "필수" "Required" %}</th><th>{% t "설명" "Description" %}</th></tr></thead>
+                <tbody>{% for p in ep.params_list %}<tr><td class="font-mono text-navy">{{ p.name }}</td><td class="text-muted">{{ p.type }}</td>
+                  <td>{% if p.required %}<span class="req-badge">{% t "필수" "Required" %}</span>{% else %}<span class="text-muted" style="font-size:9px">{% t "선택" "Optional" %}</span>{% endif %}</td><td class="text-muted">{{ p.desc }}</td></tr>{% endfor %}</tbody></table>
+            </div>
+            <div>
+              <h4 class="text-muted font-semibold mb-1" style="font-size:10px">{% t "응답 예시" "Example Response" %}</h4>
+              <pre class="code-block">{{ ep.response }}</pre>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# API Key section #}
+  <div class="card card-sm" id="api-key" data-testid="api-key-section">
+    <h3 class="text-xs font-semibold text-navy mb-3 flex items-center gap-1">{% icon "key" "w-3_5 h-3_5" %} {% t "API 키 발급" "Issue API Key" %}</h3>
+    {% if new_key %}
+      <div class="alert alert-success mb-3" style="display:block" data-testid="new-key">
+        <p class="text-sm font-semibold">{% t "API 키가 발급되었습니다. 이 키는 지금 한 번만 표시됩니다 — 안전한 곳에 복사해 두세요." "Your API key has been issued. It is shown only this once — copy it somewhere safe." %}</p>
+        <p class="key-once mt-2">{{ new_key }}</p>
+        <p class="text-xs mt-2">{% t "요청 헤더:" "Request header:" %} <code class="code-inline">Authorization: Bearer {{ new_key }}</code></p>
+      </div>
+    {% endif %}
+    {% if key_error %}<div class="alert alert-error mb-3" data-testid="key-error">{{ key_error }}</div>{% endif %}
+    {% if active_key %}
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3 text-xs" data-testid="active-key">
+        <span>{% t "사용 중인 키:" "Active key:" %} <code class="code-inline">{{ active_key.prefix }}…</code> · {% t "발급" "Issued" %} {{ active_key.created_at|date:"Y-m-d H:i" }} · {% t "마지막 사용" "Last used" %} {{ active_key.last_used_at|date:"Y-m-d H:i"|default:"-" }}</span>
+        <form method="post" action="/data/api/key/revoke">{% csrf_token %}<button type="submit" class="btn btn-danger btn-xs" data-testid="revoke-key" data-tip="{% t '이 API 키를 즉시 폐기합니다. 폐기된 키로는 더 이상 호출할 수 없습니다.' 'Revoke this API key immediately. Revoked keys can no longer be used.' %}">{% icon "trash-2" "w-3 h-3" %} {% t "키 폐기" "Revoke Key" %}</button></form>
+      </div>
+    {% endif %}
+    {% if can_issue %}
+      <p class="text-xs text-muted mb-2">{% t "승인된 데이터 유형:" "Approved data types:" %} {{ approved_labels|join:", " }} · {% t "API 키가 허용하는 데이터는 호출할 때의 데이터 접근 승인 상태를 따릅니다." "The data an API key can access follows your data access approvals at the time of each call." %}</p>
+    {% else %}
+      <div class="alert alert-info mb-3" data-testid="key-needs-dar">{% t "데이터 접근 신청(DAR)이 승인된 뒤에 API 키를 발급받을 수 있습니다." "An API key can be issued after a data access request (DAR) is approved." %} <a href="/data?tab=dar" class="link-underline">{% t "데이터 접근 신청" "Data Access Request" %}</a></div>
+    {% endif %}
+    <form method="post" action="/data/api/key" x-data="{ email: '{{ key_form_values.email|escapejs }}', org: '{{ key_form_values.institution|escapejs }}' }">{% csrf_token %}
+      <div class="form-grid-2">
+        <div><label class="text-muted" style="font-size:10px;display:block;margin-bottom:4px" for="key-email">{% t "이메일 *" "Email *" %}</label>
+          <input id="key-email" type="email" name="email" x-model="email" class="input input-sm{% if key_errors.email %} is-invalid{% endif %}" placeholder="researcher@institution.ac.kr" maxlength="254">
+          {% if key_errors.email %}<p class="field-error">{{ key_errors.email }}</p>{% endif %}</div>
+        <div><label class="text-muted" style="font-size:10px;display:block;margin-bottom:4px" for="key-org">{% t "소속기관 *" "Institution *" %}</label>
+          <input id="key-org" type="text" name="institution" x-model="org" class="input input-sm{% if key_errors.institution %} is-invalid{% endif %}" placeholder="{% t '기관명을 입력하세요' 'Enter your institution name' %}" maxlength="200">
+          {% if key_errors.institution %}<p class="field-error">{{ key_errors.institution }}</p>{% endif %}</div>
+      </div>
+      <div class="mt-3" data-tip="{% if can_issue %}{% t '입력한 이메일·소속기관으로 API 키 발급을 요청합니다. 기존 키는 폐기됩니다.' 'Request an API key for the entered email and institution. Any existing key is revoked.' %}{% else %}{% t '데이터 접근 신청(DAR)이 승인되면 API 키를 발급받을 수 있습니다.' 'You can get an API key once a data access request (DAR) is approved.' %}{% endif %}">
+        <button type="submit" class="btn btn-teal btn-sm" {% if not can_issue %}disabled{% else %}:disabled="!email || !org"{% endif %} data-testid="issue-key">{% icon "send" "w-3 h-3" %} {% if active_key %}{% t "API 키 재발급" "Reissue API Key" %}{% else %}{% t "API 키 발급 요청" "Request API Key" %}{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>

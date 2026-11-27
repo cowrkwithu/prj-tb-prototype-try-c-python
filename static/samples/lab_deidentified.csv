@@ -1,0 +1,6 @@
+condition_id,specimen_id,specimen_date,specimen_type,microscopy_result,culture_method,culture_result,genexpert_mtb,genexpert_rif,dst_method,isoniazid,rifampicin,ethambutol,pyrazinamide,streptomycin,levofloxacin,moxifloxacin,amikacin,kanamycin,capreomycin,bedaquiline,linezolid
+TB-KR-101,SP-101A,2024-01-16,Sputum,3+,MGIT,Positive,Detected,Detected,Phenotypic,R,R,S,S,R,S,S,S,,,S,S
+TB-KR-101,SP-101B,2024-04-16,Sputum,1+,MGIT,Positive,Detected,Detected,Phenotypic,R,R,S,S,R,S,S,S,,,S,S
+TB-KR-102,SP-102A,2024-02-09,Sputum,2+,MGIT,Positive,Detected,Not detected,Phenotypic,S,S,S,S,S,,,,,,,
+TB-KR-103,SP-103A,2024-03-15,Sputum,Scanty,Both,Positive,Detected,Detected,LPA-SecondLine,R,R,R,R,R,R,R,S,S,,S,S
+TB-KR-103,SP-103B,2024-06-15,BAL,Negative,MGIT,Negative,Not detected,,,,,,,,,,,,,,

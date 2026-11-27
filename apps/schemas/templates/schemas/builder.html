@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if schema %}{% t "데이터 구조 편집" "Edit Data Schema" %}{% else %}{% t "새 데이터 구조 만들기" "Create Data Schema" %}{% endif %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/schemas.css' %}">{% endblock %}
+{% block content %}
+{# 원본 components/schema/SchemaBuilder.tsx (+ FieldTypeSelector, DictionaryBrowser, FieldCanvas, FieldEditor, FieldConstraintEditor) #}
+{{ state|json_script:"builder-state" }}
+{{ type_meta|json_script:"builder-types" }}
+{{ with_data|json_script:"builder-with-data" }}
+{{ code_systems|json_script:"builder-codes" }}
+<div class="sb" x-data="schemaBuilder()" @beforeunload.window="if (dirty) { $event.preventDefault(); $event.returnValue = ''; }">
+  <form method="post" x-ref="saveForm" class="sr-only" aria-hidden="true">{% csrf_token %}
+    <input type="hidden" name="payload" x-ref="payload"><input type="hidden" name="action" x-ref="action">
+    <input type="hidden" name="rev" value="{{ state.rev }}"></form>
+
+  {# ── 상단 바 ── #}
+  <div class="sb-top">
+    <a href="{% if schema %}/schemas/{{ schema.schema_id }}{% else %}/schemas{% endif %}" class="back-link sc-row text-sm text-muted"
+       data-tip="{% t '편집을 마치고 커스텀 데이터 구조 목록 화면으로 돌아갑니다.' 'Leave the builder and return to the data schema list.' %}">{% icon "arrow-left" "w-4 h-4" %} {% t "데이터 구조 목록" "Data Schemas" %}</a>
+    <input class="sb-title" x-model="meta.name" @input="touch()" aria-label="{% t '데이터 구조명' 'Data schema name' %}">
+    <div class="sc-row">
+      {% if schema %}<span class="badge badge-sm badge-neutral">v{{ schema.version }}</span>{% endif %}
+      {% if not schema or schema.status == "draft" %}{# 임시저장은 신규·초안만 — 발행된 구조는 서버도 strict 검증 #}
+      <button type="button" class="btn btn-xs btn-secondary" @click="save('draft')" data-testid="btn-draft"
+              data-tip="{% t '지금까지 편집한 내용을 초안으로 임시 저장합니다(선택지·수식 등이 비어 있어도 저장).' 'Save your current edits as a draft (even if options or formulas are still empty).' %}">{% icon "download" "w-3_5 h-3_5" %} {% t "임시저장" "Save Draft" %}</button>
+      {% endif %}
+      <button type="button" class="btn btn-xs btn-secondary" @click="openPreview()"
+              data-tip="{% t '구성한 필드로 만든 입력 폼을 미리 보고 직접 입력해 봅니다.' 'Preview and try out the input form built from your fields.' %}">{% icon "eye" "w-3_5 h-3_5" %} {% t "미리보기" "Preview" %}</button>
+      <button type="button" class="btn btn-xs btn-primary" @click="save('save')" data-testid="btn-save"
+              data-tip="{% t '데이터 구조의 기본 정보와 필드 구성을 저장합니다. 발행된 구조를 고치면 버전이 올라갑니다.' 'Save the data schema info and field layout. Editing a published schema bumps its version.' %}">{% icon "save" "w-3_5 h-3_5" %} {% t "저장" "Save" %}</button>
+      {% if not schema or schema.status == "draft" %}
+      <button type="button" class="btn btn-xs btn-teal" @click="save('publish')" data-testid="btn-publish"
+              data-tip="{% t '데이터 구조를 발행해 다른 연구자가 데이터 입력에 쓸 수 있게 합니다.' 'Publish so researchers can use this schema for data entry.' %}">{% icon "send" "w-3_5 h-3_5" %} {% t "발행" "Publish" %}</button>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if errors %}
+    <div class="sb-errors alert alert-error" style="align-items:flex-start" role="alert" data-testid="builder-errors">{% icon "circle-alert" "w-4 h-4" %}
+      <div><p class="font-medium">{% t "저장하지 못했습니다 — 아래 내용을 고친 뒤 다시 시도하세요" "Not saved — fix the following and try again" %}</p>
+        <ul class="text-xs mt-1">{% for e in errors %}<li>· {{ e.text }}</li>{% endfor %}</ul></div></div>
+  {% endif %}
+  {% if schema and schema.status == "published" %}
+    <div class="sb-errors alert alert-info text-xs">{% icon "info" "w-4 h-4" %} {% t "발행된 데이터 구조입니다. 저장하면 버전이 올라가며, 입력된 데이터가 있는 필드는 삭제·필드명 변경·타입 변경을 할 수 없습니다." "This schema is published. Saving bumps the version; fields with entered data cannot be deleted, renamed or retyped." %}</div>
+  {% endif %}
+
+  <div class="sb-body">
+    {# ── 좌측: 필드 팔레트 / 데이터사전 ── #}
+    <aside class="sb-left">
+      <div class="sb-left-tabs" role="tablist">
+        <button type="button" role="tab" :class="leftTab === 'types' && 'on'" :aria-selected="leftTab === 'types'" @click="leftTab = 'types'"
+                data-tip="{% t '필드 타입 목록을 보여줍니다. 타입을 캔버스로 끌어다(또는 눌러서) 필드를 추가합니다.' 'Show field types. Drag (or click) a type onto the canvas to add a field.' %}">{% t "필드 추가" "Add Field" %}</button>
+        <button type="button" role="tab" :class="leftTab === 'dictionary' && 'on'" :aria-selected="leftTab === 'dictionary'" @click="leftTab = 'dictionary'"
+                data-tip="{% t '데이터사전 항목을 보여줍니다. 항목을 끌어다(또는 눌러서) 표준 필드로 추가합니다.' 'Show the data dictionary. Drag (or click) an item to add a standard field.' %}">{% t "데이터사전" "Data Dictionary" %}</button>
+      </div>
+      <div class="sb-left-body">
+        <div x-show="leftTab === 'types'" data-testid="palette">
+          {% for p in palette %}
+            <button type="button" class="sb-palette-item" draggable="true" style="border-color:{{ p.color }}55;color:{{ p.color }}"
+                    @dragstart="dragStart($event, {origin: 'palette', type: '{{ p.type|escapejs }}'})" @click="addType('{{ p.type|escapejs }}')"
+                    data-tip="{% if is_en %}Drag onto the canvas or click to add a {{ p.label }} field.{% else %}캔버스로 끌어다 놓거나 눌러서 '{{ p.label }}' 필드를 추가합니다.{% endif %}" data-tip-side="right">
+              <span class="grip">{% icon "chevrons-up-down" "w-3 h-3" %}</span>{% icon p.icon "w-4 h-4 shrink-0" %}
+              <span style="min-width:0"><p>{{ p.label }}</p><small>{{ p.description }}</small></span>
+            </button>
+          {% endfor %}
+        </div>
+        <div x-show="leftTab === 'dictionary'" x-cloak data-testid="dict-browser">
+          <div class="input-icon mb-2">{% icon "search" "w-3_5 h-3_5" %}
+            <input class="input input-xs" type="search" name="q" placeholder="{% t '데이터사전 필드 검색...' 'Search dictionary fields...' %}" autocomplete="off"
+                   hx-get="/schemas/builder/dictionary" hx-trigger="input changed delay:300ms, search" hx-target="#dict-search" aria-label="{% t '데이터사전 검색' 'Search dictionary' %}"></div>
+          <div id="dict-search"></div>
+          {% for c in dict_categories %}
+            <div x-data="{ open: false, loaded: false }">
+              <button type="button" class="sb-dict-cat" @click="open = !open; if (open && !loaded) { loaded = true; htmx.ajax('GET', '/schemas/builder/dictionary?cat={{ c.code|urlencode|escapejs }}', {target: $refs.list, swap: 'innerHTML'}) }"
+                      data-tip-side="right" :data-tip="open ? '{% if is_en %}Collapse this category.{% else %}이 분류의 항목 목록을 접습니다.{% endif %}' : '{% if is_en %}Expand to see dictionary items you can drag in.{% else %}분류를 펼쳐 끌어다 쓸 수 있는 사전 항목을 봅니다.{% endif %}'">
+                <span :style="open && 'transform:rotate(90deg)'" style="display:inline-flex;transition:transform .15s">{% icon "chevron-right" "w-3 h-3" %}</span>
+                <span class="flex-1">{{ c.name }}</span><span class="badge badge-sm badge-neutral">{{ c.count }}</span></button>
+              <div x-ref="list" x-show="open" style="margin-left:8px"></div>
+            </div>
+          {% empty %}
+            <p class="text-xs text-muted">{% t "적재된 표준 데이터사전이 없습니다." "No standard dictionary is loaded." %}</p>
+          {% endfor %}
+        </div>
+      </div>
+    </aside>
+
+    {# ── 중앙: 기본 정보 + 필드 캔버스 ── #}
+    <main class="sb-center">
+      <div class="card mb-4" style="padding:0">
+        <button type="button" class="sc-between" style="width:100%;padding:12px 16px;font-size:14px;font-weight:600" @click="metaOpen = !metaOpen"
+                :data-tip="metaOpen ? '{% t "이름·카테고리·설명 등 기본 정보 입력란을 접습니다." "Collapse the basic info fields." %}' : '{% t "이름·카테고리·설명 등 기본 정보 입력란을 펼칩니다." "Expand the basic info fields." %}'">
+          {% t "데이터 구조 기본 정보" "Data Schema Info" %}<span class="text-xs text-muted" x-text="metaOpen ? '{% t "접기" "Collapse" %}' : '{% t "펼치기" "Expand" %}'"></span></button>
+        <div x-show="metaOpen" class="form-grid-2" style="padding:0 16px 16px;gap:12px">
+          <div style="grid-column:1/-1"><label class="sb-label" for="m-name">{% t "데이터 구조명 *" "Data Schema Name *" %}</label>
+            <input id="m-name" class="input input-sm" x-model="meta.name" @input="touch()" maxlength="200"></div>
+          <div style="grid-column:1/-1"><label class="sb-label" for="m-name-en">{% t "데이터 구조명(영문)" "Data Schema Name (English)" %}</label>
+            <input id="m-name-en" class="input input-sm" x-model="meta.nameEn" @input="touch()" maxlength="200"></div>
+          <div style="grid-column:1/-1"><label class="sb-label" for="m-desc">{% t "설명" "Description" %}</label>
+            <textarea id="m-desc" class="textarea" rows="2" x-model="meta.description" @input="touch()" maxlength="4000"></textarea></div>
+          <div><label class="sb-label" for="m-cat">{% t "카테고리 *" "Category *" %}</label>
+            <select id="m-cat" class="select input input-sm" x-model="meta.category" @change="touch()">{% for v, l in categories %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+          <div><label class="sb-label" for="m-vis">{% t "공개 범위" "Visibility" %}</label>
+            <select id="m-vis" class="select input input-sm" x-model="meta.visibility" @change="touch()">
+              <option value="private">{% t "비공개" "Private" %}</option><option value="shared">{% t "기관내 공유" "Shared within Institution" %}</option><option value="public">{% t "전체 공개" "Public" %}</option></select></div>
+          <div><label class="sb-label" for="m-link">{% t "연결 키 필드" "Link Key Field" %}</label>
+            <select id="m-link" class="select input input-sm" x-model="meta.linkFieldName" @change="touch()">{% for v, l in link_fields %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+          <div><label class="sb-label" for="m-tags">{% t "태그 (쉼표 구분)" "Tags (comma-separated)" %}</label>
+            <input id="m-tags" class="input input-sm" :value="(meta.tags || []).join(', ')" @input="meta.tags = $event.target.value.split(',').map(s => s.trim()).filter(Boolean); touch()"></div>
+        </div>
+      </div>
+
+      <div class="sc-between mb-3 mt-4">
+        <span class="text-sm font-semibold" x-text="{% if is_en %}`Fields (${fields.length})`{% else %}`필드 목록 (${fields.length}개)`{% endif %}"></span>
+        <button type="button" class="text-xs text-teal link-underline" @click="addType('TEXT')"
+                data-tip="{% t '텍스트 타입의 빈 필드를 목록 끝에 추가합니다.' 'Add a blank text field to the end of the list.' %}">{% t "+ 빈 필드 직접 추가" "+ Add Blank Field" %}</button>
+      </div>
+      <div class="sb-canvas" :class="canvasOver && 'over'" data-testid="canvas"
+           @dragover.prevent="canvasOver = true" @dragleave.self="canvasOver = false" @drop.prevent="drop($event, fields.length)">
+        <template x-if="fields.length === 0">
+          <div class="empty-state">
+            <span class="icon-circle">{% icon "type" "w-8 h-8" %}</span>
+            <p class="text-sm font-medium">{% t "좌측 패널에서 필드를 여기로" "Drag fields from the left panel here" %}</p>
+            <p class="text-sm font-medium mb-3">{% t "드래그하여 데이터 구조를 구성하세요" "to build your data schema" %}</p>
+            <p class="text-xs">{% t '필드 타입·데이터사전 항목은 끌어다 놓거나 눌러서 추가하고, 빈 필드는 위의 "+ 빈 필드 직접 추가"로 추가합니다' 'Drag or click field types and dictionary items, or use "+ Add Blank Field" above for an empty field' %}</p>
+          </div>
+        </template>
+        <template x-for="row in rows()" :key="row.key">
+          <div>
+            <template x-if="row.kind === 'group'">
+              <button type="button" class="sb-group-head" @click="toggleGroup(row.group)">{% icon "folder" "w-3_5 h-3_5" %}<span x-text="row.label"></span><span class="font-mono text-10 text-muted" x-show="row.label !== row.group" x-text="row.group"></span>
+                <span class="ml-auto" :style="collapsed[row.group] && 'transform:rotate(-90deg)'" style="display:inline-flex">{% icon "chevron-down" "w-3 h-3" %}</span></button>
+            </template>
+            <template x-if="row.kind === 'field' && !collapsed[row.f.group]">
+              <div class="sb-field" tabindex="0" draggable="true" :class="{ active: activeKey === row.f.fieldId, 'drop-before': overKey === row.f.fieldId }"
+                   :data-testid="'field-' + row.f.fieldName"
+                   @click="select(row.f.fieldId)" @keydown.enter.prevent="select(row.f.fieldId)"
+                   @keydown.alt.arrow-up.prevent="move(row.f.fieldId, -1)" @keydown.alt.arrow-down.prevent="move(row.f.fieldId, 1)"
+                   @dragstart.stop="dragStart($event, {origin: 'canvas', key: row.f.fieldId})"
+                   @dragover.prevent.stop="overKey = row.f.fieldId; canvasOver = true" @dragleave="overKey = null"
+                   @drop.prevent.stop="drop($event, row.idx)"
+                   :aria-label="row.f.displayName + ' (' + row.f.fieldName + ') — {% t "Alt+↑/↓ 로 순서 변경" "Alt+Up/Down to reorder" %}'">
+                <span class="grip">{% icon "chevrons-up-down" "w-4 h-4" %}</span>
+                <span class="sb-type-icon" :style="`background:${typeColor(row.f.dataType)}1A;color:${typeColor(row.f.dataType)}`">
+                  {% for tp, meta in type_meta.items %}<span x-show="row.f.dataType === '{{ tp|escapejs }}'" style="display:inline-flex">{% icon meta.icon "w-3_5 h-3_5" %}</span>{% endfor %}</span>
+                <div style="flex:1;min-width:0">
+                  <div class="sc-row" style="gap:6px"><span class="text-xs font-semibold" x-text="label(row.f)"></span>
+                    <span x-show="row.f.sourceRef" title="{% t '데이터사전 참조' 'Data Dictionary reference' %}" style="display:inline-flex">{% icon "book-open" "w-3 h-3 text-teal" %}</span>
+                    <span x-show="withData.includes(row.f.fieldName)" class="badge badge-sm badge-warning">{% t "데이터 있음" "Has data" %}</span></div>
+                  <div class="sc-row" style="gap:6px"><span class="font-mono text-11 text-muted" x-text="row.f.fieldName"></span>
+                    <span class="text-10 text-muted truncate" style="max-width:150px" x-show="row.f.description" x-text="'— ' + row.f.description"></span></div>
+                </div>
+                <span x-show="row.f.isRequired" class="badge badge-sm badge-danger">{% t "필수" "Required" %}</span>
+                <span class="badge badge-sm badge-neutral" x-text="types[row.f.dataType] ? types[row.f.dataType].label : row.f.dataType"></span>
+                <button type="button" class="icon-btn sm" :disabled="row.idx === 0" @click.stop="move(row.f.fieldId, -1)" aria-label="{% t '위로 이동' 'Move up' %}" data-tip="{% t '이 필드를 한 칸 위로 옮깁니다.' 'Move this field up one position.' %}">{% icon "chevron-up" "w-3_5 h-3_5" %}</button>
+                <button type="button" class="icon-btn sm" :disabled="row.idx === fields.length - 1" @click.stop="move(row.f.fieldId, 1)" aria-label="{% t '아래로 이동' 'Move down' %}" data-tip="{% t '이 필드를 한 칸 아래로 옮깁니다.' 'Move this field down one position.' %}">{% icon "chevron-down" "w-3_5 h-3_5" %}</button>
+                <button type="button" class="icon-btn sm hover-danger" @click.stop="remove(row.f.fieldId)" aria-label="{% t '필드 삭제' 'Delete field' %}" data-tip="{% t '이 필드를 데이터 구조에서 삭제합니다.' 'Remove this field from the data schema.' %}">{% icon "trash-2" "w-3_5 h-3_5" %}</button>
+              </div>
+            </template>
+          </div>
+        </template>
+        <div x-show="canvasOver && fields.length" class="text-center text-xs text-teal font-medium" style="border:2px dashed var(--color-teal);border-radius:8px;padding:10px;margin-top:4px">{% t "여기에 놓으세요" "Drop here" %}</div>
+      </div>
+    </main>
+
+    {# ── 우측: 필드 속성 ── #}
+    <aside class="sb-right" data-testid="field-editor">
+      <template x-if="!active()">
+        <div class="empty-state text-sm">{% t "캔버스에서 필드를 선택하면" "Select a field on the canvas" %}<br>{% t "여기서 속성을 편집할 수 있습니다" "to edit its properties here" %}</div>
+      </template>
+      <template x-if="active()">
+        <div class="sb-props">
+          <h3 class="text-sm font-semibold">{% t "필드 속성" "Field Properties" %}</h3>
+          <div><label class="sb-label">{% t "표시명 *" "Display Name *" %}</label><input class="input input-sm" x-model="active().displayName" @input="touch(true)" maxlength="200"></div>
+          <div><label class="sb-label">{% t "표시명(영문)" "Display Name (English)" %}</label><input class="input input-sm" x-model="active().displayNameEn" @input="touch(true)" maxlength="200"></div>
+          <div><label class="sb-label">{% t "필드명 *" "Field Name *" %}</label>
+            <input class="input input-sm font-mono" :value="active().fieldName" @input="active().fieldName = $event.target.value.replace(/\s+/g, '_').replace(/[^A-Za-z0-9_]/g, ''); $event.target.value = active().fieldName; touch(true)" maxlength="64">
+            <p class="text-10 text-muted mt-1">{% t "영문으로 시작, 영문·숫자·밑줄만 허용" "Start with a letter; letters, digits and underscores only" %}</p>
+            <p class="text-10 text-warning" x-show="fields.filter(f => f.fieldName === active().fieldName).length > 1">{% t "같은 데이터 구조 내에 중복 필드명이 있습니다" "Duplicate field name in this data schema" %}</p>
+            <p class="text-10 text-warning" x-show="withData.includes(active()._origName || '')">{% t "입력된 데이터가 있는 필드 — 필드명·타입을 바꾸거나 삭제하면 저장이 거부됩니다" "This field has data — renaming, retyping or deleting it will be rejected" %}</p></div>
+          <div><label class="sb-label">{% t "설명" "Description" %}</label><textarea class="textarea" rows="2" x-model="active().description" @input="touch(true)"></textarea></div>
+          <div><label class="sb-label">{% t "데이터 타입" "Data Type" %}</label>
+            <select class="select input input-sm" :value="active().dataType" @change="changeType($event)">
+              {% for v, l in type_options %}<option value="{{ v }}">{{ l }} ({{ v }})</option>{% endfor %}</select></div>
+          <div><label class="sb-label">{% t "필드 그룹 (선택)" "Field Group (optional)" %}</label>
+            <input class="input input-sm" x-model="active().group" @input="touch()" maxlength="60" placeholder="{% t '예: 기본정보, 검사결과' 'e.g. Basic Info, Lab Results' %}"></div>
+          <div x-show="active().dataType !== 'CALCULATED' && active().dataType !== 'FILE'"><label class="sb-label">{% t "기본값 (선택)" "Default Value (optional)" %}</label>
+            <input class="input input-sm" :value="active().defaultValue ?? ''" @input="active().defaultValue = $event.target.value || null; touch()" placeholder="{% t '비워두면 기본값 없음' 'Leave empty for no default' %}"></div>
+          <div class="sc-row" style="gap:16px">
+            <label class="sc-row text-xs"><input type="checkbox" x-model="active().isRequired" @change="touch()"> {% t "필수" "Required" %}</label>
+            <label class="sc-row text-xs"><input type="checkbox" x-model="active().isUnique" @change="touch()"> {% t "고유값" "Unique" %}</label></div>
+
+          {# 타입별 제약조건 (FieldConstraintEditor) #}
+          <div class="stack-sm">
+            <h4 class="text-xs font-medium text-muted">{% t "제약조건" "Constraints" %}</h4>
+            <template x-if="['TEXT','TEXTAREA'].includes(active().dataType)"><div class="stack-sm">
+              <div class="grid-2" style="gap:8px"><div><label class="sb-label">{% t "최소 길이" "Min Length" %}</label><input type="number" min="0" class="sb-mini" x-model="active().constraints.minLength" @input="touch(true)"></div>
+                <div><label class="sb-label">{% t "최대 길이" "Max Length" %}</label><input type="number" min="0" class="sb-mini" x-model="active().constraints.maxLength" @input="touch(true)"></div></div>
+              <div><label class="sb-label">{% t "패턴 (정규식)" "Pattern (regex)" %}</label><input class="sb-mini font-mono" x-model="active().constraints.pattern" @input="touch(true)" placeholder="^[A-Za-z]+$" maxlength="200">
+                <p class="text-10 text-muted mt-1">{% t "Python 정규식 문법 기준(부분 일치 — 전체 일치는 ^…$). 너무 복잡한 패턴(검사 0.1초 초과)은 저장이 거부됩니다." "Python regular-expression syntax (partial match — use ^…$ for a full match). Overly complex patterns (over 0.1 s to check) are rejected." %}</p></div>
+              <div x-show="active().constraints.pattern"><label class="sb-label">{% t "패턴 불일치 시 메시지" "Mismatch Message" %}</label><input class="sb-mini" x-model="active().constraints.patternMessage" @input="delete active().constraints.patternMessageEn; touch(true)" placeholder="{% t '올바른 형식을 입력하세요' 'Please enter a valid format' %}"></div>
+            </div></template>
+            <template x-if="['INTEGER','DECIMAL','NUMERIC_RANGE','CALCULATED'].includes(active().dataType)"><div class="stack-sm">
+              <div class="grid-2" style="gap:8px" x-show="active().dataType !== 'CALCULATED'"><div><label class="sb-label">{% t "최솟값" "Min" %}</label><input type="number" step="any" class="sb-mini" x-model="active().constraints.min" @input="touch(true)"></div>
+                <div><label class="sb-label">{% t "최댓값" "Max" %}</label><input type="number" step="any" class="sb-mini" x-model="active().constraints.max" @input="touch(true)"></div></div>
+              <div class="grid-2" style="gap:8px">
+                <div x-show="active().dataType !== 'INTEGER'"><label class="sb-label">{% t "소수 자릿수" "Decimal Places" %}</label>
+                  <select class="sb-mini" x-model="active().constraints.precision" @change="touch(true)"><option value="">{% t "선택" "Select" %}</option>{% for n in "0123456" %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select></div>
+                <div><label class="sb-label">{% t "단위" "Unit" %}</label><input class="sb-mini" x-model="active().constraints.unit" @input="touch(true)" placeholder="mg, %, L" maxlength="30"></div></div>
+            </div></template>
+            <template x-if="['SELECT','MULTISELECT'].includes(active().dataType)"><div class="stack-sm">
+              <label class="sb-label">{% t "선택지 (값 · 표시 라벨)" "Options (value · label)" %}</label>
+              <template x-for="(opt, i) in (active().constraints.options || [])" :key="i">
+                <div class="sc-row" style="gap:4px"><input class="sb-mini" x-model="opt.value" @input="opt.label = opt.label || opt.value; delete opt.labelEn; touch(true)" placeholder="{% t '값' 'Value' %}">
+                  <input class="sb-mini" x-model="opt.label" @input="delete opt.labelEn; touch(true)" placeholder="{% t '라벨' 'Label' %}">
+                  <button type="button" class="icon-btn sm hover-danger" @click="active().constraints.options.splice(i, 1); touch(true)" aria-label="{% t '선택지 삭제' 'Remove option' %}" data-tip="{% t '이 선택지를 목록에서 삭제합니다.' 'Remove this option from the list.' %}">{% icon "x" "w-3 h-3" %}</button></div>
+              </template>
+              <button type="button" class="text-10 text-teal link-underline" style="align-self:flex-start" @click="(active().constraints.options = active().constraints.options || []).push({value: '', label: ''}); touch(true)"
+                      data-tip="{% t '값과 라벨을 입력할 빈 선택지를 하나 추가합니다.' 'Add an empty option to fill in its value and label.' %}">{% t "+ 선택지 추가" "+ Add Option" %}</button>
+              <div x-show="active().dataType === 'MULTISELECT'"><label class="sb-label">{% t "최대 선택 수" "Max Selections" %}</label><input type="number" min="1" class="sb-mini" x-model="active().constraints.maxSelections" @input="touch(true)"></div>
+            </div></template>
+            <template x-if="active().dataType === 'BOOLEAN'"><p class="text-10 text-muted" style="font-style:italic">{% t "예/아니오 토글 — 추가 제약조건 없음" "Yes/No toggle — no additional constraints" %}</p></template>
+            <template x-if="['DATE','DATETIME'].includes(active().dataType)"><div class="grid-2" style="gap:8px">
+              <div><label class="sb-label">{% t "최소 날짜" "Min Date" %}</label><input type="date" class="sb-mini" x-model="active().constraints.minDate" @input="touch(true)"></div>
+              <div><label class="sb-label">{% t "최대 날짜" "Max Date" %}</label><input type="date" class="sb-mini" x-model="active().constraints.maxDate" @input="touch(true)"></div></div></template>
+            <template x-if="active().dataType === 'FILE'"><div class="stack-sm">
+              <div><label class="sb-label">{% t "최대 파일 크기 (MB)" "Max File Size (MB)" %}</label><input type="number" min="0" step="any" class="sb-mini" x-model="active().constraints.maxFileSizeMB" @input="touch(true)"></div>
+              <div><label class="sb-label">{% t "허용 파일 유형 (쉼표 구분)" "Allowed File Types (comma-separated)" %}</label><input class="sb-mini" x-model="active().constraints.allowedFileTypes" @input="touch(true)" placeholder=".pdf, .csv, .xlsx"></div></div></template>
+            <template x-if="active().dataType === 'REFERENCE'"><div class="grid-2" style="gap:8px">
+              <div><label class="sb-label">{% t "참조 데이터사전" "Reference Dictionary" %}</label><input class="sb-mini" x-model="active().constraints.refDictionary" @input="touch(true)" placeholder="{% t '카테고리명' 'Category name' %}"></div>
+              <div><label class="sb-label">{% t "참조 필드" "Reference Field" %}</label><input class="sb-mini" x-model="active().constraints.refField" @input="touch(true)" placeholder="{% t '필드명' 'Field name' %}"></div></div></template>
+            <template x-if="active().dataType === 'CALCULATED'"><div><label class="sb-label">{% t "수식" "Formula" %}</label>
+              <input class="sb-mini font-mono" x-model="active().constraints.formula" @input="touch(true)" placeholder="fev1_L / fvc_L * 100" maxlength="300">
+              <p class="text-10 text-muted mt-1">{% t "다른 숫자 필드의 fieldName 을 변수로 사용합니다(+ − × ÷ 괄호). 서버가 저장 시 계산합니다." "Use other numeric fields' fieldName as variables (+ − × ÷, parentheses). Computed by the server on save." %}</p></div></template>
+            <template x-if="active().dataType === 'CODED'"><div><label class="sb-label">{% t "코드 체계" "Code System" %}</label>
+              <select class="sb-mini" x-model="active().constraints.codeSystem" @change="delete active().constraints.codeSystemEn; touch(true)"><option value="">{% t "선택" "Select" %}</option>
+                <template x-if="active().constraints.codeSystem && !codes.includes(active().constraints.codeSystem)"><option :value="active().constraints.codeSystem" x-text="active().constraints.codeSystem"></option></template>
+                {% for cs in code_systems %}<option value="{{ cs }}">{{ cs }}</option>{% endfor %}</select></div></template>
+          </div>
+
+          <template x-if="active().sourceRef"><div class="sb-source">
+            <p class="sc-row text-xs font-medium text-teal">{% icon "book-open" "w-3_5 h-3_5" %} {% t "표준 데이터사전 참조" "Standard Data Dictionary Reference" %}</p>
+            <p class="text-10 text-muted">{% t "원본 필드" "Source field" %}: <span x-text="active().sourceRef.fieldName"></span></p>
+            <p class="text-10 text-muted">{% t "사전 ID" "Dictionary ID" %}: <span x-text="active().sourceRef.dictionaryId"></span></p>
+            <p class="text-10 text-warning" x-show="active().sourceRef.isModified">{% t "원본에서 수정됨" "Modified from source" %}</p></div></template>
+
+          <div class="sc-row" style="padding-top:8px;border-top:1px solid var(--color-border)">
+            <button type="button" class="btn btn-xs btn-secondary flex-1 text-danger" @click="remove(activeKey)" data-tip="{% t '선택한 필드를 데이터 구조에서 삭제합니다.' 'Remove the selected field from the data schema.' %}">{% t "필드 삭제" "Delete Field" %}</button>
+            <button type="button" class="btn btn-xs btn-secondary flex-1" @click="duplicate(activeKey)" data-tip="{% t '같은 설정의 필드를 하나 더 만들어 바로 아래에 추가합니다.' 'Add a copy of this field with the same settings right below.' %}">{% t "필드 복제" "Duplicate Field" %}</button>
+          </div>
+        </div>
+      </template>
+    </aside>
+  </div>
+
+  {# 타입 변경 확인 (원본 FieldEditor 모달) #}
+  <div class="modal-backdrop" x-show="pendingType" x-cloak @click.self="pendingType = null" @keydown.escape.window="pendingType = null">
+    <div class="modal modal-sm" role="dialog" aria-modal="true"><div class="modal-body stack-sm">
+      <h3 class="sc-row text-sm font-semibold">{% icon "triangle-alert" "w-5 h-5 text-warning" %} {% t "타입 변경 확인" "Confirm Type Change" %}</h3>
+      <p class="text-xs text-muted" x-text="{% if is_en %}`Changing the data type from ${active() ? active().dataType : ''} to ${pendingType} will reset existing constraints. Continue?`{% else %}`데이터 타입을 ${active() ? active().dataType : ''}에서 ${pendingType}로 변경하면 기존 제약조건이 초기화됩니다. 계속하시겠습니까?`{% endif %}"></p>
+      <div class="sc-row" style="justify-content:flex-end"><button type="button" class="btn btn-xs btn-secondary" @click="pendingType = null">{% t "취소" "Cancel" %}</button>
+        <button type="button" class="btn btn-xs btn-amber" @click="applyType(pendingType); pendingType = null">{% t "변경" "Change" %}</button></div>
+    </div></div>
+  </div>
+
+  {# 폼 미리보기 (원본 PreviewModal) — 서버가 데이터 입력과 같은 템플릿으로 그린다 #}
+  <div class="modal-backdrop" x-show="previewOpen" x-cloak @click.self="previewOpen = false" @keydown.escape.window="previewOpen = false">
+    <div class="modal modal-xl" role="dialog" aria-modal="true" style="height:80vh;display:flex;flex-direction:column">
+      <div class="modal-header"><div><h3 class="modal-title">{% t "폼 미리보기" "Form Preview" %}</h3>
+          <p class="text-xs text-muted" x-text="meta.name + ' — ' + {% if is_en %}`${fields.length} fields`{% else %}`${fields.length}개 필드`{% endif %}"></p></div>
+        <div class="sc-row">
+          <button type="button" class="btn btn-xs btn-amber" @click="loadPreview(true)" data-tip="{% t '각 필드에 예시 값을 자동으로 채워 폼 동작을 확인합니다.' 'Fill every field with sample values to test the form.' %}">{% t "테스트 데이터" "Test Data" %}</button>
+          <button type="button" class="btn btn-xs btn-secondary" @click="showJson = !showJson" :data-tip="showJson ? '{% t "오른쪽 JSON 데이터 패널을 닫습니다." "Hide the JSON data panel on the right." %}' : '{% t "입력값이 JSON으로 실시간 표시되는 패널을 엽니다." "Show a panel with the entered values as live JSON." %}'">{% icon "code" "w-3_5 h-3_5" %} JSON</button>
+          <button type="button" class="icon-btn sm" @click="previewOpen = false" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-5 h-5" %}</button></div></div>
+      <div style="display:flex;flex:1;min-height:0">
+        <div style="overflow-y:auto;padding:24px" :style="showJson ? 'width:60%;border-right:1px solid var(--color-border)' : 'width:100%'"
+             id="preview-body" @input="previewJson = collectForm($el)" @change="previewJson = collectForm($el)" @htmx:after-swap="previewJson = collectForm($el)"></div>
+        <div x-show="showJson" style="width:40%;overflow-y:auto;padding:16px;background:#F8FAFC">
+          <div class="sc-between mb-2"><span class="text-xs font-medium text-muted">{% t "실시간 JSON 데이터" "Live JSON Data" %}</span>
+            <button type="button" class="text-10 text-teal link-underline" @click="navigator.clipboard && navigator.clipboard.writeText(previewJson)">{% t "복사" "Copy" %}</button></div>
+          <pre class="font-mono" style="font-size:11px;white-space:pre-wrap;word-break:break-all" x-text="previewJson"></pre></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/schemas.js' %}"></script>{% endblock %}

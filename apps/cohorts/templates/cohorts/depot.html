@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% t "데이터 탐색" "Data Explorer" %}{% endblock %}
+{% block head %}<script src="{% static 'vendor/chart.umd.min.js' %}" defer></script>{% endblock %}
+{% block content %}
+{# 원본 src/pages/Depot — 좌측 조건 설정(280px) · 가운데 분석 · 우측 저장 데이터셋(300px, 접기) #}
+<div class="depot" x-data="{ saved: {{ panel_saved|yesno:'true,false' }} }" data-testid="depot">
+  <aside class="depot-left">
+    <div class="depot-head"><h2 class="depot-title">{% icon "users" "w-4 h-4" %} {% t "데이터 조건 설정" "Data Conditions" %}</h2></div>
+    <form id="depot-form" class="depot-form" action="/depot" method="get"
+          hx-get="/depot" hx-target="#depot-result" hx-swap="innerHTML" hx-push-url="true"
+          hx-trigger="change, input changed delay:400ms from:.depot-num, submit">
+      <input type="hidden" name="run" id="depot-run" value="{% if run %}1{% endif %}">
+      <input type="hidden" name="tab" id="depot-tab" value="{{ tab }}">
+      <input type="hidden" name="panel" id="depot-panel" :value="saved ? 'saved' : ''" value="{% if panel_saved %}saved{% endif %}">
+      <div class="depot-scroll">
+      {% if tree_mode %}
+        {% if source == "cohort" %}<input type="hidden" name="loaded" value="{{ cohort_source_id }}">{% else %}<input type="hidden" name="tree" value="{{ tree_raw }}">{% endif %}
+        <div class="soft-box text-xs" data-testid="tree-mode">
+          <p class="font-medium text-navy mb-1">{% icon "layers" "w-3 h-3" %} {% t "고급 조건 (중첩 그룹)" "Advanced conditions (nested groups)" %}</p>
+          <p class="depot-tree">{{ tree_text|default:"—" }}</p>
+          <p class="text-muted mt-1">{% t "이 조건은 아래 항목별 선택으로 나타낼 수 없어 그대로 적용합니다." "These conditions cannot be shown as the per-field choices below, so they are applied as is." %}</p>
+          <a href="/depot" class="link-danger mt-1">{% icon "x" "w-3 h-3" %} {% t "고급 조건 해제" "Clear advanced conditions" %}</a>
+        </div>
+      {% else %}
+        <div class="depot-logic">
+          <span class="text-xs text-muted">{% t "조건 결합" "Combine Conditions" %}</span>
+          <div class="pill-toggle" role="radiogroup">
+            <label data-tip="{% t '설정한 조건을 모두 만족하는 대상자만 고릅니다.' 'Select only subjects that meet every condition you set.' %}"><input type="radio" name="logic" value="AND" {% if filters.logic == "AND" %}checked{% endif %}><span>AND</span></label>
+            <label data-tip="{% t '설정한 조건 중 하나라도 만족하는 대상자를 고릅니다.' 'Select subjects that meet at least one of the conditions you set.' %}"><input type="radio" name="logic" value="OR" {% if filters.logic == "OR" %}checked{% endif %}><span>OR</span></label>
+          </div>
+        </div>
+
+        <details class="depot-acc" open>
+          <summary data-tip="{% t '국적·연령대·성별 조건으로 대상자를 거릅니다. 눌러서 펼치거나 접습니다.' 'Filter subjects by nationality, age range and sex. Click to expand or collapse.' %}">{% t "인구통계" "Demographics" %} {% icon "chevron-down" "w-3 h-3" %}</summary>
+          <div class="depot-acc-body">
+            <p class="filter-label">{% t "국적" "Nationality" %}</p>
+            <div class="chips">{% for c in countries %}<label class="chip"><input type="checkbox" name="country" value="{{ c.value }}" {% if c.value in filters.countries %}checked{% endif %}><span>{{ c.label }}</span></label>{% endfor %}</div>
+            <p class="filter-label mt-3">{% t "연령대" "Age Range" %}</p>
+            <div class="flex items-center gap-1">
+              <input class="input input-xs depot-num" type="number" name="age_min" min="0" max="150" value="{{ filters.ageRange.0 }}" aria-label="{% t '최소 연령' 'Minimum age' %}">
+              <span class="text-xs text-muted">~</span>
+              <input class="input input-xs depot-num" type="number" name="age_max" min="0" max="150" value="{{ filters.ageRange.1 }}" aria-label="{% t '최대 연령' 'Maximum age' %}">
+              <span class="text-xs text-muted">{% t "세" "yrs" %}</span>
+            </div>
+            <p class="filter-label mt-3">{% t "성별" "Sex" %}</p>
+            <div class="chips">
+              <label class="chip"><input type="checkbox" name="sex" value="M" {% if "M" in filters.sex %}checked{% endif %}><span>{% t "남성" "Male" %}</span></label>
+              <label class="chip"><input type="checkbox" name="sex" value="F" {% if "F" in filters.sex %}checked{% endif %}><span>{% t "여성" "Female" %}</span></label>
+            </div>
+          </div>
+        </details>
+
+        <details class="depot-acc" {% if filters.diagnosisTypes or filters.outcomes or filters.comorbidities %}open{% endif %}>
+          <summary data-tip="{% t '약제내성 유형·치료결과·동반질환 조건으로 대상자를 거릅니다. 눌러서 펼치거나 접습니다.' 'Filter subjects by drug resistance type, treatment outcome and comorbidities. Click to expand or collapse.' %}">{% t "임상정보" "Clinical" %} {% icon "chevron-down" "w-3 h-3" %}</summary>
+          <div class="depot-acc-body">
+            <p class="filter-label">{% t "약제내성 유형" "Drug Resistance Type" %}</p>
+            <div class="chips">{% for v in diag_options %}<label class="chip"><input type="checkbox" name="diag" value="{{ v }}" {% if v in filters.diagnosisTypes %}checked{% endif %}><span>{{ v }}</span></label>{% endfor %}</div>
+            <p class="filter-label mt-3">{% t "치료결과" "Treatment Outcome" %}</p>
+            <div class="chips">{% for v in outcome_options %}<label class="chip"><input type="checkbox" name="outcome" value="{{ v }}" {% if v in filters.outcomes %}checked{% endif %}><span>{{ v }}</span></label>{% endfor %}</div>
+            <p class="filter-label mt-3">{% t "동반질환" "Comorbidities" %}</p>
+            <div class="chips">{% for c in comorb_options %}<label class="chip"><input type="checkbox" name="comorb" value="{{ c.value }}" {% if c.value in filters.comorbidities %}checked{% endif %}><span>{{ c.label }}</span></label>{% endfor %}</div>
+          </div>
+        </details>
+
+        <details class="depot-acc" {% if filters.hasSequence is not None or filters.lineage or filters.hasMutation is not None or filters.mutations %}open{% endif %}>
+          <summary data-tip="{% t '시퀀스 유무·Lineage·내성 변이 조건으로 대상자를 거릅니다. 눌러서 펼치거나 접습니다.' 'Filter subjects by sequence availability, lineage and resistance mutations. Click to expand or collapse.' %}">{% t "유전체" "Genomic" %} {% icon "chevron-down" "w-3 h-3" %}</summary>
+          <div class="depot-acc-body">
+            {% include "cohorts/_tri.html" with name="seq" opts=tri_seq label_ko="시퀀스 유무" label_en="Has Sequence" %}
+            <p class="filter-label mt-2">Lineage</p>
+            <select class="input input-xs w-full" name="lineage">
+              <option value="">{% t "전체" "All" %}</option>
+              {% for l in lineage_options %}<option value="{{ l }}" {% if l == filters.lineage %}selected{% endif %}>{{ l }}</option>{% endfor %}
+            </select>
+            {% include "cohorts/_tri.html" with name="mut" opts=tri_mut label_ko="내성 변이 보유" label_en="Has Resistance Mutation" %}
+            <p class="filter-label mt-2">{% t "특정 내성 변이" "Specific Resistance Mutations" %}</p>
+            <div class="chips">{% for m in mutation_options %}<label class="chip"><input type="checkbox" name="mutations" value="{{ m }}" {% if m in filters.mutations %}checked{% endif %}><span>{{ m }}</span></label>{% endfor %}</div>
+          </div>
+        </details>
+
+        <details class="depot-acc" {% if filters.hasCxr is not None or filters.hasCt is not None or filters.hasPetCt is not None or filters.cxrFindings or filters.cxrMin is not None %}open{% endif %}>
+          <summary data-tip="{% t 'CXR·CT·PET-CT 보유 여부와 CXR 소견 조건으로 대상자를 거릅니다. 눌러서 펼치거나 접습니다.' 'Filter subjects by CXR, CT and PET-CT availability and CXR findings. Click to expand or collapse.' %}">{% t "영상" "Imaging" %} {% icon "chevron-down" "w-3 h-3" %}</summary>
+          <div class="depot-acc-body">
+            {% include "cohorts/_tri.html" with name="cxr" opts=tri_cxr label_ko="CXR 유무" label_en="Has CXR" %}
+            {% include "cohorts/_tri.html" with name="ct" opts=tri_ct label_ko="CT 유무" label_en="Has CT" %}
+            {% include "cohorts/_tri.html" with name="pet" opts=tri_pet label_ko="PET-CT 유무" label_en="Has PET-CT" %}
+            <div class="flex items-center justify-between mt-2">
+              <span class="filter-label" style="margin:0">{% t "CXR 최소 장수" "Min. CXR Images" %}</span>
+              <input class="input input-xs depot-num" style="width:64px" type="number" name="cxr_min" min="0" value="{{ filters.cxrMin|default_if_none:'' }}" aria-label="{% t 'CXR 최소 장수' 'Minimum CXR images' %}">
+            </div>
+            <p class="filter-label mt-2">{% t "CXR 소견" "CXR Findings" %}</p>
+            <div class="chips">{% for c in finding_options %}<label class="chip"><input type="checkbox" name="finding" value="{{ c.value }}" {% if c.value in filters.cxrFindings %}checked{% endif %}><span>{{ c.label }}</span></label>{% endfor %}</div>
+          </div>
+        </details>
+      {% endif %}
+      </div>
+      <div class="depot-actions">
+        <button type="submit" class="btn btn-teal btn-block" data-testid="generate" @click="document.getElementById('depot-run').value = '1'"
+                data-tip="{% t '현재 조건에 맞는 대상자로 데이터를 만들어 가운데 분석 화면에 보여줍니다.' 'Build data from the subjects matching the current conditions and show it in the analysis view.' %}">
+          <span>{% if is_en %}Generate Data (<span id="depot-count" data-testid="match-count">{{ count }}</span>){% else %}데이터 생성 (<span id="depot-count" data-testid="match-count">{{ count }}</span>명){% endif %}</span>
+        </button>
+        <a href="/depot{% if panel_saved %}?panel=saved{% endif %}" class="btn btn-secondary btn-sm btn-block mt-1"
+           data-tip="{% t '설정한 조건과 생성된 분석 결과를 모두 지우고 처음 상태로 되돌립니다.' 'Clear all conditions and generated results and start over.' %}">{% icon "refresh-cw" "w-3 h-3" %} {% t "조건 초기화" "Reset Conditions" %}</a>
+      </div>
+    </form>
+  </aside>
+
+  <section class="depot-center" id="depot-result">
+    {% include "cohorts/_result.html" %}
+  </section>
+
+  <button type="button" class="depot-saved-toggle" x-show="!saved" @click="saved = true" {% if panel_saved %}x-cloak{% endif %}
+          data-tip="{% t '저장해 둔 데이터셋 목록을 오른쪽에 펼쳐 불러올 수 있게 합니다.' 'Open the saved datasets list on the right so you can load one.' %}">
+    {% icon "folder" "w-4 h-4" %}<span>{% t "저장 데이터셋" "Saved Datasets" %}</span>
+  </button>
+  {% include "cohorts/_saved.html" %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/depot.js' %}"></script>{% endblock %}

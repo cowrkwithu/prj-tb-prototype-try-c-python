@@ -1,0 +1,12 @@
+<div id="schema-grid" data-testid="schema-grid">
+  {% if cards %}
+    <div class="sc-grid">{% for c in cards %}{% include "schemas/_card.html" %}{% endfor %}</div>
+  {% else %}
+    <div class="empty-state">
+      <span class="icon-circle">{% icon "database" "w-8 h-8" %}</span>
+      <h3 class="text-lg font-semibold mb-2" style="color:var(--color-text-primary)">{% if filtered %}{% t "일치하는 데이터 구조가 없습니다" "No matching data schemas" %}{% else %}{% t "아직 등록된 커스텀 데이터 구조가 없습니다" "No custom data schemas yet" %}{% endif %}</h3>
+      <p class="text-sm mb-4">{% if filtered %}{% t "검색 조건을 변경해보세요" "Try changing your search criteria" %}{% else %}{% t "첫 데이터 구조를 만들어보세요" "Create your first data schema" %}{% endif %}</p>
+      <a href="/schemas/create" class="btn btn-teal btn-sm">{% t "새 데이터 구조 만들기" "Create Data Schema" %}</a>
+    </div>
+  {% endif %}
+</div>

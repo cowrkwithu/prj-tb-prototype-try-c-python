@@ -1,0 +1,15 @@
+{# 원본 components/schema/SchemaSelectModal.tsx — 업로드 허브 '커스텀 데이터' #}
+<div class="modal-backdrop" x-data @keydown.escape.window="$el.remove()" @click.self="$el.remove()">
+  <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="sel-title">
+    <div class="modal-header"><h3 class="modal-title" id="sel-title">{% t "데이터 구조 선택" "Select Data Schema" %}</h3>
+      <button type="button" class="icon-btn sm" @click="$root.remove()" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+    <div class="modal-body stack">
+      <form class="sc-row" hx-get="/schemas/select" hx-target="#schema-select-list" hx-swap="outerHTML" hx-trigger="input changed delay:300ms from:input, change from:select">
+        <div class="input-icon flex-1">{% icon "search" "w-4 h-4" %}<input class="input input-sm" type="search" name="q" value="{{ q }}" placeholder="{% t '데이터 구조 검색...' 'Search data schemas...' %}" aria-label="{% t '검색' 'Search' %}"></div>
+        <select name="category" class="sc-select" aria-label="{% t '카테고리' 'Category' %}"><option value="">{% t "전체 카테고리" "All Categories" %}</option>
+          {% for v, l in categories %}<option value="{{ v }}"{% if category == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+      </form>
+      {% include "schemas/_select_list.html" %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% t "데이터 제출 완료" "Data Submitted" %} · {{ name }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/schemas.css' %}">{% endblock %}
+{% block content %}
+{# 원본 SchemaData Step3Complete #}
+<div class="container">
+  {% include "schemas/_data_head.html" %}
+  <div class="text-center" style="max-width:448px;margin:0 auto;padding:32px 0">
+    <span class="icon-circle" style="width:64px;height:64px;border-radius:50%;background:var(--color-success-bg);color:var(--color-success);display:inline-flex;align-items:center;justify-content:center">{% icon "circle-check" "w-8 h-8" %}</span>
+    <h2 class="text-lg font-bold mt-4 mb-2">{% t "데이터 제출 완료" "Data Submitted" %}</h2>
+    <p class="text-sm text-muted mb-6" data-testid="done-msg">{% if is_en %}{{ count }} {% if count == 1 %}record was{% else %}records were{% endif %} registered to {{ name }} via {{ method_en }}.{% else %}{{ name }}에 {{ method_ko }}으로 {{ count }}건의 데이터가 등록되었습니다.{% endif %}</p>
+    <div class="card card-sm mb-6" style="text-align:left"><div class="grid-2 text-xs" style="gap:12px">
+      <div><span class="text-muted">{% t "데이터 구조" "Data Schema" %}</span><p class="font-medium">{{ name }}</p></div>
+      <div><span class="text-muted">{% t "입력 방식" "Input Method" %}</span><p class="font-medium">{{ method_label }}</p></div>
+      <div><span class="text-muted">{% t "레코드 수" "Records" %}</span><p class="font-medium">{% if is_en %}{{ count }}{% else %}{{ count }}건{% endif %}</p></div>
+      <div><span class="text-muted">{% t "등록 시간" "Registered At" %}</span><p class="font-medium">{{ at|date:"Y-m-d H:i:s" }}</p></div></div></div>
+    <div class="sc-row" style="justify-content:center">
+      <a href="/schemas/{{ schema.schema_id }}?tab=data" class="btn btn-secondary btn-sm" data-tip="{% t '방금 입력한 데이터 구조의 상세 화면으로 이동합니다.' 'Go to the detail page of this data schema.' %}">{% t "데이터 구조 상세" "Data Schema Details" %}</a>
+      <a href="/schemas/{{ schema.schema_id }}/data" class="btn btn-teal btn-sm" data-tip="{% t '입력 방식 선택으로 돌아가 데이터를 더 입력합니다.' 'Go back to the start to enter more records.' %}">{% t "추가 입력" "Add More" %}</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

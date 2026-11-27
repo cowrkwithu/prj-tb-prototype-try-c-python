@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ sub.upload_id }} · {% t "데이터 검증" "Data Review" %}{% endblock %}
+{% block content %}
+{# 원본 ReviewDashboard 상세(좌: 데이터 60% / 우: 작업 40%) — 리포트·미리보기는 실제 행 검증 결과 #}
+<div class="container stack" x-data="{ checks: [{% for c in checklist %}false{% if not forloop.last %}, {% endif %}{% endfor %}], modal: null, get all() { return this.checks.every(Boolean) } }">
+  <div><h1 class="text-xl font-bold text-navy">{% t "데이터 검증 대시보드" "Data Review Dashboard" %}</h1>
+    <p class="text-sm text-muted mt-1">{% t "업로드된 데이터를 검토하고 승인/반려합니다." "Review uploaded data and approve or reject it." %}</p></div>
+  <div class="review-grid">
+    <div class="stack">
+      <a href="/admin/review" class="inline-flex items-center gap-1 text-sm text-teal link-underline" data-tip="{% t '검증 화면을 닫고 검증 대기 목록으로 돌아갑니다.' 'Close this review and return to the review queue.' %}">{% icon "arrow-left" "w-4 h-4" %} {% t "목록으로 돌아가기" "Back to list" %}</a>
+      <div class="card card-sm">
+        <h3 class="text-sm font-semibold text-navy mb-2">{% t "업로드 기본정보" "Upload Details" %}</h3>
+        <div class="form-grid-2 text-sm">
+          <div><span class="text-muted">{% t "업로드 ID:" "Upload ID:" %}</span> <strong class="font-mono" data-testid="detail-upload-id">{{ sub.upload_id }}</strong></div>
+          <div><span class="text-muted">{% t "유형:" "Type:" %}</span> <strong>{{ domain_name }}</strong></div>
+          <div><span class="text-muted">{% t "기관:" "Institution:" %}</span> <strong>{{ org }}</strong></div>
+          <div><span class="text-muted">{% t "제출자:" "Submitter:" %}</span> <strong>{{ row.submitter }}</strong></div>
+          <div><span class="text-muted">{% t "레코드 수:" "Records:" %}</span> <strong>{% if is_en %}{{ sub.total_records }}{% else %}{{ sub.total_records }}건{% endif %}</strong></div>
+          <div><span class="text-muted">{% t "제출일:" "Submitted:" %}</span> <strong>{{ sub.submitted_at|date:"Y-m-d H:i"|default:"-" }}</strong></div>
+          <div><span class="text-muted">{% t "입력 방식:" "Method:" %}</span> <strong>{{ sub.get_method_display }}{% if sub.source_filename %} · <span class="font-mono text-xs">{{ sub.source_filename }}</span>{% endif %}</strong></div>
+          <div><span class="text-muted">{% t "상태:" "Status:" %}</span> {% include "uploads/_status_badge.html" with status=row.status %}{% if deletion_requested %} <span class="badge badge-sm badge-neutral">{% t "제출자 삭제 요청" "Deletion requested by submitter" %}</span>{% endif %}</div>
+        </div>
+      </div>
+
+      <div class="card card-sm">
+        <h3 class="text-sm font-semibold text-navy mb-2">{% t "자동 검증 리포트" "Automated Validation Report" %}</h3>
+        <div class="flex items-center gap-2 mb-2 {{ row.auto_color }}">{% icon row.auto_icon "w-5 h-5" %}<span class="text-sm font-semibold" data-testid="auto-result">{{ row.auto_label }}</span>
+          {% if issue_total %}<span class="text-xs text-muted">{% if is_en %}({{ issue_total }} issue{{ issue_total|pluralize }}){% else %}({{ issue_total }}건 이슈){% endif %}</span>{% endif %}</div>
+        {% if issue_total %}
+          <div class="stack-xs">{% for m in listed_issues %}<div class="issue-box{% if m.severity == 'error' %} err{% endif %}">{% if is_en %}Row {{ m.row }}{% else %}{{ m.row }}행{% endif %}: {{ m.field }} "{{ m.value }}" — {{ m.text }}</div>{% endfor %}
+            {% if issue_total > listed_issues|length %}<p class="text-xs text-muted">{% if is_en %}... and {{ issue_total|add:0 }} total{% else %}... 전체 {{ issue_total }}건{% endif %}</p>{% endif %}</div>
+          <div class="mt-4">{% include "uploads/_validation_report.html" %}</div>
+        {% else %}
+          <div class="alert alert-success">{% t "모든 자동 검증 항목을 통과했습니다." "All automated validation checks passed." %}</div>
+        {% endif %}
+        {% if sub.error_records %}<p class="text-xs text-muted mt-2">{% t "오류가 있는 행은 승인해도 반영되지 않습니다." "Rows with errors are not applied even if approved." %}</p>{% endif %}
+      </div>
+
+      <div class="card card-sm">{% include "uploads/_pii_report.html" %}
+        {% if sub.deid_signer or sub.deid_date %}<p class="text-xs text-muted mt-2">{% t "비식별화 확인:" "De-identification confirmed:" %} {{ sub.deid_signer|default:"-" }} · {{ sub.deid_date|date:"Y-m-d" }}</p>{% endif %}</div>
+
+      {% if is_pending %}
+        <div class="card card-sm" data-testid="dup-preview">
+          <h3 class="text-sm font-semibold text-navy mb-2">{% t "기존 데이터 중복 점검" "Duplicate Check Against Existing Data" %}</h3>
+          {% if dup_preview %}
+            <div class="stack-xs">{% for d in dup_preview %}<div class="issue-box">{% if d.row %}{% if is_en %}Row {{ d.row }}{% else %}{{ d.row }}행{% endif %} · {% endif %}{% if d.condition_id %}{{ d.condition_id }} · {% endif %}{{ d.text }}</div>{% endfor %}</div>
+          {% else %}<div class="alert alert-success">{% t "기존 데이터와 겹치는 항목이 없습니다." "Nothing overlaps with existing data." %}</div>{% endif %}
+          <p class="text-xs text-muted mt-2">{% t "같은 파일(SHA-256)·같은 생화학 결과·같은 레지멘은 승인해도 다시 만들지 않고 '중복 건너뜀'으로 기록됩니다. 경고 행의 규칙 위반 값은 반영하지 않고 버립니다." "Identical files (SHA-256), biochemistry results and regimens are not created again on approval and are recorded as duplicates skipped. Rule-violating values in warning rows are dropped, not applied." %}</p>
+          {% if sub.domain == "clinical" %}<p class="text-xs text-muted mt-1" data-testid="clinical-blank-note">{% t "임상 갱신은 CSV 헤더에 있는 컬럼의 값이 있는 칸만 반영합니다. 빈 칸은 기존 값을 그대로 유지합니다(지우지 않음)." "Clinical updates apply only filled cells of columns present in the CSV header. Blank cells keep the existing values (they do not erase them)." %}</p>{% endif %}
+        </div>
+      {% endif %}
+
+      <div class="card card-sm">
+        <h3 class="text-sm font-semibold text-navy mb-2">{% t "데이터 미리보기" "Data Preview" %}</h3>
+        <div class="table-wrap"><table class="table table-compact" data-testid="preview">
+          <thead><tr><th>#</th>{% for c in preview_cols %}<th>{{ c }}</th>{% endfor %}<th class="text-center">{% t "검증" "Check" %}</th></tr></thead>
+          <tbody>{% for p in preview %}<tr class="{% if p.rec.status == 'error' %}row-error{% elif p.rec.status == 'warning' %}row-warning{% endif %}"><td>{{ p.rec.row_no }}</td>
+            {% for v in p.cells %}<td class="truncate" style="max-width:160px">{{ v }}</td>{% endfor %}
+            <td class="text-center">{% if p.rec.status == 'valid' %}{% icon "circle-check" "w-3_5 h-3_5 text-success" %}{% elif p.rec.status == 'warning' %}{% icon "triangle-alert" "w-3_5 h-3_5 text-warning" %}{% else %}{% icon "circle-x" "w-3_5 h-3_5 text-danger" %}{% endif %}</td></tr>{% endfor %}</tbody>
+        </table></div>
+        {% if more_rows %}<p class="text-xs text-muted text-center mt-2">{% if is_en %}... and {{ more_rows }} more{% else %}... 외 {{ more_rows }}건{% endif %}</p>{% endif %}
+      </div>
+
+      {% if files %}
+        <div class="card card-sm">
+          <h3 class="text-sm font-semibold text-navy mb-2">{% t "업로드 파일" "Uploaded Files" %}</h3>
+          <ul class="file-list" data-testid="review-files">{% for x in files %}<li>{% icon "file" "w-4 h-4 text-slate-400" %}<span class="flex-1 truncate">{{ x.f.original_name }}</span><span class="text-xs text-slate-400">{{ x.size }}</span><span class="font-mono text-10 text-slate-400 hide-mobile" title="SHA-256">{{ x.f.sha256|slice:":12" }}…</span>
+            <a href="/upload/file/{{ x.f.pk }}" class="btn-outline-teal" data-tip="{% t '이 파일을 내려받습니다.' 'Download this file.' %}">{% icon "download" "w-3 h-3" %} {% t "다운로드" "Download" %}</a></li>{% endfor %}</ul>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="stack">
+      {% if is_pending and own_upload %}
+        <div class="alert alert-warning" style="display:block" data-testid="own-upload-note">{% icon "shield-alert" "w-4 h-4" %}
+          {% t "본인이 제출한 업로드는 승인·반려·수정요청할 수 없습니다(직무 분리). 다른 관리자가 검토해야 합니다." "You cannot approve, reject or request revisions for your own upload (separation of duties). Another administrator must review it." %}</div>
+      {% elif is_pending %}
+        <div class="card card-sm">
+          <h3 class="text-sm font-semibold text-navy mb-2">{% t "검증 체크리스트" "Review Checklist" %}</h3>
+          <div class="stack-xs">{% for c in checklist %}<label class="check-line text-sm"><input type="checkbox" form="approve-form" name="check" value="{{ forloop.counter0 }}" x-model="checks[{{ forloop.counter0 }}]"> <span>{{ c }}</span></label>{% endfor %}</div>
+        </div>
+        <div class="card card-sm">
+          <h3 class="text-sm font-semibold text-navy mb-2 flex items-center gap-1">{% icon "message-square" "w-4 h-4" %} {% t "검증자 코멘트" "Reviewer Comments" %}</h3>
+          <textarea class="textarea" rows="4" form="approve-form" name="comment" maxlength="2000" placeholder="{% t '검증 의견을 작성하세요...' 'Write your review comments...' %}"></textarea>
+        </div>
+        <div class="stack-sm">
+          <button type="button" class="btn btn-success btn-block" :disabled="!all" @click="modal = 'approve'" data-testid="approve-open"
+                  :data-tip="all ? '{% t "이 업로드를 승인해 포털 데이터에 반영하는 확인 창을 엽니다." "Open the confirmation to approve this upload and publish it to the portal." %}' : '{% t "체크리스트 항목을 모두 확인해야 승인할 수 있습니다." "Check every checklist item before you can approve." %}'">{% icon "circle-check" "w-4 h-4" %} {% t "승인" "Approve" %}</button>
+          <button type="button" class="btn btn-amber btn-block" @click="modal = 'revise'" data-tip="{% t '제출자에게 수정을 요청하는 창을 엽니다. 요청 사유를 함께 보냅니다.' 'Open a dialog to ask the submitter for revisions, with a reason.' %}">{% icon "triangle-alert" "w-4 h-4" %} {% t "수정 요청" "Request Revision" %}</button>
+          <button type="button" class="btn btn-danger btn-block" @click="modal = 'reject'" data-tip="{% t '반려 사유를 입력해 이 업로드를 반려하는 확인 창을 엽니다.' 'Open the confirmation to reject this upload with a reason.' %}">{% icon "circle-x" "w-4 h-4" %} {% t "반려" "Reject" %}</button>
+        </div>
+      {% else %}
+        <div class="card card-sm stack-sm" data-testid="review-result">
+          <h3 class="text-sm font-semibold text-navy">{% t "검증 결과" "Review Result" %}</h3>
+          <p class="text-sm">{% include "uploads/_status_badge.html" with status=row.status %} · {{ sub.reviewer.shown_name|default:"-" }} · {{ sub.reviewed_at|date:"Y-m-d H:i" }}</p>
+          {% if sub.review_comment %}<div class="soft-box text-sm">{{ sub.review_comment }}</div>{% endif %}
+          {% if sub.status == "approved" %}
+            <p class="text-sm" data-testid="apply-summary">{% if is_en %}Applied: {{ sub.apply_summary.created|default:0 }} created · {{ sub.apply_summary.updated|default:0 }} case(s) updated{% else %}반영: 생성 {{ sub.apply_summary.created|default:0 }}건 · 갱신 환자 {{ sub.apply_summary.updated|default:0 }}명{% endif %}</p>
+            {% for s in skipped %}<p class="text-xs text-warning">{% if is_en %}Row {{ s.row }}{% else %}{{ s.row }}행{% endif %} {{ s.condition_id }}: {{ s.text }}</p>{% endfor %}
+            {% for d in duplicates %}<p class="text-xs text-muted" data-testid="dup-skipped">{% t "중복 건너뜀" "Duplicate skipped" %} · {% if d.row %}{% if is_en %}Row {{ d.row }}{% else %}{{ d.row }}행{% endif %} {% endif %}{{ d.condition_id }}: {{ d.text }}</p>{% endfor %}
+            {% if dropped %}<div class="text-xs" data-testid="dropped-fields"><p class="font-medium text-warning">{% if is_en %}Dropped fields (rule violations, not applied): {{ dropped|length }}{% else %}버린 필드(규칙 위반 — 반영 안 함): {{ dropped|length }}건{% endif %}</p>
+              <ul style="margin:4px 0 0;padding-left:18px">{% for d in dropped %}<li>{% if is_en %}Row {{ d.row }}{% else %}{{ d.row }}행{% endif %} · <span class="font-mono">{{ d.field }}</span> "{{ d.value }}"</li>{% endfor %}</ul></div>{% endif %}
+            {% if dst_profiles %}<div class="text-xs">{% t "DST 프로파일:" "DST Profile:" %} {% for p in dst_profiles %}<span class="badge badge-sm badge-danger">{{ p.condition_id }} {{ p.specimen_id }} · {{ p.text }}</span> {% endfor %}</div>{% endif %}
+          {% endif %}
+          <p class="text-xs text-muted">{% t "승인·반려는 되돌릴 수 없습니다." "Approvals and rejections cannot be undone." %}</p>
+        </div>
+      {% endif %}
+      <div class="card card-sm">
+        <h3 class="text-sm font-semibold text-navy mb-2">{% if is_en %}Review History ({{ org }}){% else %}이전 검증 이력 ({{ org }}){% endif %}</h3>
+        <div class="stack-xs text-xs">{% for h in history %}<div class="status-row" style="padding:6px 0;border-bottom:1px solid var(--color-border)"><span class="text-muted">{{ h.date|date:"Y-m-d" }} · <a class="font-mono link-underline" href="/admin/review/{{ h.upload_id }}">{{ h.upload_id }}</a></span><span class="badge badge-sm badge-{{ h.variant }}">{{ h.label }}</span></div>
+          {% empty %}<p class="text-muted">{% t "이 기관의 이전 검증 이력이 없습니다" "No previous reviews for this institution" %}</p>{% endfor %}</div>
+      </div>
+    </div>
+  </div>
+
+  {% if is_pending and not own_upload %}
+    <form id="approve-form" method="post" action="/admin/review/{{ sub.upload_id }}/approve">{% csrf_token %}</form>
+    <div class="modal-backdrop" x-show="modal === 'approve'" x-cloak @click.self="modal = null" @keydown.escape.window="modal = null">
+      <div class="modal modal-sm" role="dialog" aria-modal="true"><div class="modal-header"><h3 class="modal-title">{% t "승인 확인" "Confirm Approval" %}</h3></div>
+        <div class="modal-body stack-sm"><p class="text-sm">{% t "해당 업로드 데이터를 승인하시겠습니까?" "Approve this uploaded data?" %}</p>
+          <p class="text-xs text-muted">{% t "승인하면 오류가 없는 행이 케이스 데이터에 즉시 반영되며 되돌릴 수 없습니다." "Approving applies the error-free rows to the case data immediately and cannot be undone." %}</p>
+          <div class="flex justify-end gap-2"><button type="button" class="btn btn-secondary btn-sm" @click="modal = null" data-tip="{% t '처리하지 않고 창을 닫습니다.' 'Close this dialog without taking action.' %}">{% t "취소" "Cancel" %}</button>
+            <button type="submit" form="approve-form" class="btn btn-success btn-sm" data-testid="approve-confirm" data-tip="{% t '이 업로드를 승인하고 검증 대기 목록으로 돌아갑니다.' 'Approve this upload and return to the review queue.' %}">{% t "승인" "Approve" %}</button></div></div></div>
+    </div>
+    <div class="modal-backdrop" x-show="modal === 'revise'" x-cloak @click.self="modal = null" @keydown.escape.window="modal = null">
+      <div class="modal modal-sm" role="dialog" aria-modal="true"><div class="modal-header"><h3 class="modal-title">{% t "수정 요청" "Request Revision" %}</h3></div>
+        <form method="post" action="/admin/review/{{ sub.upload_id }}/revise" class="modal-body stack-sm">{% csrf_token %}
+          <p class="text-sm">{% t "수정 사유를 입력해주세요." "Please enter the reason for revision." %}</p>
+          <textarea class="textarea" rows="3" name="reason" required maxlength="2000" placeholder="{% t '수정이 필요한 사항을 구체적으로 작성해주세요...' 'Describe in detail what needs to be revised...' %}"></textarea>
+          <div class="flex justify-end gap-2"><button type="button" class="btn btn-secondary btn-sm" @click="modal = null" data-tip="{% t '처리하지 않고 창을 닫습니다.' 'Close this dialog without taking action.' %}">{% t "취소" "Cancel" %}</button>
+            <button type="submit" class="btn btn-amber btn-sm" data-tip="{% t '입력한 사유와 함께 제출자에게 수정 요청을 보냅니다.' 'Send the revision request with the reason to the submitter.' %}">{% t "수정 요청" "Request Revision" %}</button></div></form></div>
+    </div>
+    <div class="modal-backdrop" x-show="modal === 'reject'" x-cloak @click.self="modal = null" @keydown.escape.window="modal = null">
+      <div class="modal modal-sm" role="dialog" aria-modal="true"><div class="modal-header"><h3 class="modal-title">{% t "반려 확인" "Confirm Rejection" %}</h3></div>
+        <form method="post" action="/admin/review/{{ sub.upload_id }}/reject" class="modal-body stack-sm">{% csrf_token %}
+          <p class="text-sm">{% t "반려 사유를 입력해주세요." "Please enter the reason for rejection." %}</p>
+          <textarea class="textarea" rows="3" name="reason" required maxlength="2000" placeholder="{% t '반려 사유를 구체적으로 작성해주세요...' 'Describe the reason for rejection in detail...' %}"></textarea>
+          <div class="flex justify-end gap-2"><button type="button" class="btn btn-secondary btn-sm" @click="modal = null" data-tip="{% t '처리하지 않고 창을 닫습니다.' 'Close this dialog without taking action.' %}">{% t "취소" "Cancel" %}</button>
+            <button type="submit" class="btn btn-danger btn-sm" data-tip="{% t '입력한 사유로 이 업로드를 반려하고 목록으로 돌아갑니다.' 'Reject this upload with the reason and return to the queue.' %}">{% t "반려" "Reject" %}</button></div></form></div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

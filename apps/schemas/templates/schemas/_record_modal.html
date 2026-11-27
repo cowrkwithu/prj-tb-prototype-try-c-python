@@ -1,0 +1,16 @@
+{# 원본 SchemaDetail 의 행 상세 모달 #}
+<div class="modal-backdrop" x-data @keydown.escape.window="$el.remove()" @click.self="$el.remove()">
+  <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="rec-title">
+    <div class="modal-header"><h3 class="modal-title" id="rec-title">{% t "데이터 상세" "Record Details" %}</h3>
+      <button type="button" class="icon-btn sm" @click="$root.remove()" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+    <div class="modal-body stack-sm">
+      <div class="sc-row" style="gap:16px"><span class="text-xs text-muted" style="width:144px;flex-shrink:0">{{ link_label }}</span><span class="text-sm font-mono">{{ rec.condition_id }}</span></div>
+      {% for r in rows %}
+        <div class="sc-row" style="gap:16px;align-items:flex-start"><span class="text-xs text-muted" style="width:144px;flex-shrink:0">{{ r.label }}</span>
+          <span class="text-sm" style="white-space:pre-wrap">{% if r.cell.kind == "file" and r.cell.value.file_id %}<a class="link-underline text-teal" href="/schemas/{{ schema.schema_id }}/files/{{ r.cell.value.file_id }}">{{ r.text }}</a>{% else %}{{ r.text }}{% if r.cell.unit and r.cell.kind == "num" %} {{ r.cell.unit }}{% endif %}{% endif %}</span></div>
+      {% endfor %}
+      <p class="text-10 text-muted mt-2">{{ rec.record_id }} · {{ rec.author_label|default:"-" }} · {{ rec.created_at|date:"Y-m-d H:i" }}</p>
+    </div>
+    {% if can_modify %}<div class="modal-footer"><a href="/schemas/{{ schema.schema_id }}/data?method=edit&row={{ rec.record_id }}" class="btn btn-xs btn-secondary">{% icon "pencil" "w-3_5 h-3_5" %} {% t "수정" "Edit" %}</a></div>{% endif %}
+  </div>
+</div>

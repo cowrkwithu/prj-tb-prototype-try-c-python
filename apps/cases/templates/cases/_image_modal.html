@@ -1,0 +1,46 @@
+{% load static %}{# 영상 상세 모달 본문 — 부모(영상 탭)의 Alpine 상태 showAI·showExpert·slice 를 그대로 쓴다 #}
+<div class="viewer" data-image-detail="{{ im.id }}">
+  <div class="viewer-toggles">
+    <button type="button" class="vt" :class="showAI ? 'on-teal' : ''" @click="showAI = !showAI"
+            :data-tip="showAI ? '{% t "AI가 찾은 병변 표시(빨강·노랑 상자)를 숨깁니다." "Hide AI-detected lesion boxes." %}' : '{% t "AI가 찾은 병변 위치를 상자로 영상 위에 표시합니다." "Show AI-detected lesion boxes on the image." %}'">
+      <span x-show="showAI">{% icon "eye" "w-3 h-3" %}</span><span x-show="!showAI">{% icon "eye-off" "w-3 h-3" %}</span> {% t "AI 어노테이션" "AI Annotation" %}</button>
+    <button type="button" class="vt" :class="showExpert ? 'on-sky' : ''" @click="showExpert = !showExpert" data-testid="expert-toggle"
+            :data-tip="showExpert ? '{% t "전문의가 그린 영역·텍스트(하늘색) 표시를 숨깁니다." "Hide the expert-drawn regions and text (sky blue)." %}' : '{% t "영상 분석에서 전문의가 입력한 소견 영역·텍스트를 하늘색으로 표시합니다." "Show expert findings entered in Imaging Analysis, in sky blue." %}'">
+      <span x-show="showExpert">{% icon "eye" "w-3 h-3" %}</span><span x-show="!showExpert">{% icon "eye-off" "w-3 h-3" %}</span> {% t "전문가 소견" "Expert Findings" %}</button>
+  </div>
+  {% if im.type == "CXR" %}
+    <div class="cxr-frame">
+      <img src="{% static im.src %}" alt="CXR {{ im.date }}" draggable="false">
+      <div class="cxr-caption"><p>CXR · PA</p><p>{{ im.date }}</p></div>
+      {% for a in im.annotations %}
+        <div class="ann-box" x-show="showAI" style="left:{{ a.x }}%;top:{{ a.y }}%;width:{{ a.width }}%;height:{{ a.height }}%;border-color:{{ a.color }};background:{{ a.color }}20">
+          {% if forloop.first %}<span class="ann-label" style="color:{{ a.color }};background:{{ a.color }}30">{{ im.ann_label }}</span>{% endif %}</div>
+      {% endfor %}
+    </div>
+  {% else %}
+    {% static im.volume_dir as vdir %}
+    <div class="cxr-frame">
+      <img :src="'{{ vdir }}' + String(slice).padStart(3, '0') + '.jpg'" src="{% static im.src %}" alt="{{ im.type }} {{ im.date }}" draggable="false">
+      <div class="cxr-caption"><p>{{ im.type }} · Axial</p><p x-text="(slice + 1) + ' / {{ volume.axial_count }}'"></p></div>
+      {% with a=im.annotations.0 %}
+        <div class="ann-box" x-show="showAI && slice >= {{ volume.slice_range.0 }} && slice <= {{ volume.slice_range.1 }}" style="left:{{ a.x }}%;top:{{ a.y }}%;width:{{ a.width }}%;height:{{ a.height }}%;border-color:{{ a.color }};background:{{ a.color }}20">
+          <span class="ann-label" style="color:{{ a.color }};background:{{ a.color }}30">{{ im.ann_label }}</span></div>
+      {% endwith %}
+    </div>
+    <input type="range" class="slice-range" min="0" max="{{ volume.axial_count|add:-1 }}" x-model.number="slice" aria-label="{% t '단면' 'Slice' %}">
+  {% endif %}
+  <p class="source-note">{% if im.type == "CXR" %}{% t "영상: NLM Shenzhen 결핵 CXR 세트 (판독의 합의 ROI) — 기관 내부 시연용" "Image: NLM Shenzhen TB CXR Set (consensus ROI) — internal demonstration only" %}{% else %}{% t "영상: TCIA Lung-PET-CT-Dx (CC BY 4.0) — 폐암 환자 공개 영상, 결핵 영상 아님" "Image: TCIA Lung-PET-CT-Dx (CC BY 4.0) — public lung cancer study, not tuberculosis" %}{% endif %}</p>
+</div>
+<div class="flex gap-6 flex-wrap text-sm">
+  <div><span class="text-muted">{% t "유형:" "Type:" %}</span> <strong>{{ im.type }}</strong></div>
+  <div><span class="text-muted">{% t "촬영일:" "Taken:" %}</span> <strong>{{ im.date }}</strong></div>
+  {% if im.suv_max %}<div><span class="text-muted">{% t "FDG 섭취:" "FDG uptake:" %}</span> <strong>SUVmax {{ im.suv_max|floatformat:1 }}</strong></div>{% endif %}
+</div>
+<div class="flex flex-wrap gap-2">
+  {% for f in im.findings_l %}<span class="finding-chip">{{ f.type }} · {{ f.location }} · {{ f.severity }}</span>
+  {% empty %}<span class="text-sm text-muted">{% t "소견 없음" "No findings" %}</span>{% endfor %}
+</div>
+<div>
+  <h4 class="h4 flex items-center gap-2"><span class="swatch" style="background:#0EA5E9"></span>{% t "전문가 소견" "Expert Findings" %} <span class="text-xs text-muted">{% t "0건" "(0)" %}</span></h4>
+  <p class="text-xs text-muted">{% t "입력된 전문가 소견이 없습니다. 영상 분석 화면에서 영상에 영역을 그려 입력할 수 있습니다." "No expert findings yet. Radiologists can draw on the image in Imaging Analysis to add them." %}</p>
+</div>

@@ -1,0 +1,28 @@
+{# 원본 components/schema/DynamicDataTable.tsx (+ common/DataTable: 검색·정렬·10행 페이지) — 상태는 URL #}
+<div id="schema-records" data-testid="records">
+  <form class="input-icon mb-3" style="max-width:320px" action="{{ search_url }}" method="get" hx-get="{{ search_url }}" hx-target="#schema-records" hx-swap="outerHTML" hx-push-url="true" hx-trigger="input changed delay:300ms from:input, submit">
+    <input type="hidden" name="tab" value="data">{% icon "search" "w-4 h-4" %}
+    <input class="input input-sm" type="search" name="q" value="{{ rstate.q }}" placeholder="{% t '데이터 검색...' 'Search data...' %}" aria-label="{% t '데이터 검색' 'Search data' %}"></form>
+  <div class="table-wrap">
+    <table class="table table-clickable table-compact">
+      <thead><tr>{% for c in columns %}<th><a class="th-sort" href="{{ c.sort_url }}" hx-get="{{ c.sort_url }}" hx-target="#schema-records" hx-swap="outerHTML" hx-push-url="true"
+                 data-tip="{% t '이 열 기준으로 정렬합니다(오름차순 → 내림차순 → 해제).' 'Sort by this column (ascending → descending → off).' %}">{{ c.label }}{% if c.dir == "asc" %} ▲{% elif c.dir == "desc" %} ▼{% endif %}</a></th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for row in rows %}
+          <tr hx-get="/schemas/{{ schema.schema_id }}/records/{{ row.r.record_id }}" hx-target="#modal-root" data-record="{{ row.r.record_id }}"
+              data-tip="{% t '행을 누르면 이 데이터의 모든 필드 값을 자세히 봅니다.' 'Click a row to see all field values of this record.' %}" tabindex="0" @keydown.enter="$el.click()">
+            <td class="font-mono text-xs">{{ row.r.condition_id }}</td>
+            {% for c in row.cells %}<td>{% include "schemas/_cell.html" %}</td>{% endfor %}
+          </tr>
+        {% empty %}<tr><td colspan="{{ columns|length }}" class="text-center text-muted" style="padding:32px">{% t "데이터가 없습니다" "No data" %}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page.paginator.num_pages > 1 %}
+    <div class="pager">
+      {% if prev_url %}<a class="pager-btn" href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#schema-records" hx-swap="outerHTML" hx-push-url="true">{% t "이전" "Previous" %}</a>{% else %}<span class="pager-btn disabled">{% t "이전" "Previous" %}</span>{% endif %}
+      <span class="text-xs text-muted">{{ page.number }} / {{ page.paginator.num_pages }} ({% if is_en %}{{ total }} total{% else %}총 {{ total }}건{% endif %})</span>
+      {% if next_url %}<a class="pager-btn" href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#schema-records" hx-swap="outerHTML" hx-push-url="true">{% t "다음" "Next" %}</a>{% else %}<span class="pager-btn disabled">{% t "다음" "Next" %}</span>{% endif %}
+    </div>
+  {% endif %}
+</div>

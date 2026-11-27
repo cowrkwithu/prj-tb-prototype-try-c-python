@@ -1,0 +1,33 @@
+{# AI 검색 도우미 (원본 DictionaryAiAssistant — 규칙 기반 시뮬레이션, 서버측 검색) #}
+<div class="ai-assist" x-data="{ open: false, busy: false, text: '' }">
+  <button type="button" class="ai-fab" x-show="!open" @click="open = true; $nextTick(() => $refs.input.focus())"
+          aria-label="{% t 'AI 검색 도우미 열기' 'Open AI Search Assistant' %}" data-tip="{% t '자연어로 데이터 항목을 찾아주는 AI 검색 도우미 대화창을 엽니다.' 'Open the AI assistant chat to find data items in natural language.' %}">
+    {% icon "sparkles" "w-5 h-5" %} <span class="text-sm font-semibold">{% t "AI 검색 도우미" "AI Search Assistant" %}</span></button>
+  <div class="ai-panel" x-show="open" x-cloak>
+    <div class="ai-head">{% icon "bot" "w-5 h-5" %}
+      <div class="flex-1" style="min-width:0"><p class="text-sm font-semibold">{% t "데이터사전 AI 검색 도우미" "Data Dictionary AI Search Assistant" %}</p>
+        <p class="text-11" style="opacity:.8">{% t "자연어로 원하는 데이터 항목을 찾아드려요 (시뮬레이션)" "Find the data items you need in natural language (simulation)" %}</p></div>
+      <button type="button" class="ai-close" @click="open = false" aria-label="{% t '닫기' 'Close' %}" data-tip="{% t 'AI 검색 도우미 대화창을 닫습니다. 대화 내용은 유지됩니다.' 'Close the AI assistant chat. The conversation is kept.' %}">{% icon "x" "w-4 h-4" %}</button>
+    </div>
+    <div class="ai-messages" id="ai-messages" x-ref="msgs">
+      <div class="ai-msg"><span class="ai-avatar">{% icon "bot" "w-4 h-4" %}</span><div class="ai-bubble">{{ greeting }}</div></div>
+    </div>
+    <div class="ai-typing" x-show="busy" x-cloak><span class="ai-avatar">{% icon "bot" "w-4 h-4" %}</span><span class="dots"><i></i><i></i><i></i></span></div>
+    <div class="ai-suggest">
+      <p class="text-11 text-muted mb-1 flex items-center gap-1">{% icon "search" "w-3 h-3" %} {% t "추천 질문 (클릭해서 바로 검색)" "Suggested questions (click to search)" %}</p>
+      <div class="ai-chips">
+        <button type="button" class="ai-chip ai-chip-muted" :disabled="busy" hx-post="/dictionary/assistant" hx-vals='{"help": "1"}' hx-target="#ai-messages" hx-swap="beforeend"
+                data-tip="{% t '도우미에게 어떤 질문을 할 수 있는지 안내를 요청합니다.' 'Ask the assistant what kinds of questions it can answer.' %}">{{ help_prompt }}</button>
+        {% for s in scenarios %}
+          <button type="button" class="ai-chip" :disabled="busy" hx-post="/dictionary/assistant" hx-vals='{"scenario": "{{ s.id }}"}' hx-target="#ai-messages" hx-swap="beforeend"
+                  data-tip="{% if is_en %}Search right away with &quot;{{ s.prompt }}&quot;.{% else %}'{{ s.prompt }}' 질문으로 바로 검색합니다.{% endif %}">{{ s.prompt }}</button>
+        {% endfor %}
+      </div>
+    </div>
+    <form class="ai-input" hx-post="/dictionary/assistant" hx-target="#ai-messages" hx-swap="beforeend" @htmx:after-request="text = ''">
+      <input name="text" x-ref="input" x-model="text" class="input input-sm" autocomplete="off" placeholder="{% t '예: 약제 내성 항목을 찾아줘' 'e.g. Find drug resistance items' %}">
+      <button type="submit" class="ai-send" :disabled="!text.trim() || busy" aria-label="{% t '전송' 'Send' %}"
+              :data-tip="!text.trim() ? '{% t "질문을 입력하면 도우미에게 보낼 수 있습니다." "Type a question to send it to the assistant." %}' : '{% t "입력한 질문을 보내 관련 데이터 항목을 검색합니다." "Send your question and search for related data items." %}'">{% icon "send" "w-4 h-4" %}</button>
+    </form>
+  </div>
+</div>

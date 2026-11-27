@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{% t title_ko title_en %}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">{% t title_ko title_en %}</h1>
+  </div>
+  <div class="card empty-state">
+    <span class="icon-circle">{% icon "construction" "w-6 h-6" %}</span>
+    <p class="font-semibold text-primary">{% t "준비 중입니다" "Coming soon" %}</p>
+    <p class="text-sm mt-1">{% t "이 화면은 이후 단계에서 구현됩니다." "This page will be implemented in a later stage." %}</p>
+    <a href="/" class="btn btn-secondary btn-sm mt-4">{% t "홈으로" "Home" %}</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{# 원본 components/layout/Sidebar.tsx — md 이상에서만 표시, 접기/펼치기 #}
+<aside class="sidebar" x-data="{ collapsed: false }" :class="{ 'collapsed': collapsed }">
+  <div class="sidebar-head">
+    <span class="sidebar-title" x-show="!collapsed">{{ sidebar.title }}</span>
+    <button type="button" class="icon-btn sm" @click="collapsed = !collapsed"
+            :aria-label="collapsed ? '{% t "사이드바 펼치기" "Expand sidebar" %}' : '{% t "사이드바 접기" "Collapse sidebar" %}'"
+            :data-tip="collapsed ? '{% t "사이드바를 펼쳐 메뉴 이름을 함께 보여줍니다." "Expand the sidebar to show menu names." %}' : '{% t "사이드바를 아이콘만 보이게 접어 본문을 넓게 씁니다." "Collapse the sidebar to icons only for a wider content area." %}'">
+      <span x-show="!collapsed">{% icon "panel-left-close" "w-4 h-4 text-muted" %}</span>
+      <span x-show="collapsed" x-cloak>{% icon "panel-left" "w-4 h-4 text-muted" %}</span>
+    </button>
+  </div>
+  <nav class="sidebar-nav">
+    {% for item in sidebar.items %}
+      <a href="{{ item.to }}" class="sidebar-link{% if item.active %} active{% endif %}" data-tip-side="right"
+         data-tip="{% if is_en %}Go to the {{ item.label }} page.{% else %}'{{ item.label }}' 화면으로 이동합니다.{% endif %}"
+         :aria-label="collapsed ? '{{ item.label|escapejs }}' : null">
+        {% icon item.icon "w-5 h-5 shrink-0" %}
+        <span class="sidebar-label" x-show="!collapsed">{{ item.label }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+</aside>

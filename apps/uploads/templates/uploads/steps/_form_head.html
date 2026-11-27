@@ -1,0 +1,2 @@
+{% csrf_token %}
+{% if sub %}<input type="hidden" name="id" value="{{ sub.upload_id }}">{% else %}<input type="hidden" name="mode" value="{{ mode }}">{% endif %}

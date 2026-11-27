@@ -1,0 +1,5 @@
+{% if not field_count %}
+  <div class="empty-state text-sm">{% t "필드를 추가하면 입력 폼이 여기에 표시됩니다." "Add fields to see the input form here." %}</div>
+{% else %}
+  {% include "schemas/_dynamic_form.html" with show_progress=True preview=True %}
+{% endif %}

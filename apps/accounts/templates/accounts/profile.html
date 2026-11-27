@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{% t "내 프로필" "My Profile" %}{% endblock %}
+{% block content %}
+{# 원본 pages/Auth/Profile.tsx #}
+<div class="container-narrow stack">
+  <div>
+    <h1 class="page-title">{% t "내 프로필" "My Profile" %}</h1>
+    <p class="page-subtitle">{% t "계정 정보를 확인하고 수정할 수 있습니다" "View and edit your account information" %}</p>
+  </div>
+
+  <form method="post" action="/profile" class="card card-lg"
+        x-data="profileForm({ name: '{{ saved.display_name|escapejs }}', org: '{{ saved.organization|escapejs }}', email: '{{ saved.email|escapejs }}' },
+                            { name: '{{ form.display_name.value|default:''|escapejs }}', org: '{{ saved.organization|escapejs }}', email: '{{ form.email.value|default:''|escapejs }}' })">
+    {% csrf_token %}
+    <div class="flex items-center gap-4 mb-6" style="padding-bottom:24px;border-bottom:1px solid var(--color-border)">
+      <span class="avatar avatar-lg{% if user.is_portal_admin %} avatar-admin{% endif %}">{{ user.initial }}</span>
+      <div>
+        <h2 class="text-lg font-semibold">{{ user.shown_name }}</h2>
+        <p class="text-sm text-muted">@{{ user.username }}</p>
+        <span class="badge mt-1 {% if user.is_portal_admin %}badge-navy{% else %}badge-teal{% endif %}">
+          {% if user.is_portal_admin %}{% t "관리자" "Administrator" %}{% else %}{% t "연구원" "Researcher" %}{% endif %}
+        </span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="label" for="id_display_name">{% icon "user" "w-4 h-4 text-muted" %} {% t "이름" "Name" %}</label>
+      <input class="input{% if form.display_name.errors %} is-invalid{% endif %}" type="text" id="id_display_name" name="display_name"
+             maxlength="100" x-model="name" value="{{ form.display_name.value|default:'' }}">
+      {% for e in form.display_name.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="label" for="id_organization">{% icon "building-2" "w-4 h-4 text-muted" %} {% t "소속 기관" "Organization" %}</label>
+      <p class="readonly-box" id="id_organization" data-testid="profile-org">{{ saved.organization|default:"-" }}</p>
+      <p class="text-xs text-muted mt-1">{% t "소속 기관은 데이터 열람 범위(기관 공유)에 쓰이므로 관리자만 변경할 수 있습니다." "Your organization determines data access (institution sharing), so only administrators can change it." %}</p>
+    </div>
+    <div class="form-group">
+      <label class="label" for="id_email">{% icon "mail" "w-4 h-4 text-muted" %} {% t "이메일" "Email" %}</label>
+      <input class="input{% if form.email.errors %} is-invalid{% endif %}" type="email" id="id_email" name="email"
+             maxlength="254" x-model="email" value="{{ form.email.value|default:'' }}">
+      {% for e in form.email.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="label">{% icon "clock" "w-4 h-4 text-muted" %} {% t "로그인 시간" "Login Time" %}</label>
+      <p class="readonly-box">{% if user.last_login %}{{ user.last_login|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</p>
+    </div>
+
+    <div class="flex items-center gap-3 mt-6">
+      <button type="submit" class="btn btn-primary" :disabled="!changed"
+              :data-tip="changed ? '{% t "수정한 이름·이메일을 계정 정보에 저장합니다." "Save the edited name and email to your account." %}' : '{% t "이름·이메일을 고치면 저장할 수 있습니다." "Edit your name or email to enable saving." %}'">
+        {% icon "save" "w-4 h-4" %} {% t "저장" "Save" %}
+      </button>
+    </div>
+  </form>
+
+  <div class="card card-lg">
+    <h3 class="card-title mb-4">{% t "계정 정보" "Account Information" %}</h3>
+    <div class="stack-sm text-sm">
+      <div class="flex justify-between"><span class="text-muted">{% t "아이디" "Username" %}</span><span class="font-mono">{{ user.username }}</span></div>
+      <div class="flex justify-between"><span class="text-muted">{% t "역할" "Role" %}</span><span>{% if user.is_portal_admin %}{% t "관리자" "Administrator" %}{% else %}{% t "연구원" "Researcher" %}{% endif %}</span></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  // 원본: 이름·소속·이메일이 저장값과 달라야 저장 버튼 활성화 (소속은 읽기 전용 — 관리자만 변경)
+  function profileForm(saved, current) {
+    return {
+      name: current.name, org: current.org, email: current.email,
+      get changed() { return this.name !== saved.name || this.org !== saved.org || this.email !== saved.email; },
+    };
+  }
+</script>
+{% endblock %}

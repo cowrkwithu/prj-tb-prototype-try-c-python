@@ -1,0 +1,4 @@
+condition_id,patient_name,rrn,phone,email,address,specimen_id,platform,method,coverage,sra_accession,lineage
+TB-KR-101,홍길동,900101-1234567,010-1234-5678,hong@hospital.kr,서울시 강남구 테헤란로 152,SP-101A,Illumina,WGS,120,SRR20101011,Beijing
+TB-KR-102,김철수,850315-2345678,02-2072-1234,,부산시 해운대구 센텀로 99,SP-102A,Illumina,WGS,95,SRR20101022,EAI
+TB-KR-103,박영희,780722-2456789,010-9876-5432,park.yh@clinic.co.kr,대구시 수성구 동대구로 45,SP-103A,ONT,WGS,60,ERR20101033,LAM

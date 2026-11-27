@@ -1,0 +1,19 @@
+<div class="modal-backdrop" x-data @keydown.escape.window="$el.remove()" @click.self="$el.remove()">
+  <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="cf-title">
+    <div class="modal-header"><h3 class="modal-title" id="cf-title">{% if action == "delete" %}{% t "삭제 확인" "Confirm Delete" %}{% else %}{% t "처리 확인" "Confirm Action" %}{% endif %}</h3>
+      <button type="button" class="icon-btn sm" @click="$root.remove()" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+    <form method="post" action="/admin/schemas/{{ s.schema_id }}/{% if action == 'delete' %}delete{% else %}action{% endif %}" class="modal-body stack-sm">{% csrf_token %}
+      <input type="hidden" name="action" value="{{ action }}"><input type="hidden" name="back" value="{{ back }}">
+      {% if action == "delete" %}
+        <p class="text-sm">{% if is_en %}Delete <strong>"{{ name }}"</strong>? This cannot be undone.{% else %}<strong>"{{ s.name }}"</strong>을(를) 삭제하시겠습니까? 되돌릴 수 없습니다.{% endif %}</p>
+      {% else %}
+        <p class="text-sm">{% if is_en %}<strong>{{ name }}</strong>: {{ label|lower }}?{% else %}<strong>{{ s.name }}</strong>을(를) <strong>{{ label_ko }}</strong> 처리하시겠습니까?{% endif %}
+          {% if action == "archive" %}<span class="block text-xs text-muted mt-1">{% if is_en %}The {{ s.data_count }} existing records and the definition are kept; only new entry is blocked.{% else %}입력된 데이터 {{ s.data_count }}건과 구조 정의는 그대로 남고, 새 데이터 입력만 막힙니다.{% endif %}</span>{% endif %}</p>
+        <div><label class="text-xs font-medium text-muted" for="note">{% t "처리 메모 (선택)" "Note (optional)" %}</label>
+          <textarea id="note" name="note" rows="2" maxlength="500" class="textarea mt-1" placeholder="{% t '예: 필드 정의 검토 완료' 'e.g. Field definitions reviewed' %}"></textarea></div>
+      {% endif %}
+      <div class="sc-row" style="justify-content:flex-end"><button type="button" class="btn btn-xs btn-secondary" @click="$root.remove()">{% t "취소" "Cancel" %}</button>
+        <button type="submit" class="btn btn-xs {% if action == 'delete' %}btn-danger{% else %}btn-primary{% endif %}" data-testid="confirm-submit">{% if action == "delete" %}{% t "삭제" "Delete" %}{% else %}{% t "확인" "Confirm" %}{% endif %}</button></div>
+    </form>
+  </div>
+</div>

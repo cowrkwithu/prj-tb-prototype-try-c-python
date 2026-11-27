@@ -1,0 +1,14 @@
+<div class="card card-sm mb-4">
+  <label class="df-label" for="link_value">{{ link_label }} <span class="text-danger text-10">*</span> <span class="font-mono text-10 text-muted">({{ schema.link_field_name }})</span></label>
+  <input id="link_value" name="link_value" class="input input-sm font-mono{% if link_error %} is-invalid{% endif %}" value="{{ link_value }}" maxlength="40" required
+         placeholder="{% if schema.link_field_name == 'condition_id' %}KR-2024-0001{% else %}ID-0001{% endif %}" data-testid="link-input">
+  {% if link_error %}<p class="df-err">{{ link_error }}</p>{% endif %}
+  {% if patient %}
+    {% if patient.found %}
+      <div class="alert alert-info mt-2" style="display:block"><p class="text-xs font-medium mb-1">{% t "연결 환자 정보" "Linked Patient Info" %}</p>
+        <div class="grid-3 text-xs" style="gap:8px"><div>{% t "케이스 ID:" "Case ID:" %} <span class="font-mono font-medium">{{ patient.p.condition_id }}</span></div>
+          <div>{% t "국가:" "Country:" %} <span class="font-medium">{{ patient.country }}</span></div>
+          <div>{% t "진단:" "Diagnosis:" %} <span class="font-medium">{{ patient.p.diagnosis_type }}</span></div></div></div>
+    {% else %}<p class="text-xs text-warning mt-1">{% t "등록된 환자 케이스에서 찾을 수 없는 케이스 ID 입니다(경고 — 저장은 가능)." "Case ID not found among registered patient cases (warning — can still be saved)." %}</p>{% endif %}
+  {% endif %}
+</div>

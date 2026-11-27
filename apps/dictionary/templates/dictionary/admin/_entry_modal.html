@@ -1,0 +1,35 @@
+{{ type_sets|json_script:"entry-modal-types" }}
+<div class="modal-backdrop" data-dt="{{ current_type }}" x-data="{ dt: $el.dataset.dt, sets: JSON.parse(document.getElementById('entry-modal-types').textContent) }" @keydown.escape.window="$el.remove()" @click.self="$el.remove()">
+  <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="em-title">
+    <div class="modal-header"><h3 class="modal-title" id="em-title">{% if entry %}{% t "데이터 항목 수정" "Edit Data Item" %}{% else %}{% t "새 데이터 항목 추가" "Add New Data Item" %}{% endif %}</h3>
+      <button type="button" class="icon-btn sm" @click="$root.remove()" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+    <form method="post" action="/admin/dictionary/entry/save" class="modal-body stack-sm">{% csrf_token %}
+      {% if entry %}<input type="hidden" name="id" value="{{ entry.pk }}">{% else %}<input type="hidden" name="cat" value="{{ cat.pk }}">{% endif %}
+      <input type="hidden" name="cat_code" value="{{ cat.code }}">
+      {% if entry %}<p class="text-xs text-muted"><span class="font-mono">{{ entry.dictionary_id }}</span> · {% if entry.is_standard %}{% t "표준 항목 — 같은 버전 엑셀을 다시 적재하면 엑셀 값으로 덮어써집니다" "Standard item — re-loading the same workbook version overwrites it" %}{% else %}{% t "사용자 정의 항목" "Custom item" %}{% endif %}</p>{% endif %}
+      <div class="grid-2" style="gap:12px">
+        <div><label class="label" for="e-fn">{% t "필드명 *" "Field Name *" %}</label><input id="e-fn" name="field_name" class="input input-sm font-mono" value="{{ entry.field_name|default:'' }}" required maxlength="100"{% if entry.is_standard %} readonly{% endif %} placeholder="{% t '예: symptom_type' 'e.g. symptom_type' %}" oninput="this.value=this.value.replace(/[^a-zA-Z0-9_]/g,'')"></div>
+        <div><label class="label" for="e-dn">{% t "표시명 *" "Display Name *" %}</label><input id="e-dn" name="display_name" class="input input-sm" value="{{ entry.display_name|default:'' }}" required maxlength="300" placeholder="{% t '예: 증상 유형' 'e.g. Symptom Type' %}"></div>
+        <div style="grid-column:1/-1"><label class="label" for="e-dne">{% t "표시명(영문)" "Display Name (English)" %}</label><input id="e-dne" name="display_name_en" class="input input-sm" value="{{ entry.display_name_en|default:'' }}" maxlength="300"></div>
+      </div>
+      <div><label class="label" for="e-desc">{% t "설명" "Description" %}</label><input id="e-desc" name="description" class="input input-sm" value="{{ entry.description|default:'' }}" maxlength="4000" placeholder="{% t '이 필드에 대한 설명' 'Description of this field' %}"></div>
+      <div><label class="label" for="e-desc-en">{% t "설명(영문)" "Description (English)" %}</label><input id="e-desc-en" name="description_en" class="input input-sm" value="{{ entry.description_en|default:'' }}" maxlength="4000"></div>
+      <div class="grid-2" style="gap:12px">
+        <div><label class="label" for="e-dt">{% t "데이터 타입" "Data Type" %}</label><select id="e-dt" name="data_type" class="select input input-sm" x-model="dt">{% for v, l in types %}<option value="{{ v }}"{% if v == current_type %} selected{% endif %}>{{ l }} ({{ v }})</option>{% endfor %}</select></div>
+        <div><label class="label" for="e-fhir">{% t "HL7 FHIR 매핑" "HL7 FHIR Mapping" %}</label><input id="e-fhir" name="hl7_fhir_mapping" class="input input-sm" value="{{ entry.hl7_fhir_mapping|default:'' }}" maxlength="200" placeholder="{% t '예: Observation.value' 'e.g. Observation.value' %}"></div>
+      </div>
+      <div class="soft-box stack-sm"><p class="text-xs font-medium text-muted">{% t "제약조건" "Constraints" %}</p>
+        <div class="grid-2" style="gap:8px">
+          <template x-if="sets.length.includes(dt)"><div><label class="sb-label">{% t "최대 길이" "Max Length" %}</label><input type="number" min="0" name="maxLength" class="sb-mini" value="{{ c.maxLength|default_if_none:'' }}" placeholder="200"></div></template>
+          <template x-if="sets.range.includes(dt)"><div class="stack-sm" style="grid-column:1/-1"><div class="grid-2" style="gap:8px">
+            <div><label class="sb-label">{% t "최솟값" "Min" %}</label><input type="number" step="any" name="min" class="sb-mini" value="{{ c.min|default_if_none:'' }}"></div>
+            <div><label class="sb-label">{% t "최댓값" "Max" %}</label><input type="number" step="any" name="max" class="sb-mini" value="{{ c.max|default_if_none:'' }}"></div>
+            <div><label class="sb-label">{% t "소수 자릿수" "Decimal Places" %}</label><input type="number" min="0" max="6" name="precision" class="sb-mini" value="{{ c.precision|default_if_none:'' }}"></div>
+            <div><label class="sb-label">{% t "단위" "Unit" %}</label><input name="unit" class="sb-mini" value="{{ c.unit|default:'' }}" placeholder="{% t '예: mg, kg/m²' 'e.g. mg, kg/m²' %}"></div></div></div></template>
+          <template x-if="sets.option.includes(dt)"><div style="grid-column:1/-1"><label class="sb-label">{% t "선택지 (쉼표 구분)" "Options (comma-separated)" %}</label><input name="options" class="sb-mini" value="{{ options_text }}" placeholder="{% t '예: Option A, Option B, Option C' 'e.g. Option A, Option B, Option C' %}"></div></template>
+        </div></div>
+      <div class="sc-row" style="justify-content:flex-end;padding-top:8px"><button type="button" class="btn btn-sm btn-secondary" @click="$root.remove()">{% t "취소" "Cancel" %}</button>
+        <button type="submit" class="btn btn-sm btn-primary">{% if entry %}{% t "저장" "Save" %}{% else %}{% t "추가" "Add" %}{% endif %}</button></div>
+    </form>
+  </div>
+</div>

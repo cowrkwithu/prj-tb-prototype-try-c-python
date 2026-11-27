@@ -1,0 +1,6 @@
+<div class="grid-4">
+  <div class="sum-card sum-yellow"><div class="flex items-center gap-2">{% icon "clock" "w-5 h-5" %}<span class="text-sm font-medium">{% t "검증 대기" "Pending Review" %}</span></div><p class="text-2xl font-bold mt-1" data-testid="count-pending">{% if is_en %}{{ counts.pending }}{% else %}{{ counts.pending }}건{% endif %}</p></div>
+  <div class="sum-card sum-blue"><div class="flex items-center gap-2">{% icon "refresh-cw" "w-5 h-5" %}<span class="text-sm font-medium">{% t "수정 요청 중" "Revision Requested" %}</span></div><p class="text-2xl font-bold mt-1">{% if is_en %}{{ counts.revision }}{% else %}{{ counts.revision }}건{% endif %}</p></div>
+  <div class="sum-card sum-green"><div class="flex items-center gap-2">{% icon "circle-check" "w-5 h-5" %}<span class="text-sm font-medium">{% t "금일 승인" "Approved Today" %}</span></div><p class="text-2xl font-bold mt-1" data-testid="count-approved-today">{% if is_en %}{{ counts.approved_today }}{% else %}{{ counts.approved_today }}건{% endif %}</p></div>
+  <div class="sum-card sum-red"><div class="flex items-center gap-2">{% icon "circle-x" "w-5 h-5" %}<span class="text-sm font-medium">{% t "금일 반려" "Rejected Today" %}</span></div><p class="text-2xl font-bold mt-1">{% if is_en %}{{ counts.rejected_today }}{% else %}{{ counts.rejected_today }}건{% endif %}</p></div>
+</div>

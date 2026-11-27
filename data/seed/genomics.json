@@ -1,0 +1,329 @@
+{
+ "resistanceGenes": [
+  {
+   "gene": "rpoB",
+   "fullName": "RNA polymerase beta subunit",
+   "associatedDrugs": [
+    "Rifampicin"
+   ],
+   "knownVariants": 68
+  },
+  {
+   "gene": "katG",
+   "fullName": "Catalase-peroxidase",
+   "associatedDrugs": [
+    "Isoniazid"
+   ],
+   "knownVariants": 42
+  },
+  {
+   "gene": "inhA",
+   "fullName": "Enoyl-ACP reductase",
+   "associatedDrugs": [
+    "Isoniazid",
+    "Ethionamide"
+   ],
+   "knownVariants": 18
+  },
+  {
+   "gene": "gyrA",
+   "fullName": "DNA gyrase subunit A",
+   "associatedDrugs": [
+    "Fluoroquinolones"
+   ],
+   "knownVariants": 32
+  },
+  {
+   "gene": "gyrB",
+   "fullName": "DNA gyrase subunit B",
+   "associatedDrugs": [
+    "Fluoroquinolones"
+   ],
+   "knownVariants": 15
+  },
+  {
+   "gene": "embB",
+   "fullName": "Arabinosyltransferase B",
+   "associatedDrugs": [
+    "Ethambutol"
+   ],
+   "knownVariants": 24
+  },
+  {
+   "gene": "pncA",
+   "fullName": "Pyrazinamidase",
+   "associatedDrugs": [
+    "Pyrazinamide"
+   ],
+   "knownVariants": 95
+  },
+  {
+   "gene": "rrs",
+   "fullName": "16S rRNA",
+   "associatedDrugs": [
+    "Amikacin",
+    "Kanamycin",
+    "Capreomycin"
+   ],
+   "knownVariants": 8
+  },
+  {
+   "gene": "eis",
+   "fullName": "Enhanced intracellular survival",
+   "associatedDrugs": [
+    "Kanamycin"
+   ],
+   "knownVariants": 12
+  },
+  {
+   "gene": "ethA",
+   "fullName": "Monooxygenase",
+   "associatedDrugs": [
+    "Ethionamide"
+   ],
+   "knownVariants": 28
+  }
+ ],
+ "variants": [
+  {
+   "id": 1,
+   "gene": "rpoB",
+   "position": 761155,
+   "refAllele": "C",
+   "altAllele": "T",
+   "aminoAcidChange": "S450L",
+   "drugResistance": "Rifampicin",
+   "frequency": 0.72,
+   "sampleCount": 614,
+   "annotation": "Most common RIF resistance mutation globally"
+  },
+  {
+   "id": 2,
+   "gene": "rpoB",
+   "position": 761139,
+   "refAllele": "C",
+   "altAllele": "T",
+   "aminoAcidChange": "H445Y",
+   "drugResistance": "Rifampicin",
+   "frequency": 0.08,
+   "sampleCount": 68,
+   "annotation": "Second most frequent rpoB mutation"
+  },
+  {
+   "id": 3,
+   "gene": "rpoB",
+   "position": 761110,
+   "refAllele": "A",
+   "altAllele": "T",
+   "aminoAcidChange": "D435V",
+   "drugResistance": "Rifampicin",
+   "frequency": 0.04,
+   "sampleCount": 34,
+   "annotation": "Less common rpoB variant"
+  },
+  {
+   "id": 4,
+   "gene": "katG",
+   "position": 2155168,
+   "refAllele": "C",
+   "altAllele": "G",
+   "aminoAcidChange": "S315T",
+   "drugResistance": "Isoniazid",
+   "frequency": 0.85,
+   "sampleCount": 726,
+   "annotation": "Predominant high-level INH resistance mutation"
+  },
+  {
+   "id": 5,
+   "gene": "inhA",
+   "position": 1673425,
+   "refAllele": "C",
+   "altAllele": "T",
+   "aminoAcidChange": "c-15t (promoter)",
+   "drugResistance": "Isoniazid",
+   "frequency": 0.12,
+   "sampleCount": 102,
+   "annotation": "Promoter mutation causing low-level INH resistance"
+  },
+  {
+   "id": 6,
+   "gene": "gyrA",
+   "position": 7582,
+   "refAllele": "A",
+   "altAllele": "G",
+   "aminoAcidChange": "D94G",
+   "drugResistance": "Fluoroquinolones",
+   "frequency": 0.38,
+   "sampleCount": 109,
+   "annotation": "Most common FQ resistance-conferring mutation"
+  },
+  {
+   "id": 7,
+   "gene": "gyrA",
+   "position": 7570,
+   "refAllele": "C",
+   "altAllele": "T",
+   "aminoAcidChange": "A90V",
+   "drugResistance": "Fluoroquinolones",
+   "frequency": 0.22,
+   "sampleCount": 63,
+   "annotation": "Second most common gyrA mutation"
+  },
+  {
+   "id": 8,
+   "gene": "gyrA",
+   "position": 7582,
+   "refAllele": "A",
+   "altAllele": "C",
+   "aminoAcidChange": "D94A",
+   "drugResistance": "Fluoroquinolones",
+   "frequency": 0.05,
+   "sampleCount": 14,
+   "annotation": "Low-frequency gyrA variant"
+  },
+  {
+   "id": 9,
+   "gene": "embB",
+   "position": 4247429,
+   "refAllele": "A",
+   "altAllele": "G",
+   "aminoAcidChange": "M306V",
+   "drugResistance": "Ethambutol",
+   "frequency": 0.45,
+   "sampleCount": 192,
+   "annotation": "Main EMB resistance mutation"
+  },
+  {
+   "id": 10,
+   "gene": "embB",
+   "position": 4247729,
+   "refAllele": "G",
+   "altAllele": "A",
+   "aminoAcidChange": "G406S",
+   "drugResistance": "Ethambutol",
+   "frequency": 0.1,
+   "sampleCount": 43,
+   "annotation": "Secondary embB mutation"
+  },
+  {
+   "id": 11,
+   "gene": "pncA",
+   "position": 2289091,
+   "refAllele": "G",
+   "altAllele": "C",
+   "aminoAcidChange": "H51D",
+   "drugResistance": "Pyrazinamide",
+   "frequency": 0.08,
+   "sampleCount": 35,
+   "annotation": "pncA missense variant"
+  },
+  {
+   "id": 12,
+   "gene": "pncA",
+   "position": 2288839,
+   "refAllele": "T",
+   "altAllele": "G",
+   "aminoAcidChange": "T135P",
+   "drugResistance": "Pyrazinamide",
+   "frequency": 0.06,
+   "sampleCount": 26,
+   "annotation": "pncA missense variant"
+  },
+  {
+   "id": 13,
+   "gene": "rrs",
+   "position": 1473246,
+   "refAllele": "A",
+   "altAllele": "G",
+   "aminoAcidChange": "a1401g",
+   "drugResistance": "Amikacin",
+   "frequency": 0.65,
+   "sampleCount": 56,
+   "annotation": "Main injectable resistance mutation"
+  },
+  {
+   "id": 14,
+   "gene": "rrs",
+   "position": 1473247,
+   "refAllele": "C",
+   "altAllele": "T",
+   "aminoAcidChange": "c1402t",
+   "drugResistance": "Amikacin",
+   "frequency": 0.12,
+   "sampleCount": 10,
+   "annotation": "Secondary rrs mutation"
+  },
+  {
+   "id": 15,
+   "gene": "eis",
+   "position": 2715346,
+   "refAllele": "G",
+   "altAllele": "A",
+   "aminoAcidChange": "c-14t (promoter)",
+   "drugResistance": "Kanamycin",
+   "frequency": 0.35,
+   "sampleCount": 28,
+   "annotation": "eis promoter mutation for KAN resistance"
+  },
+  {
+   "id": 16,
+   "gene": "gyrB",
+   "position": 6742,
+   "refAllele": "A",
+   "altAllele": "T",
+   "aminoAcidChange": "E540D",
+   "drugResistance": "Fluoroquinolones",
+   "frequency": 0.03,
+   "sampleCount": 9,
+   "annotation": "Rare gyrB variant"
+  },
+  {
+   "id": 17,
+   "gene": "ethA",
+   "position": 4326332,
+   "refAllele": "G",
+   "altAllele": "T",
+   "aminoAcidChange": "A381D",
+   "drugResistance": "Ethionamide",
+   "frequency": 0.07,
+   "sampleCount": 18,
+   "annotation": "ethA missense variant"
+  },
+  {
+   "id": 18,
+   "gene": "rpoB",
+   "position": 761095,
+   "refAllele": "T",
+   "altAllele": "C",
+   "aminoAcidChange": "L430P",
+   "drugResistance": "Rifampicin",
+   "frequency": 0.03,
+   "sampleCount": 26,
+   "annotation": "Disputed rpoB mutation"
+  },
+  {
+   "id": 19,
+   "gene": "katG",
+   "position": 2155214,
+   "refAllele": "A",
+   "altAllele": "C",
+   "aminoAcidChange": "W300G",
+   "drugResistance": "Isoniazid",
+   "frequency": 0.02,
+   "sampleCount": 17,
+   "annotation": "Rare katG variant"
+  },
+  {
+   "id": 20,
+   "gene": "embB",
+   "position": 4248004,
+   "refAllele": "G",
+   "altAllele": "C",
+   "aminoAcidChange": "Q497H",
+   "drugResistance": "Ethambutol",
+   "frequency": 0.06,
+   "sampleCount": 26,
+   "annotation": "Secondary embB mutation"
+  }
+ ]
+}

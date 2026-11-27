@@ -1,0 +1,4 @@
+condition_id,specimen_id,platform,method,coverage,sra_accession,lineage
+TB-KR-101,SP-101A,Illumina,WGS,120,SRR20101011,Beijing
+TB-KR-102,SP-102A,Illumina,WGS,95,SRR20101022,EAI
+TB-KR-103,SP-103A,ONT,WGS,60,ERR20101033,LAM

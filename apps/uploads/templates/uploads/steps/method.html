@@ -1,0 +1,29 @@
+{# 0단계: 업로드 방식 선택 (웹 폼 / CSV) #}
+<form method="post" action="/upload/{{ domain }}/mode" class="stack-sm" x-data="{ mode: '{{ mode|default:'' }}' }">
+  {% csrf_token %}
+  {% if sub %}<input type="hidden" name="id" value="{{ sub.upload_id }}">{% endif %}
+  <input type="hidden" name="conditionId" value="{{ prefill_cid }}">
+  <input type="hidden" name="mode" :value="mode">
+  <h2 class="font-semibold">{% t "업로드 방식을 선택하세요" "Select an upload method" %}</h2>
+  <div class="grid-2">
+    <button type="button" class="choice" :class="mode === 'form' && 'on'" @click="mode = 'form'" data-mode="form"
+            data-tip="{% if domain == 'clinical' %}{% t '환자 케이스를 웹 폼에 한 건씩 직접 입력하는 방식을 선택합니다.' 'Choose to enter patient cases one at a time in a web form.' %}{% elif domain == 'regimen' %}{% t '레지멘을 약물별로 웹 폼에 직접 입력하는 방식을 선택합니다.' 'Choose to enter the regimen drug by drug in a web form.' %}{% else %}{% t '검사 결과를 항목별로 웹 폼에 직접 입력하는 방식을 선택합니다.' 'Choose to enter test results item by item in a web form.' %}{% endif %}">
+      <span class="text-teal">{% icon "rectangle-ellipsis" "w-7 h-7" %}</span>
+      <p class="font-semibold mt-2">{% t "개별 입력 (웹 폼)" "Individual Entry (Web Form)" %}</p>
+      <p class="text-sm text-muted mt-1">{% if domain == 'clinical' %}{% t "환자 케이스를 한 건씩 직접 입력합니다" "Enter patient cases one at a time" %}{% elif domain == 'regimen' %}{% t "레지멘을 약물별로 직접 입력합니다" "Enter the regimen drug by drug" %}{% else %}{% t "검사 결과를 항목별로 직접 입력합니다" "Enter test results item by item" %}{% endif %}</p>
+      {% if domain == 'clinical' %}<p class="text-xs text-slate-400 mt-2">{% t "소량 데이터나 수정 시 권장" "Recommended for small datasets or corrections" %}</p>{% endif %}
+    </button>
+    <div role="button" tabindex="0" class="choice" :class="mode === 'csv' && 'on'" @click="mode = 'csv'" @keydown.enter.prevent="mode = 'csv'" @keydown.space.prevent="mode = 'csv'" data-mode="csv"
+         data-tip="{% if domain == 'clinical' %}{% t 'CSV 파일로 여러 케이스를 한 번에 올리는 방식을 선택합니다.' 'Choose to upload many cases at once with a CSV file.' %}{% elif domain == 'regimen' %}{% t 'CSV 파일로 여러 레지멘을 한 번에 올리는 방식을 선택합니다.' 'Choose to upload many regimens at once with a CSV file.' %}{% else %}{% t 'CSV 파일로 여러 검사 결과를 한 번에 올리는 방식을 선택합니다.' 'Choose to upload many test results at once with a CSV file.' %}{% endif %}" data-tip-side="right">
+      <span class="text-teal">{% icon "file-spreadsheet" "w-7 h-7" %}</span>
+      <p class="font-semibold mt-2">{% t "일괄 업로드 (CSV)" "Batch Upload (CSV)" %}</p>
+      <p class="text-sm text-muted mt-1">{% if domain == 'clinical' %}{% t "CSV 파일로 다수 케이스를 한번에 업로드" "Upload many cases at once with a CSV file" %}{% elif domain == 'regimen' %}{% t "CSV 파일로 다수 레지멘을 한번에 업로드" "Upload many regimens at once with a CSV file" %}{% else %}{% t "CSV 파일로 다수 검사 결과를 한번에 업로드" "Upload many test results at once with a CSV file" %}{% endif %}</p>
+      {% if domain == 'clinical' %}<p class="text-xs text-slate-400 mt-2">{% t "대량 데이터 입력 시 권장" "Recommended for large datasets" %}</p>{% endif %}
+      <a href="/upload/{{ domain }}/template.csv" @click.stop class="mt-2 inline-flex items-center gap-1 text-xs text-teal link-underline" data-tip="{% t '필수 컬럼이 들어 있는 CSV 템플릿 파일을 내려받습니다.' 'Download a CSV template file with the required columns.' %}">{% icon "download" "w-3 h-3" %} {% t "CSV 템플릿 다운로드" "Download CSV Template" %}</a>
+    </div>
+  </div>
+  <div class="flex justify-end">
+    <button type="submit" class="btn btn-teal" :disabled="!mode" data-testid="next"
+            :data-tip="mode ? '{% t "선택한 업로드 방식으로 다음 단계로 넘어갑니다." "Continue to the next step with the selected upload method." %}' : '{% t "업로드 방식을 먼저 선택해야 다음 단계로 넘어갈 수 있습니다." "Select an upload method first to continue." %}'">{% t "다음 단계" "Next Step" %} {% icon "arrow-right" "w-4 h-4" %}</button>
+  </div>
+</form>

@@ -1,0 +1,14 @@
+<div id="schema-select-list" class="stack-sm" style="max-height:400px;overflow-y:auto">
+  {% for c in cards %}
+    <a href="/schemas/{{ c.s.schema_id }}/data" class="card card-sm card-hover sc-between" style="text-decoration:none;color:inherit"
+       data-tip="{% if is_en %}Select the {{ c.name }} data schema and go to its data entry page.{% else %}'{{ c.name }}' 데이터 구조를 선택해 데이터 입력 화면으로 이동합니다.{% endif %}">
+      <div style="min-width:0;flex:1">
+        <div class="sc-row mb-1"><span class="text-sm font-semibold">{{ c.name }}</span><span class="badge badge-sm badge-neutral">v{{ c.s.version }}</span><span class="badge badge-sm badge-info">{{ c.category }}</span></div>
+        <p class="text-xs text-muted clamp-1">{{ c.description }}</p>
+        <div class="sc-row text-10 text-muted mt-1"><span>{% if is_en %}{{ c.field_count }} fields{% else %}{{ c.field_count }}개 필드{% endif %}</span><span>{% if is_en %}{{ c.data_count }} records{% else %}{{ c.data_count }}건 데이터{% endif %}</span><span>{{ c.owner }}</span></div>
+      </div>{% icon "arrow-right" "w-4 h-4 text-muted" %}
+    </a>
+  {% empty %}
+    <div class="empty-state">{% icon "blocks" "w-8 h-8" %}<p class="text-sm">{% t "일치하는 데이터 구조가 없습니다" "No matching data schemas" %}</p></div>
+  {% endfor %}
+</div>

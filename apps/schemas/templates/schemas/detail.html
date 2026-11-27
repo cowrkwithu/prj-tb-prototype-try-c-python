@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ card.name }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/schemas.css' %}">{% endblock %}
+{% block content %}
+{# 원본 src/pages/Schemas/SchemaDetail.tsx #}
+<div class="container" x-data="{ tab: '{{ tab|escapejs }}', more: false }">
+  <a href="/schemas" class="back-link sc-row text-sm text-muted mb-4" style="width:fit-content" data-tip="{% t '커스텀 데이터 구조 목록 화면으로 돌아갑니다.' 'Return to the custom data schema list.' %}">{% icon "arrow-left" "w-4 h-4" %} {% t "데이터 구조 목록" "Data Schemas" %}</a>
+
+  <div class="card mb-6">
+    <div class="sc-head">
+      <div class="sc-head-main">
+        <div class="sc-row flex-wrap mb-2">
+          <span class="badge badge-{{ card.status.variant }}" data-testid="status-badge">{{ card.status.label }}</span>
+          <span class="sc-chip tone-gray">{{ card.category }}</span>
+          <span class="badge badge-sm {% if schema.visibility == 'public' %}badge-info{% else %}badge-neutral{% endif %}">{{ card.visibility_label }}</span>
+        </div>
+        <h1 class="text-2xl font-bold mb-2" data-testid="schema-name">{{ card.name }}</h1>
+        <p class="text-sm text-muted mb-3">{{ card.description }}</p>
+        {% if card.tags %}<div class="sc-row flex-wrap mb-3" style="gap:6px">{% icon "hash" "w-3_5 h-3_5 text-muted" %}{% for tg in card.tags %}<span class="sc-tag" style="font-size:12px">#{{ tg }}</span>{% endfor %}</div>{% endif %}
+        <div class="sc-row flex-wrap text-xs text-muted" style="gap:16px">
+          <span class="sc-row" style="gap:4px">{% icon "users" "w-3_5 h-3_5" %}{{ card.owner }} · {{ card.institution }}</span>
+          <span class="sc-row" style="gap:4px">{% icon "calendar" "w-3_5 h-3_5" %}{{ card.created }} · v{{ schema.version }}</span>
+          <span class="sc-row font-mono" style="gap:4px">{{ schema.schema_id }}</span>
+        </div>
+      </div>
+      <div class="sc-head-side">
+        <div class="sc-stats" style="margin-top:0">
+          <div class="sc-stat">{% icon "file-text" "w-4 h-4 text-muted" %}<b class="text-lg">{{ card.field_count }}{% if not is_en %}<small class="text-muted">개</small>{% endif %}</b><span>{% t "필드" "Fields" %}</span></div>
+          <div class="sc-stat">{% icon "users" "w-4 h-4 text-muted" %}<b class="text-lg">{{ card.usage_count }}{% if not is_en %}<small class="text-muted">명</small>{% endif %}</b><span>{% t "사용자" "Users" %}</span></div>
+          <div class="sc-stat">{% icon "database" "w-4 h-4 text-muted" %}<b class="text-lg">{{ card.data_count }}{% if not is_en %}<small class="text-muted">건</small>{% endif %}</b><span>{% t "데이터" "Records" %}</span></div>
+        </div>
+        <div class="stack-sm">
+          {% if can_enter %}
+            <a href="/schemas/{{ schema.schema_id }}/data" class="btn btn-teal btn-sm btn-block" data-tip="{% t '이 데이터 구조로 새 데이터를 입력하는 화면으로 이동합니다.' 'Go to the data entry screen for this data schema.' %}">{% icon "database" "w-4 h-4" %} {% t "데이터 입력" "Enter Data" %}</a>
+          {% else %}
+            <span class="btn btn-sm btn-block" aria-disabled="true" data-tip="{% t '발행된 데이터 구조에서만 데이터를 입력할 수 있습니다.' 'Data entry is available only for published schemas.' %}">{% icon "database" "w-4 h-4" %} {% t "데이터 입력" "Enter Data" %}</span>
+          {% endif %}
+          <div class="sc-row">
+            {% if can_edit %}<a href="/schemas/{{ schema.schema_id }}/edit" class="btn btn-xs btn-secondary flex-1" data-tip="{% t '필드와 설정을 고칠 수 있는 데이터 구조 편집 화면으로 이동합니다.' 'Open the builder to edit fields and settings of this schema.' %}">{% icon "pencil" "w-3_5 h-3_5" %} {% t "수정" "Edit" %}</a>{% endif %}
+            <a href="/schemas/{{ schema.schema_id }}/template.csv" class="btn btn-xs btn-secondary flex-1" data-tip="{% t '필드명이 헤더로 들어간 CSV 입력 양식을 내려받습니다.' 'Download a CSV template with field names as headers.' %}">{% icon "download" "w-3_5 h-3_5" %} {% t "CSV 템플릿" "CSV Template" %}</a>
+            <div class="sc-menu" @click.outside="more = false">
+              <button type="button" class="btn btn-xs btn-secondary" @click="more = !more" aria-label="{% t '더보기' 'More' %}" :aria-expanded="more" data-tip="{% t '복제·JSON 내보내기·보관·삭제 메뉴를 펼칩니다.' 'Open the menu to duplicate, export JSON, archive or delete.' %}">⋯</button>
+              <div class="dropdown-menu" x-show="more" x-cloak>
+                <form method="post" action="/schemas/{{ schema.schema_id }}/duplicate">{% csrf_token %}<button class="dropdown-item text-xs" data-tip="{% t '데이터 구조를 같은 내용의 초안 사본으로 복제합니다.' 'Make a draft copy of this data schema.' %}">{% icon "file" "w-3_5 h-3_5" %} {% t "데이터 구조 복제" "Duplicate Data Schema" %}</button></form>
+                <a class="dropdown-item text-xs" href="/schemas/{{ schema.schema_id }}/export.json" data-tip="{% t '데이터 구조 정의를 JSON 파일로 내려받습니다.' 'Download the schema definition as a JSON file.' %}">{% icon "download" "w-3_5 h-3_5" %} {% t "JSON 내보내기" "Export JSON" %}</a>
+                {% if can_manage %}
+                  <hr class="dropdown-sep">
+                  {% if schema.status == "published" %}
+                    <form method="post" action="/schemas/{{ schema.schema_id }}/status" onsubmit="return confirm('{% t "보관하면 새 데이터 입력이 막힙니다. 계속하시겠습니까?" "Archiving blocks new data entry. Continue?" %}')">{% csrf_token %}<input type="hidden" name="action" value="archive">
+                      <button class="dropdown-item text-xs" data-tip="{% t '데이터 구조를 보관 상태로 바꿔 새 데이터 입력을 막습니다.' 'Archive this data schema to block new data entry.' %}">{% icon "layers" "w-3_5 h-3_5" %} {% t "보관(Archive)" "Archive" %}</button></form>
+                  {% elif schema.status == "archived" %}
+                    <form method="post" action="/schemas/{{ schema.schema_id }}/status">{% csrf_token %}<input type="hidden" name="action" value="restore">
+                      <button class="dropdown-item text-xs" data-tip="{% t '보관을 풀고 발행 상태로 되돌립니다.' 'Unarchive and return to published.' %}">{% icon "refresh-cw" "w-3_5 h-3_5" %} {% t "복원" "Restore" %}</button></form>
+                  {% endif %}
+                  {% if card.data_count %}
+                    <span class="dropdown-item text-xs text-muted" aria-disabled="true" data-tip="{% t '입력된 데이터가 있어 삭제할 수 없습니다. 더 이상 쓰지 않으려면 보관하세요.' 'Cannot delete: data has been entered. Archive it instead.' %}">{% icon "trash-2" "w-3_5 h-3_5" %} {% t "삭제" "Delete" %}</span>
+                  {% else %}
+                    <form method="post" action="/schemas/{{ schema.schema_id }}/delete" onsubmit="return confirm('{% t "이 데이터 구조를 삭제하시겠습니까? 되돌릴 수 없습니다." "Delete this data schema? This cannot be undone." %}')">{% csrf_token %}
+                      <button class="dropdown-item text-xs text-danger" data-tip="{% t '이 데이터 구조를 삭제합니다.' 'Delete this data schema.' %}">{% icon "trash-2" "w-3_5 h-3_5" %} {% t "삭제" "Delete" %}</button></form>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if schema.status == "draft" and can_edit %}
+    <div class="sc-banner"><span class="sc-row text-sm font-medium">{% icon "pencil" "w-4 h-4" %} {% t "초안 데이터 구조입니다 — 필드를 추가하거나 수정할 수 있습니다" "This is a draft data schema — you can add or edit fields" %}</span>
+      <a href="/schemas/{{ schema.schema_id }}/edit" class="btn btn-sm btn-amber" data-tip="{% t '초안 데이터 구조의 필드를 추가하거나 수정하는 편집 화면으로 이동합니다.' 'Open the builder to add or edit fields in this draft.' %}">{% icon "pencil" "w-4 h-4" %} {% t "데이터 구조 편집하기" "Edit Data Schema" %}</a></div>
+  {% elif schema.status == "archived" %}
+    <div class="sc-banner">{% icon "layers" "w-4 h-4" %} <span class="text-sm">{% t "보관된 데이터 구조입니다 — 입력된 데이터와 정의는 유지되며 새 데이터 입력은 막혀 있습니다." "This data schema is archived — existing data and the definition are kept; new data entry is blocked." %}</span></div>
+  {% endif %}
+
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" role="tab" :aria-selected="tab === 'fields'" @click="tab = 'fields'; history.replaceState(null, '', '?tab=fields')" data-tip="{% t '그룹별 필드 이름·유형·제약조건을 봅니다.' 'View field names, types and constraints by group.' %}">{% t "필드 구조" "Field Structure" %}</button>
+    <button type="button" class="tab" role="tab" :aria-selected="tab === 'data'" @click="tab = 'data'; history.replaceState(null, '', '?tab=data')" data-tip="{% t '이 데이터 구조로 입력된 데이터 목록을 봅니다.' 'View records entered with this data schema.' %}">{% if is_en %}Data ({{ card.data_count }} {% if card.data_count == 1 %}record{% else %}records{% endif %}){% else %}데이터 현황 ({{ card.data_count }}건){% endif %}</button>
+    <button type="button" class="tab" role="tab" :aria-selected="tab === 'history'" @click="tab = 'history'; history.replaceState(null, '', '?tab=history')" data-tip="{% t '버전별 변경 내용과 날짜를 시간순으로 봅니다.' 'View changes and dates for each version over time.' %}">{% t "버전 이력" "Version History" %}</button>
+  </div>
+  <div class="tab-panel">
+    <section x-show="tab === 'fields'"{% if tab != "fields" %} x-cloak{% endif %} data-testid="tab-fields">
+      {% for g in groups %}
+        <div class="sc-group"><div class="sc-group-head"><h3 class="text-sm font-semibold">{{ g.name }}</h3>{% if g.description %}<p class="text-xs text-muted">{{ g.description }}</p>{% endif %}</div>
+          {% for r in g.rows %}
+            <div class="sc-field-row">
+              <div style="flex:1;min-width:0"><div class="sc-row flex-wrap"><span class="font-mono text-xs font-semibold">{{ r.f.field_name }}</span><span class="text-xs text-muted">{{ r.display }}</span>
+                {% if r.f.is_required %}<span class="badge badge-sm badge-danger">{% t "필수" "Required" %}</span>{% endif %}{% if r.f.is_unique %}<span class="badge badge-sm badge-navy">{% t "고유" "Unique" %}</span>{% endif %}
+                {% if r.f.source_dictionary_id %}<span class="badge badge-sm badge-info" data-tip="{{ r.f.source_dictionary_id }}{% if r.f.dictionary_field and r.f.dictionary_field.is_deprecated %} · {% t '사전에서 폐기된 항목' 'Deprecated in the dictionary' %}{% endif %}">{% t "사전 참조" "Dictionary Ref" %}</span>{% endif %}</div>
+                <p class="text-xs text-muted mt-1 clamp-1">{{ r.description }}</p></div>
+              <span class="badge badge-sm badge-neutral">{{ r.type_label }}</span>
+              <div class="sc-cons" title="{{ r.constraint }}">{{ r.constraint }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% empty %}<div class="empty-state text-sm">{% t "정의된 필드가 없습니다" "No fields defined" %}</div>{% endfor %}
+      {% if schema.validation_rules %}<p class="text-xs text-muted">{% t "검증 규칙" "Validation rules" %}: {% for r in schema.validation_rules %}<span class="font-mono">{{ r.expression }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+    </section>
+    <section x-show="tab === 'data'"{% if tab != "data" %} x-cloak{% endif %} data-testid="tab-data">
+      <div class="sc-row mb-3" style="justify-content:flex-end">
+        {% if can_enter %}<a href="/schemas/{{ schema.schema_id }}/data" class="btn btn-xs btn-teal" data-tip="{% t '이 데이터 구조에 새 데이터를 입력하는 화면으로 이동합니다.' 'Go to the data entry screen to add a new record.' %}">{% t "데이터 추가" "Add Data" %}</a>{% endif %}
+        <a href="/schemas/{{ schema.schema_id }}/records.csv" class="btn btn-xs btn-secondary" data-tip="{% t '이 데이터 구조에 입력된 데이터 전체를 CSV 파일로 내려받습니다.' 'Download all records of this schema as a CSV file.' %}">{% t "전체 내보내기 (CSV)" "Export All (CSV)" %}</a>
+      </div>
+      {% include "schemas/_records.html" %}
+    </section>
+    <section x-show="tab === 'history'"{% if tab != "history" %} x-cloak{% endif %} data-testid="tab-history">
+      <div class="sc-history">
+        {% for h in history %}
+          <div class="sc-history-item{% if forloop.first %} first{% endif %}">
+            <div class="sc-row mb-1"><span class="badge badge-sm {% if forloop.first %}badge-success{% else %}badge-neutral{% endif %}">v{{ h.version }}</span>
+              <span class="text-xs text-muted">{{ h.date }}</span><span class="text-xs text-muted">· {{ h.l.actor_label|default:"-" }}</span><span class="text-xs text-muted">· {{ h.action }}</span></div>
+            <p class="text-sm">{{ h.detail }}{% if h.l.note %} <span class="text-muted">· {{ h.l.note }}</span>{% endif %}</p>
+          </div>
+        {% empty %}<p class="text-sm text-muted">{% t "이력이 없습니다" "No history" %}</p>{% endfor %}
+      </div>
+    </section>
+  </div>
+  <div id="modal-root"></div>
+</div>
+{% endblock %}

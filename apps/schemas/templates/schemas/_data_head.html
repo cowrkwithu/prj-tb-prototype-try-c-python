@@ -1,0 +1,4 @@
+<a href="/schemas/{{ schema.schema_id }}" class="back-link sc-row text-sm text-muted mb-4" style="width:fit-content" data-tip="{% t '이 데이터 구조의 상세 화면으로 돌아갑니다.' 'Return to the detail page of this data schema.' %}">{% icon "arrow-left" "w-4 h-4" %} {{ name }}</a>
+<div class="mb-6"><h1 class="text-xl font-bold">{% t "데이터 입력" "Enter Data" %}</h1>
+  <p class="text-sm text-muted mt-1">{{ name }} — {% if is_en %}{{ field_count }} fields{% else %}{{ field_count }}개 필드{% endif %}</p></div>
+<div class="mb-8">{% include "uploads/_step_indicator.html" %}</div>

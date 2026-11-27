@@ -1,0 +1,8 @@
+<div class="step-actions">
+  {% include "uploads/steps/_back.html" with help_ko=back_ko help_en=back_en %}
+  <div class="flex items-center gap-2">
+    <button type="submit" name="action" value="draft" formnovalidate class="btn btn-secondary btn-sm" data-testid="save-draft"
+            data-tip="{% t '지금까지 입력한 내용을 제출하지 않고 임시로 저장합니다. 내 업로드에서 이어서 작성할 수 있습니다.' 'Save what you have entered so far as a draft without submitting. Continue it later from My Uploads.' %}">{% icon "save" "w-4 h-4" %} {% t "임시저장" "Save Draft" %}</button>
+    <button type="submit" name="action" value="next" class="btn btn-teal" data-testid="next" data-tip="{% t next_tip_ko next_tip_en %}">{% t next_ko next_en %} {% icon "arrow-right" "w-4 h-4" %}</button>
+  </div>
+</div>

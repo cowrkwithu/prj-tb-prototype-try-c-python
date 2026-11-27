@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{% t "데이터 검증 대시보드" "Data Review Dashboard" %}{% endblock %}
+{% block content %}
+{# 원본 src/pages/Admin/ReviewDashboard.tsx — 검증 대기 목록 #}
+<div class="container stack">
+  <div><h1 class="text-xl font-bold text-navy">{% t "데이터 검증 대시보드" "Data Review Dashboard" %}</h1>
+    <p class="text-sm text-muted mt-1">{% t "업로드된 데이터를 검토하고 승인/반려합니다." "Review uploaded data and approve or reject it." %}</p></div>
+  {% include "uploads/admin/_summary_cards.html" %}
+  <form method="get" class="flex flex-wrap gap-3" x-data x-ref="f">
+    <label class="flex items-center gap-2 text-xs text-muted">{% t "데이터 유형:" "Data Type:" %}
+      <select name="type" class="select input select-xs" @change="$el.form.submit()">{% for v, l in type_options %}<option value="{{ v }}"{% if filters.type == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></label>
+    <label class="flex items-center gap-2 text-xs text-muted">{% t "상태:" "Status:" %}
+      <select name="status" class="select input select-xs" @change="$el.form.submit()">{% for v, l in status_options %}<option value="{{ v }}"{% if filters.status == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></label>
+    <noscript><button class="btn btn-secondary btn-xs">{% t "적용" "Apply" %}</button></noscript>
+  </form>
+  <div class="table-wrap">
+    <table class="table table-clickable" data-testid="review-queue">
+      <thead><tr><th>{% t "우선순위" "Priority" %}</th><th>{% t "업로드 ID" "Upload ID" %}</th><th>{% t "유형" "Type" %}</th><th>{% t "기관" "Institution" %}</th><th>{% t "제출자" "Submitter" %}</th><th class="text-right">{% t "레코드" "Records" %}</th><th>{% t "자동검증" "Auto Check" %}</th><th>{% t "상태" "Status" %}</th><th>{% t "제출일" "Submitted" %}</th><th class="text-center">{% t "작업" "Action" %}</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+          <tr onclick="location.href='/admin/review/{{ r.sub.upload_id }}'" data-upload="{{ r.sub.upload_id }}">
+            <td><span class="prio prio-{{ r.priority }}">{{ r.priority_label }}</span></td>
+            <td class="font-mono text-xs">{{ r.sub.upload_id }}</td><td class="text-xs">{{ r.domain_label }}</td><td class="text-xs">{{ r.org }}</td><td class="text-xs">{{ r.submitter }}</td>
+            <td class="text-xs text-right">{{ r.sub.total_records }}</td>
+            <td><span class="inline-flex items-center gap-1 text-xs font-medium {{ r.auto_color }}">{% icon r.auto_icon "w-3_5 h-3_5" %} {{ r.auto_label }}{% if r.sub.issue_count %} <span class="text-muted">({{ r.sub.issue_count }})</span>{% endif %}</span></td>
+            <td>{% include "uploads/_status_badge.html" with status=r.status %}</td>
+            <td class="text-xs text-muted">{{ r.sub.submitted_at|date:"Y-m-d"|default:"-" }}</td>
+            <td class="text-center"><a href="/admin/review/{{ r.sub.upload_id }}" class="btn-outline-teal" data-tip="{% if is_en %}Open the review screen for {{ r.sub.upload_id }} to check its data and checklist.{% else %}{{ r.sub.upload_id }} 업로드의 검증 화면을 열어 데이터와 체크리스트를 검토합니다.{% endif %}">{% if r.sub.status == "pending" %}{% t "검증 시작" "Start Review" %}{% else %}{% t "상세보기" "Details" %}{% endif %} {% icon "chevron-right" "w-3 h-3" %}</a></td>
+          </tr>
+        {% empty %}<tr><td colspan="10" class="text-center text-muted" style="padding:32px">{% t "조건에 맞는 검증 대기 항목이 없습니다" "No items match the selected filters" %}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page.paginator.num_pages > 1 %}
+    <div class="pager">
+      {% if prev_url %}<a class="pager-btn" href="{{ prev_url }}">{% icon "chevron-left" "w-3_5 h-3_5" %} {% t "이전" "Previous" %}</a>{% else %}<span class="pager-btn disabled">{% t "이전" "Previous" %}</span>{% endif %}
+      <span class="text-xs text-muted">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+      {% if next_url %}<a class="pager-btn" href="{{ next_url }}">{% t "다음" "Next" %} {% icon "chevron-right" "w-3_5 h-3_5" %}</a>{% else %}<span class="pager-btn disabled">{% t "다음" "Next" %}</span>{% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

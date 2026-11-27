@@ -1,0 +1,21 @@
+<div class="modal-backdrop" x-data @keydown.escape.window="$el.remove()" @click.self="$el.remove()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cm-title">
+    <div class="modal-header"><h3 class="modal-title" id="cm-title">{% if cat %}{% t "카테고리 수정" "Edit Category" %}{% else %}{% t "새 카테고리 추가" "Add New Category" %}{% endif %}</h3>
+      <button type="button" class="icon-btn sm" @click="$root.remove()" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+    <form method="post" action="/admin/dictionary/category/save" class="modal-body stack-sm">{% csrf_token %}
+      {% if cat %}<input type="hidden" name="id" value="{{ cat.pk }}"><input type="hidden" name="cat_code" value="{{ cat.code }}">{% endif %}
+      <div><label class="label" for="c-code">{% t "카테고리 ID *" "Category ID *" %}</label>
+        <input id="c-code" name="code" class="input input-sm font-mono" value="{{ cat.code|default:'' }}"{% if cat %} disabled{% else %} required pattern="[a-z0-9_]{1,20}"{% endif %} placeholder="{% t '예: epidemiology' 'e.g. epidemiology' %}" oninput="this.value=this.value.replace(/[^a-z0-9_]/g,'')"></div>
+      <div><label class="label" for="c-name">{% t "카테고리 이름 *" "Category Name *" %}</label><input id="c-name" name="name" class="input input-sm" value="{{ cat.name|default:'' }}" required maxlength="200" placeholder="{% t '예: 역학 조사' 'e.g. Epidemiological Survey' %}"></div>
+      <div><label class="label" for="c-name-en">{% t "카테고리 이름(영문)" "Category Name (English)" %}</label><input id="c-name-en" name="name_en" class="input input-sm" value="{{ cat.name_en|default:'' }}" maxlength="200"></div>
+      <div><label class="label" for="c-desc">{% t "설명" "Description" %}</label><input id="c-desc" name="description" class="input input-sm" value="{{ cat.description|default:'' }}" maxlength="1000" placeholder="{% t '카테고리에 대한 설명' 'Category description' %}"></div>
+      <div><label class="label" for="c-desc-en">{% t "설명(영문)" "Description (English)" %}</label><input id="c-desc-en" name="description_en" class="input input-sm" value="{{ cat.description_en|default:'' }}" maxlength="1000"></div>
+      <div class="grid-2" style="gap:12px">
+        <div><label class="label" for="c-icon">{% t "아이콘" "Icon" %}</label><select id="c-icon" name="icon" class="select input input-sm">{% for v, l, f in icons %}<option value="{{ v }}"{% if cat.icon == v or not cat and v == "Folder" %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+        <div><label class="label" for="c-color">{% t "색상" "Color" %}</label><select id="c-color" name="color" class="select input input-sm">{% for v, l in colors %}<option value="{{ v }}"{% if cat.color == v or not cat and v == "blue" %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="sc-row" style="justify-content:flex-end;padding-top:8px"><button type="button" class="btn btn-sm btn-secondary" @click="$root.remove()">{% t "취소" "Cancel" %}</button>
+        <button type="submit" class="btn btn-sm btn-primary">{% if cat %}{% t "저장" "Save" %}{% else %}{% t "추가" "Add" %}{% endif %}</button></div>
+    </form>
+  </div>
+</div>

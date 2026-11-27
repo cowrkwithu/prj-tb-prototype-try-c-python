@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ sub.upload_id }} · {% t "삭제 요청 관리" "Deletion Requests" %}{% endblock %}
+{% block content %}
+<div class="container stack" x-data="{ modal: null }">
+  <a href="/admin/deletions" class="inline-flex items-center gap-1 text-sm text-teal link-underline">{% icon "arrow-left" "w-4 h-4" %} {% t "목록으로 돌아가기" "Back to list" %}</a>
+  <div><h1 class="text-xl font-bold text-navy">{% t "삭제 요청 검토" "Review Deletion Request" %}</h1>
+    <p class="text-sm text-muted mt-1">{% t "승인하면 아래 데이터가 한 번에 삭제되며 되돌릴 수 없습니다." "Approving deletes the data below at once and cannot be undone." %}</p></div>
+  <div class="card card-sm">
+    <div class="form-grid-2 text-sm">
+      <div><span class="text-muted">{% t "업로드 ID:" "Upload ID:" %}</span> <strong class="font-mono" data-testid="deletion-upload-id">{{ sub.upload_id }}</strong></div>
+      <div><span class="text-muted">{% t "유형:" "Type:" %}</span> <strong>{{ row.domain_label }}</strong></div>
+      <div><span class="text-muted">{% t "제출자:" "Submitter:" %}</span> <strong>{{ row.submitter }}</strong> <span class="text-xs text-muted">({{ row.org }})</span></div>
+      <div><span class="text-muted">{% t "상태:" "Status:" %}</span> {% include "uploads/_status_badge.html" with status=row.status %}</div>
+      <div><span class="text-muted">{% t "제출일:" "Submitted:" %}</span> <strong>{{ sub.submitted_at|date:"Y-m-d"|default:"-" }}</strong></div>
+      <div><span class="text-muted">{% t "삭제 요청일:" "Requested:" %}</span> <strong>{{ sub.deletion_requested_at|date:"Y-m-d H:i" }}</strong></div>
+    </div>
+  </div>
+  <div class="card card-sm" data-testid="deletion-plan">
+    <h3 class="text-sm font-semibold text-navy mb-2">{% t "삭제될 데이터" "Data to Be Deleted" %}</h3>
+    <ul class="text-sm stack-xs" style="margin:0;padding-left:18px">
+      <li>{% if is_en %}Upload rows: {{ plan.records }} · stored files: {{ plan.files }}{% else %}업로드 행 {{ plan.records }}건 · 저장 파일 {{ plan.files }}개{% endif %}</li>
+      {% if plan.applied %}
+        {% if plan.regimens %}<li>{% if is_en %}Regimens: {{ plan.regimens }}{% else %}레지멘 {{ plan.regimens }}건{% endif %}</li>{% endif %}
+        {% if plan.sequence_runs %}<li>{% if is_en %}Sequence runs: {{ plan.sequence_runs }}{% else %}유전체 시퀀스 {{ plan.sequence_runs }}건{% endif %}</li>{% endif %}
+        {% if plan.imaging_studies %}<li>{% if is_en %}Imaging studies: {{ plan.imaging_studies }} (case image counts are reduced){% else %}영상 검사 {{ plan.imaging_studies }}건 (케이스의 영상 수도 줄어듭니다){% endif %}</li>{% endif %}
+        {% if plan.biochem %}<li>{% if is_en %}Biochemistry results: {{ plan.biochem }}{% else %}생화학 결과 {{ plan.biochem }}건{% endif %}</li>{% endif %}
+        {% if plan.delete_patients %}<li>{% t "이 업로드로 생성된 케이스:" "Cases created by this upload:" %} <span class="font-mono text-xs">{{ plan.delete_patients|join:", " }}</span></li>{% endif %}
+      {% else %}
+        <li class="text-muted">{% t "승인 전 업로드라 포털에 반영된 데이터는 없습니다." "Not approved yet, so no data was applied to the portal." %}</li>
+      {% endif %}
+    </ul>
+    {% if pairs %}
+      <div class="mt-2" data-testid="deletion-pairs">
+        <h4 class="text-sm font-semibold text-navy">{% t "케이스별 처리" "Per-case handling" %}</h4>
+        <p class="text-xs text-muted">{% t "다시 적용: 이 업로드를 뺀 나머지 승인 업로드를 승인 순서대로 다시 반영해, 남은 업로드만 승인했을 때와 같게 만듭니다. 예전 건: 재계산 기록이 없는 예전 승인 건이 섞여 이 업로드의 행만 지우고 요약 값은 되돌리지 않습니다." "Re-applied: the remaining approved uploads are applied again in approval order, as if only they had been approved. Older approval: mixed with older approvals without a recompute record — only this upload's rows are deleted and summary values are not reverted." %}</p>
+        <ul class="text-sm stack-xs" style="margin:0;padding-left:18px">
+          {% for pr in pairs %}<li data-testid="deletion-pair" data-mode="{{ pr.mode }}"><span class="badge {% if pr.mode == 'replay' %}badge-info{% else %}badge-warning{% endif %}">{{ pr.label }}</span>{% if pr.mode == 'replay' and pr.others %} <span class="text-xs text-muted">({% t "다시 적용할 업로드:" "uploads re-applied:" %} <span class="font-mono">{{ pr.others|join:", " }}</span>)</span>{% endif %}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+    {% for msg in notes %}<div class="alert alert-info mt-2" data-testid="deletion-note">{{ msg }}</div>{% endfor %}
+    {% for msg in irreversible %}<div class="alert alert-warning mt-2" data-testid="irreversible">{{ msg }}</div>{% endfor %}
+  </div>
+  {% if own_upload %}
+    <div class="alert alert-warning" data-testid="own-upload">{% t "본인이 제출한 업로드의 삭제 요청은 처리할 수 없습니다(직무 분리). 다른 관리자가 처리해야 합니다." "You cannot process the deletion request for your own upload (separation of duties). Another administrator must handle it." %}</div>
+  {% else %}
+    <div class="flex gap-2">
+      <button type="button" class="btn btn-danger" @click="modal = 'approve'">{% icon "trash-2" "w-4 h-4" %} {% t "삭제 승인" "Approve Deletion" %}</button>
+      <button type="button" class="btn btn-secondary" @click="modal = 'reject'">{% icon "circle-x" "w-4 h-4" %} {% t "반려" "Reject" %}</button>
+    </div>
+    <div class="modal-backdrop" x-show="modal === 'approve'" x-cloak @click.self="modal = null" @keydown.escape.window="modal = null">
+      <div class="modal modal-sm" role="dialog" aria-modal="true"><div class="modal-header"><h3 class="modal-title">{% t "삭제 승인" "Approve Deletion" %}</h3></div>
+        <form method="post" action="/admin/deletions/{{ sub.upload_id }}/approve" class="modal-body stack-sm">{% csrf_token %}
+          <p class="text-sm">{% if is_en %}Delete upload <strong class="font-mono">{{ sub.upload_id }}</strong> and its data? This cannot be undone.{% else %}업로드 <strong class="font-mono">{{ sub.upload_id }}</strong>와 그 데이터를 삭제하시겠습니까? 되돌릴 수 없습니다.{% endif %}</p>
+          <div class="flex justify-end gap-2"><button type="button" class="btn btn-secondary btn-sm" @click="modal = null">{% t "취소" "Cancel" %}</button>
+            <button type="submit" class="btn btn-danger btn-sm">{% t "삭제" "Delete" %}</button></div></form></div></div>
+    <div class="modal-backdrop" x-show="modal === 'reject'" x-cloak @click.self="modal = null" @keydown.escape.window="modal = null">
+      <div class="modal modal-sm" role="dialog" aria-modal="true"><div class="modal-header"><h3 class="modal-title">{% t "삭제 요청 반려" "Reject Deletion Request" %}</h3></div>
+        <form method="post" action="/admin/deletions/{{ sub.upload_id }}/reject" class="modal-body stack-sm">{% csrf_token %}
+          <p class="text-sm">{% t "반려 사유를 입력해주세요." "Please enter the reason for rejection." %}</p>
+          <textarea class="textarea" rows="3" name="reason" required maxlength="2000"></textarea>
+          <div class="flex justify-end gap-2"><button type="button" class="btn btn-secondary btn-sm" @click="modal = null">{% t "취소" "Cancel" %}</button>
+            <button type="submit" class="btn btn-danger btn-sm">{% t "반려" "Reject" %}</button></div></form></div></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% if error_list %}
+  <div class="alert alert-error" style="display:block" data-testid="form-errors">
+    <p class="text-xs font-semibold mb-1">{% if is_en %}{{ error_list|length }} input error{{ error_list|length|pluralize }}{% else %}입력 오류 {{ error_list|length }}건{% endif %}</p>
+    <ul class="text-xs" style="margin:0;padding-left:18px">{% for e in error_list %}<li>{% if show_rows and e.row %}{% if is_en %}Row {{ e.row }} · {% else %}{{ e.row }}행 · {% endif %}{% endif %}{{ e.label }}: {{ e.text }}</li>{% endfor %}</ul>
+  </div>
+{% endif %}
+{% if warning_list %}
+  <div class="alert alert-warning" style="display:block" data-testid="form-warnings">
+    <ul class="text-xs" style="margin:0;padding-left:18px">{% for e in warning_list %}<li>{{ e.label }}: {{ e.text }}</li>{% endfor %}</ul>
+  </div>
+{% endif %}

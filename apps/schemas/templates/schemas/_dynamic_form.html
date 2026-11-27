@@ -1,0 +1,72 @@
+{# 원본 components/schema/DynamicForm.tsx + FieldPreview.tsx — 서버가 그리는 입력 폼. 값 검증은 서버(validation.py) #}
+<div class="df" x-data="dfForm()" @input="recount()" @change="recount()">
+  {% if show_progress %}
+  <div class="df-progress">
+    <div class="sc-between text-xs"><span class="text-muted" x-text="{% if is_en %}`Progress: ${filled}/${total} fields`{% else %}`입력 진행률: ${filled}/${total}개 항목`{% endif %}"></span>
+      <span class="font-medium" :class="reqFilled === req ? 'text-teal' : 'text-warning'" x-text="'{% t "필수" "Required" %} ' + reqFilled + '/' + req"></span></div>
+    <div class="df-bar"><div :style="`width:${total ? filled / total * 100 : 0}%`"></div></div>
+  </div>
+  {% endif %}
+  {% for g in groups %}
+    <div class="df-group" x-data="{ open: true }">
+      {% if not g.is_default %}
+        <button type="button" class="df-group-head" @click="open = !open"
+                :data-tip="open ? '{% if is_en %}Collapse the fields of this group.{% else %}이 그룹의 필드 입력란을 접습니다.{% endif %}' : '{% if is_en %}Expand this group to show its fields.{% else %}그룹을 펼쳐 필드 입력란을 보여줍니다.{% endif %}'">
+          <span class="sc-row"><span :style="open && 'transform:rotate(90deg)'" style="display:inline-flex">{% icon "chevron-right" "w-3_5 h-3_5" %}</span>{{ g.label }}
+            <span class="text-muted" style="font-weight:400">({% if is_en %}{{ g.items|length }} fields{% else %}{{ g.items|length }}개 필드{% endif %})</span></span>
+          {% if show_progress %}<span class="text-10" :class="g('{{ g.key|escapejs }}').filled === g('{{ g.key|escapejs }}').total ? 'text-teal' : 'text-muted'" x-text="g('{{ g.key|escapejs }}').filled + '/' + g('{{ g.key|escapejs }}').total"></span>{% endif %}
+        </button>
+      {% endif %}
+      <div class="df-group-body" x-show="open">
+        {% for it in g.items %}
+          <div data-field="{{ it.f.field_name }}" data-type="{{ it.type }}" data-group="{{ g.key }}" data-required="{% if it.required %}1{% else %}0{% endif %}">
+            <label class="df-label" for="{{ it.key }}">{{ it.label }}{% if it.required %}<span class="text-danger text-10">*</span>{% endif %}{% if it.unit %}<span class="text-10 text-muted">({{ it.unit }})</span>{% endif %}</label>
+            {% if it.description %}<p class="df-desc">{{ it.description }}</p>{% endif %}
+            {% if it.type == "TEXTAREA" %}
+              <textarea id="{{ it.key }}" name="{{ it.key }}" rows="3" class="textarea{% if it.error %} is-invalid{% endif %}"{% if it.c.maxLength %} maxlength="{{ it.c.maxLength }}"{% endif %}{% if readonly %} readonly{% endif %} placeholder="{% if is_en %}Enter {{ it.label }}{% else %}{{ it.label }} 입력{% endif %}">{{ it.value }}</textarea>
+            {% elif it.type == "INTEGER" or it.type == "DECIMAL" %}
+              <input id="{{ it.key }}" name="{{ it.key }}" type="number" step="{{ it.step }}" value="{{ it.value }}" class="input input-sm{% if it.error %} is-invalid{% endif %}"{% if it.c.min is not None %} min="{{ it.c.min }}"{% endif %}{% if it.c.max is not None %} max="{{ it.c.max }}"{% endif %}{% if readonly %} readonly{% endif %} placeholder="{{ it.placeholder }}">
+            {% elif it.type == "BOOLEAN" %}
+              <div class="df-toggle" role="radiogroup" aria-label="{{ it.label }}">
+                <label data-tip="{% t "이 항목의 값을 '예'로 지정합니다." "Set this field to Yes." %}"><input type="radio" name="{{ it.key }}" value="true"{% if it.value == "true" %} checked{% endif %}><span>{% t "예" "Yes" %}</span></label>
+                <label class="no" data-tip="{% t "이 항목의 값을 '아니오'로 지정합니다." "Set this field to No." %}"><input type="radio" name="{{ it.key }}" value="false"{% if it.value == "false" %} checked{% endif %}><span>{% t "아니오" "No" %}</span></label>
+                <label data-tip="{% t '선택을 해제합니다(값 없음).' 'Clear the selection (no value).' %}"><input type="radio" name="{{ it.key }}" value=""{% if it.value == "" %} checked{% endif %}><span class="text-muted">—</span></label>
+              </div>
+            {% elif it.type == "DATE" %}
+              <input id="{{ it.key }}" name="{{ it.key }}" type="date" value="{{ it.value }}" class="input input-sm{% if it.error %} is-invalid{% endif %}"{% if it.c.minDate %} min="{{ it.c.minDate }}"{% endif %}{% if it.c.maxDate %} max="{{ it.c.maxDate }}"{% endif %}>
+            {% elif it.type == "DATETIME" %}
+              <input id="{{ it.key }}" name="{{ it.key }}" type="datetime-local" value="{{ it.value }}" class="input input-sm{% if it.error %} is-invalid{% endif %}">
+            {% elif it.type == "SELECT" %}
+              <select id="{{ it.key }}" name="{{ it.key }}" class="select input input-sm{% if it.error %} is-invalid{% endif %}">
+                <option value="">{% t "선택하세요" "Select..." %}</option>
+                {% for o in it.options %}<option value="{{ o.value }}"{% if o.value == it.value %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
+              </select>
+            {% elif it.type == "MULTISELECT" %}
+              <div class="df-checks">{% for o in it.options %}<label><input type="checkbox" name="{{ it.key }}" value="{{ o.value }}"{% if o.checked %} checked{% endif %}> {{ o.label }}</label>{% endfor %}
+                {% if it.c.maxSelections %}<p class="text-10 text-muted">{% if is_en %}Up to {{ it.c.maxSelections }} selections{% else %}최대 {{ it.c.maxSelections }}개 선택 가능{% endif %}</p>{% endif %}</div>
+            {% elif it.type == "NUMERIC_RANGE" %}
+              <div class="sc-row"><input name="{{ it.key }}__min" id="{{ it.key }}" type="number" step="any" value="{{ it.lo }}" class="input input-sm flex-1{% if it.error %} is-invalid{% endif %}" placeholder="{% t '최소' 'Min' %}" aria-label="{{ it.label }} {% t '최소' 'Min' %}">
+                <span class="text-xs text-muted">~</span><input name="{{ it.key }}__max" type="number" step="any" value="{{ it.hi }}" class="input input-sm flex-1{% if it.error %} is-invalid{% endif %}" placeholder="{% t '최대' 'Max' %}" aria-label="{{ it.label }} {% t '최대' 'Max' %}"></div>
+            {% elif it.type == "FILE" %}
+              <div class="stack-xs">
+                {% if it.file %}<label class="sc-row text-xs"><input type="hidden" name="{{ it.key }}__keep" value="0"><input type="checkbox" name="{{ it.key }}__keep" value="1" checked> {% icon "paperclip" "w-3_5 h-3_5" %} {% t "기존 첨부 유지" "Keep current file" %}: <span class="font-mono">{{ it.file.name }}</span></label>{% endif %}
+                {% if preview %}<div class="sc-row soft-box text-xs text-muted">{% icon "paperclip" "w-4 h-4" %} {% t "파일을 선택하세요" "Choose a file" %}{% if it.max_mb %} ({% if is_en %}max {{ it.max_mb }}MB{% else %}최대 {{ it.max_mb }}MB{% endif %}){% endif %}</div>
+                {% else %}<input id="{{ it.key }}" name="{{ it.key }}" type="file"{% if it.accept %} accept="{{ it.accept }}"{% endif %} class="text-xs">
+                  {% if it.max_mb or it.accept %}<p class="text-10 text-muted">{% if it.accept %}{{ it.accept }} {% endif %}{% if it.max_mb %}({% if is_en %}max {{ it.max_mb }}MB{% else %}최대 {{ it.max_mb }}MB{% endif %}){% endif %}</p>{% endif %}{% endif %}
+              </div>
+            {% elif it.type == "CALCULATED" %}
+              <div class="sc-row"><input type="text" readonly value="{{ it.value }}" class="input input-sm" style="background:var(--color-gray-50)" placeholder="{% t '자동 계산' 'Auto-calculated' %}" aria-label="{{ it.label }}">
+                {% if it.c.formula %}<span class="font-mono text-10 text-muted nowrap">= {{ it.c.formula }}</span>{% endif %}</div>
+            {% elif it.type == "CODED" %}
+              <div class="sc-row"><input id="{{ it.key }}" name="{{ it.key }}" type="text" value="{{ it.value }}" class="input input-sm flex-1{% if it.error %} is-invalid{% endif %}" placeholder="{% if is_en %}Enter {{ it.code_system|default:'code' }}{% else %}{{ it.code_system|default:'코드' }} 입력{% endif %}">
+                {% if it.code_system %}<span class="df-code">{{ it.code_system }}</span>{% endif %}</div>
+            {% else %}
+              <input id="{{ it.key }}" name="{{ it.key }}" type="text" value="{{ it.value }}" class="input input-sm{% if it.error %} is-invalid{% endif %}"{% if it.c.maxLength %} maxlength="{{ it.c.maxLength }}"{% endif %} placeholder="{% if is_en %}Enter {{ it.label }}{% else %}{{ it.label }} 입력{% endif %}">
+            {% endif %}
+            {% if it.error %}<p class="df-err" data-testid="err-{{ it.f.field_name }}">{{ it.error }}</p>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>

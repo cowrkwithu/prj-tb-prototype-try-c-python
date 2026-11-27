@@ -1,0 +1,47 @@
+{# 원본 components/schema/SchemaImportModal.tsx — 업로드 → 미리보기 → 가져오기 (검증은 서버) #}
+<div class="modal-backdrop" x-data @keydown.escape.window="$el.remove()" @click.self="$el.remove()">
+  <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="import-title">
+    <div class="modal-header"><h3 class="modal-title" id="import-title">{% t "데이터 구조 가져오기 (JSON)" "Import Data Schema (JSON)" %}</h3>
+      <button type="button" class="icon-btn sm" @click="$root.remove()" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+    <div class="modal-body stack">
+      {% if step == "upload" %}
+        <form hx-post="/schemas/import" hx-encoding="multipart/form-data" hx-target="closest .modal-backdrop" hx-swap="outerHTML" hx-trigger="change from:#import-file">
+          <div class="dropzone text-center" style="padding:32px">
+            {% icon "file-text" "w-12 h-12 text-muted" %}
+            <p class="text-sm text-muted mb-2 mt-2">{% t "JSON 데이터 구조 파일을 선택하세요" "Select a JSON data schema file" %}</p>
+            <p class="text-10 text-muted mb-4">{% t "데이터 구조 상세 페이지에서 내보낸 JSON 파일을 가져올 수 있습니다" "You can import JSON files exported from the data schema details page" %}</p>
+            <label class="btn btn-teal btn-sm" data-tip="{% t '내보내기로 만든 데이터 구조 JSON 파일을 골라 내용을 확인합니다.' 'Pick an exported data schema JSON file to preview it.' %}">{% icon "upload" "w-4 h-4" %} {% t "파일 선택" "Choose File" %}
+              <input id="import-file" type="file" name="file" accept=".json,application/json" class="sr-only"></label>
+          </div>
+        </form>
+        <div class="soft-box"><p class="text-xs font-medium text-muted mb-1">{% t "지원하는 형식" "Supported formats" %}</p>
+          <ul class="text-10 text-muted"><li>- {% t "TBRS Platform 데이터 구조 JSON (내보내기 기능으로 생성)" "TBRS Platform data schema JSON (created with Export)" %}</li>
+            <li>- {% t "name, fields 필드가 포함된 JSON 파일" "JSON file containing name and fields" %}</li></ul></div>
+      {% elif step == "preview" %}
+        <div class="alert alert-success">{% icon "circle-check" "w-5 h-5" %} {% t "데이터 구조 파일이 유효합니다" "The data schema file is valid" %}</div>
+        <div class="card card-sm">
+          <h4 class="text-sm font-semibold mb-2" data-testid="import-name">{{ name|default:"-" }}</h4>
+          {% if description %}<p class="text-xs text-muted mb-3">{{ description }}</p>{% endif %}
+          <div class="sc-row mb-3">{% if category %}<span class="badge badge-sm badge-info">{{ category }}</span>{% endif %}{% if version %}<span class="badge badge-sm badge-neutral">v{{ version }}</span>{% endif %}</div>
+          <p class="text-xs font-medium text-muted mb-2">{% if is_en %}{{ fields|length }} fields{% else %}{{ fields|length }}개 필드{% endif %}</p>
+          <div class="stack-xs" style="max-height:200px;overflow-y:auto">
+            {% for f in fields %}<div class="sc-row soft-box text-xs" style="padding:4px 8px"><span class="font-mono">{{ f.name }}</span><span class="text-muted">—</span><span class="text-muted">{{ f.display }}</span><span class="badge badge-sm badge-neutral">{{ f.type }}</span>{% if f.required %}<span class="badge badge-sm badge-danger">{% t "필수" "Required" %}</span>{% endif %}</div>{% endfor %}
+          </div>
+        </div>
+        <form class="flex justify-between gap-2" hx-post="/schemas/import" hx-target="closest .modal-backdrop" hx-swap="outerHTML">
+          <input type="hidden" name="confirm" value="1"><textarea name="json" hidden>{{ json }}</textarea>
+          <button type="button" class="btn btn-secondary btn-sm" hx-get="/schemas/import" hx-target="closest .modal-backdrop" hx-swap="outerHTML"
+                  data-tip="{% t '미리보기를 닫고 다른 JSON 파일을 고르는 단계로 돌아갑니다.' 'Discard this preview and pick a different JSON file.' %}">{% t "다시 선택" "Choose Again" %}</button>
+          <button type="submit" class="btn btn-teal btn-sm" data-tip="{% t '미리 본 데이터 구조를 내 목록에 새로 등록합니다(초안·비공개).' 'Add the previewed data schema to your list (draft, private).' %}">{% t "가져오기" "Import" %}</button>
+        </form>
+      {% else %}
+        <div class="alert alert-error" style="align-items:flex-start">{% icon "circle-alert" "w-5 h-5" %}
+          <div><p class="font-medium">{% t "데이터 구조 파일을 읽을 수 없습니다" "Unable to read the data schema file" %}</p>
+            {% if error %}<p class="text-xs mt-1" data-testid="import-error">{{ error }}</p>{% endif %}
+            {% if details %}<ul class="text-xs mt-1">{% for d in details %}<li>· {{ d.text }}</li>{% endfor %}</ul>{% endif %}</div></div>
+        <div><button type="button" class="btn btn-secondary btn-sm" hx-get="/schemas/import" hx-target="closest .modal-backdrop" hx-swap="outerHTML"
+                     data-tip="{% t '파일 선택 단계로 돌아가 다른 JSON 파일을 고릅니다.' 'Go back to file selection and pick another JSON file.' %}">{% t "다시 시도" "Try Again" %}</button></div>
+      {% endif %}
+    </div>
+  </div>
+</div>

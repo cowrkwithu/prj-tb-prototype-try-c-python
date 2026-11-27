@@ -1,0 +1,52 @@
+{# 데이터 단계(웹 폼) — 원본 RegimenUpload step 1: 표준 템플릿, 약물 행, 간트 미리보기 #}
+{{ initial_drugs|json_script:"regimen-initial" }}
+{{ templates|json_script:"regimen-templates" }}
+{{ drug_codes|json_script:"regimen-codes" }}
+{{ drug_colors|json_script:"regimen-colors" }}
+<form method="post" action="/upload/regimen/data" class="stack" x-data="regimenForm()">
+  {% include "uploads/steps/_form_head.html" %}
+  <div><label class="flabel" for="r-cid">Condition ID *</label>
+    <input id="r-cid" class="input{% if field_errors.condition_id %} is-invalid{% endif %}" style="max-width:288px" name="condition_id" value="{{ fd.condition_id|default:'' }}" placeholder="TB-KR-001" maxlength="40">
+    {% if field_errors.condition_id %}<p class="field-error">{{ field_errors.condition_id }}</p>{% endif %}</div>
+  <div class="flex flex-wrap items-center gap-3">
+    <select class="select input" style="width:auto" @change="applyTemplate($event.target.value); $event.target.value = '-1'" aria-label="{% t '표준 레지멘 템플릿 적용' 'Apply Standard Regimen Template' %}">
+      <option value="-1">{% t "표준 레지멘 템플릿 적용" "Apply Standard Regimen Template" %}</option>
+      {% for tpl in templates %}<option value="{{ forloop.counter0 }}">{{ tpl.label }}</option>{% endfor %}
+    </select>
+    <button type="button" class="btn btn-teal btn-sm" @click="add()" data-tip="{% t '약물 목록에 빈 약물 행을 하나 추가합니다.' 'Add an empty drug row to the list.' %}">{% icon "plus" "w-3_5 h-3_5" %} {% t "약물 추가" "Add Drug" %}</button>
+  </div>
+  <div class="table-wrap" x-show="drugs.length" x-cloak>
+    <table class="table table-compact">
+      <thead><tr><th>{% t "약물" "Drug" %}</th><th>{% t "코드" "Code" %}</th><th>{% t "시작일" "Start Day" %}</th><th>{% t "종료일" "End Day" %}</th><th>{% t "용량" "Dose" %}</th><th>{% t "경로" "Route" %}</th><th></th></tr></thead>
+      <tbody>
+        <template x-for="(d, i) in drugs" :key="d.id">
+          <tr>
+            <td><select class="select input input-xs" style="width:144px" name="drug_name" x-model="d.name" @change="d.code = codes[d.name] || ''">
+              <option value="">{% t "선택" "Select" %}</option>
+              {% for g in drug_groups %}<optgroup label="{{ g.label }}">{% for name, code in g.drugs %}<option value="{{ name }}">{{ name }}</option>{% endfor %}</optgroup>{% endfor %}
+            </select></td>
+            <td class="font-mono text-xs text-muted" x-text="d.code"></td>
+            <td><input type="number" min="0" class="input input-xs" style="width:72px" name="start_day" x-model="d.startDay"></td>
+            <td><input type="number" min="0" class="input input-xs" style="width:72px" name="end_day" x-model="d.endDay"></td>
+            <td><input class="input input-xs" style="width:88px" name="dosage" x-model="d.dosage" placeholder="300mg" maxlength="40"></td>
+            <td><select class="select input input-xs" style="width:auto" name="route" x-model="d.route">{% for r in routes %}<option>{{ r }}</option>{% endfor %}</select></td>
+            <td><button type="button" class="icon-btn sm hover-danger" @click="remove(i)" aria-label="{% t '약물 삭제' 'Remove drug' %}" data-tip="{% t '이 약물 행을 레지멘에서 삭제합니다.' 'Remove this drug row from the regimen.' %}">{% icon "x" "w-3_5 h-3_5" %}</button></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+  <div class="soft-box" x-show="bars().length" x-cloak data-testid="gantt">
+    <h3 class="text-sm font-semibold text-navy mb-2">{% t "레지멘 타임라인 미리보기" "Regimen Timeline Preview" %}</h3>
+    <div class="stack-xs">
+      <template x-for="b in bars()" :key="b.id">
+        <div class="gantt-row"><span class="gantt-label" x-text="b.name"></span>
+          <div class="gantt-track"><div class="gantt-bar" :style="`left:${b.left}%;width:${b.width}%;background:${b.color}`" :title="`${b.name} (${b.code}): Day ${b.start}-${b.end}`"></div></div></div>
+      </template>
+      <div class="gantt-row"><span class="gantt-label"></span><div class="flex-1 flex justify-between text-10 text-slate-400">
+        <span>0</span><span x-text="Math.round(maxDay() / 4)"></span><span x-text="Math.round(maxDay() / 2)"></span><span x-text="Math.round(maxDay() * 3 / 4)"></span><span x-text="{% if is_en %}maxDay() + ' days'{% else %}maxDay() + '일'{% endif %}"></span></div></div>
+    </div>
+  </div>
+  {% include "uploads/steps/_form_errors.html" with show_rows=True %}
+  {% include "uploads/steps/_form_actions.html" with back_ko="업로드 방식 선택 단계로 돌아갑니다." back_en="Go back to upload method selection." next_ko="다음 (비식별화 확인)" next_en="Next (De-identification)" next_tip_ko="입력한 내용으로 비식별화 확인 단계로 넘어갑니다." next_tip_en="Continue to the de-identification check with the entered data." %}
+</form>

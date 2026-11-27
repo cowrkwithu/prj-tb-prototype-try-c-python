@@ -1,0 +1,35 @@
+{# 비식별화 확인 — 원본 PiiScanReport + DeidentificationChecker (+ 임상: 기관 담당자 서명). 제출 조건은 서버가 다시 확인한다. #}
+<form method="post" action="/upload/{{ domain }}/submit" class="stack" x-data="{ checks: [{% for i in deid_items %}false{% if not forloop.last %}, {% endif %}{% endfor %}], get all() { return this.checks.every(Boolean) }, get left() { return this.checks.filter(c => !c).length } }">
+  {% csrf_token %}<input type="hidden" name="id" value="{{ sub.upload_id }}">
+  {% if domain == "imaging" %}
+    <div class="alert alert-warning" style="display:block">
+      <p class="font-medium">{% t "DICOM 헤더는 6개 식별 태그만 자동 검사합니다" "Only six identifying DICOM tags are checked automatically" %}</p>
+      <p class="text-xs mt-1">{% t "환자 식별정보(PatientName, PatientID, PatientBirthDate 등) 외의 태그나 영상에 찍힌 글자는 자동 검사 대상이 아닙니다. 업로드 전 익명화 도구로 헤더를 제거하고 아래 체크리스트로 직접 확인하세요." "Tags other than patient identifiers (PatientName, PatientID, PatientBirthDate, etc.) and text burned into images are not checked automatically. Remove them with an anonymization tool before upload and confirm using the checklist below." %}</p>
+    </div>
+  {% endif %}
+  {% include "uploads/_pii_report.html" %}
+  {% if data_problems %}
+    <div class="alert alert-error" data-testid="data-problems">{% icon "circle-alert" "w-4 h-4" %} {% for p in data_problems %}{{ p }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+  {% endif %}
+
+  <div class="stack-sm" data-testid="deid-checklist">
+    <div class="flex items-center gap-2">{% icon "shield-check" "w-5 h-5 text-teal" %}<h3 class="font-semibold">{% t "비식별화 검증 체크리스트" "De-identification Checklist" %}</h3></div>
+    {% for item in deid_items %}
+      <label class="deid-item" :class="checks[{{ forloop.counter0 }}] && 'on'"><input type="checkbox" name="deid" value="{{ forloop.counter0 }}" x-model="checks[{{ forloop.counter0 }}]"> <span>{{ item }}</span></label>
+    {% endfor %}
+    <div class="alert alert-warning" x-show="!all">{% icon "triangle-alert" "w-4 h-4" %} <span>{% if is_en %}All de-identification items must be checked (<span x-text="left"></span> unchecked){% else %}모든 비식별화 항목을 확인해야 합니다 (<span x-text="left"></span>건 미확인){% endif %}</span></div>
+  </div>
+
+  {% if domain == "clinical" %}
+    <div class="stack-sm" style="border-top:1px solid var(--color-border);padding-top:16px">
+      <div><label class="flabel" for="d-sign">{% t "기관 담당자 서명" "Institution Representative Signature" %}</label><input id="d-sign" class="input" name="signer" maxlength="100" placeholder="{% t '이름 입력' 'Enter name' %}"></div>
+      <div><label class="flabel" for="d-date">{% t "확인일" "Confirmation Date" %}</label><input id="d-date" type="date" class="input" name="confirm_date" value="{{ today }}"></div>
+    </div>
+  {% endif %}
+
+  <div class="step-actions">
+    {% include "uploads/steps/_back.html" with help_ko="데이터 입력 단계로 돌아갑니다." help_en="Go back to data entry." %}
+    <button type="submit" class="btn btn-teal" data-testid="submit" {% if sub.pii_blocking or data_problems %}disabled{% else %}:disabled="!all"{% endif %}
+            data-tip="{% if sub.pii_blocking %}{% t '개인정보가 탐지되어 제출할 수 없습니다. 해당 값을 제거한 뒤 다시 업로드해야 합니다.' 'Cannot submit: personal data was detected. Remove it and upload again.' %}{% elif data_problems %}{% t '입력 단계의 문제를 먼저 해결해야 제출할 수 있습니다.' 'Resolve the data entry problems first to submit.' %}{% else %}{% t '비식별화 체크리스트를 모두 확인한 뒤 데이터를 제출합니다. 제출 후에는 관리자 검증을 기다립니다.' 'Confirm the whole checklist, then submit the data. It then awaits administrator review.' %}{% endif %}">{% t "제출하기" "Submit" %} {% icon "arrow-right" "w-4 h-4" %}</button>
+  </div>
+</form>

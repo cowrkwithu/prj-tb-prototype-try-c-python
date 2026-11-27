@@ -1,0 +1,2751 @@
+[
+ {
+  "id": 1,
+  "conditionId": "KR-2024-0001",
+  "demographics": {
+   "age": 45,
+   "sex": "M",
+   "country": "한국",
+   "site": "서울대병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180001",
+   "lineage": "L2.2.1",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 3,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤",
+    "결절"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    },
+    {
+     "drug": "EMB",
+     "result": "S"
+    },
+    {
+     "drug": "PZA",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-01-15",
+  "lastUpdateDate": "2024-07-20"
+ },
+ {
+  "id": 2,
+  "conditionId": "KR-2024-0002",
+  "demographics": {
+   "age": 62,
+   "sex": "F",
+   "country": "한국",
+   "site": "국립결핵병원"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 540,
+   "comorbidities": [
+    "당뇨"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180002",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 5,
+   "ctCount": 2,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "공동",
+    "침윤",
+    "섬유화"
+   ]
+  },
+  "lab": {
+   "microscopy": "3+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "EMB",
+     "result": "S"
+    },
+    {
+     "drug": "PZA",
+     "result": "S"
+    },
+    {
+     "drug": "FQ",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-02-03",
+  "lastUpdateDate": "2024-09-15"
+ },
+ {
+  "id": 3,
+  "conditionId": "KR-2024-0003",
+  "demographics": {
+   "age": 34,
+   "sex": "M",
+   "country": "한국",
+   "site": "서울대병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180003",
+   "lineage": "L4.0",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "결절"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-02-18",
+  "lastUpdateDate": "2024-08-20"
+ },
+ {
+  "id": 4,
+  "conditionId": "KR-2024-0004",
+  "demographics": {
+   "age": 71,
+   "sex": "M",
+   "country": "한국",
+   "site": "국립결핵병원"
+  },
+  "clinical": {
+   "diagnosisType": "XDR-TB",
+   "treatmentOutcome": "Failed",
+   "treatmentDuration": 720,
+   "comorbidities": [
+    "당뇨",
+    "COPD"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180004",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T",
+    "gyrA D94G",
+    "rrs a1401g"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 8,
+   "ctCount": 3,
+   "petCtCount": 2,
+   "cxrFindings": [
+    "공동",
+    "침윤",
+    "흉수",
+    "섬유화"
+   ]
+  },
+  "lab": {
+   "microscopy": "3+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "R"
+    },
+    {
+     "drug": "AMK",
+     "result": "R"
+    }
+   ]
+  },
+  "registrationDate": "2024-03-01",
+  "lastUpdateDate": "2025-01-10"
+ },
+ {
+  "id": 5,
+  "conditionId": "KR-2024-0005",
+  "demographics": {
+   "age": 28,
+   "sex": "F",
+   "country": "한국",
+   "site": "삼성서울병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "Negative",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-03-12",
+  "lastUpdateDate": "2024-09-12"
+ },
+ {
+  "id": 6,
+  "conditionId": "KR-2024-0006",
+  "demographics": {
+   "age": 55,
+   "sex": "M",
+   "country": "한국",
+   "site": "서울대병원"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 450,
+   "comorbidities": [
+    "HIV"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180006",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB H445Y",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 6,
+   "ctCount": 2,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "공동",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "EMB",
+     "result": "S"
+    },
+    {
+     "drug": "FQ",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-03-25",
+  "lastUpdateDate": "2024-11-20"
+ },
+ {
+  "id": 7,
+  "conditionId": "KR-2024-0007",
+  "demographics": {
+   "age": 39,
+   "sex": "F",
+   "country": "한국",
+   "site": "국립결핵병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180007",
+   "lineage": "L4.2.2",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "석회화"
+   ]
+  },
+  "lab": {
+   "microscopy": "Negative",
+   "culture": "Negative",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-04-05",
+  "lastUpdateDate": "2024-10-05"
+ },
+ {
+  "id": 8,
+  "conditionId": "KR-2024-0008",
+  "demographics": {
+   "age": 48,
+   "sex": "M",
+   "country": "한국",
+   "site": "삼성서울병원"
+  },
+  "clinical": {
+   "diagnosisType": "Pre-XDR-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 600,
+   "comorbidities": [
+    "당뇨"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180008",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T",
+    "gyrA A90V"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 4,
+   "ctCount": 1,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "침윤",
+    "공동"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "R"
+    },
+    {
+     "drug": "AMK",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-04-20",
+  "lastUpdateDate": "2025-01-05"
+ },
+ {
+  "id": 9,
+  "conditionId": "KR-2024-0009",
+  "demographics": {
+   "age": 66,
+   "sex": "M",
+   "country": "한국",
+   "site": "서울대병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Died",
+   "treatmentDuration": 90,
+   "comorbidities": [
+    "폐암",
+    "COPD"
+   ]
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": false,
+   "cxrCount": 3,
+   "ctCount": 2,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤",
+    "흉수",
+    "무기폐"
+   ]
+  },
+  "lab": {
+   "microscopy": "3+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-05-01",
+  "lastUpdateDate": "2024-07-30"
+ },
+ {
+  "id": 10,
+  "conditionId": "KR-2024-0010",
+  "demographics": {
+   "age": 23,
+   "sex": "F",
+   "country": "한국",
+   "site": "국립결핵병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180010",
+   "lineage": "L4.0",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "결절"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-05-14",
+  "lastUpdateDate": "2024-11-14"
+ },
+ {
+  "id": 11,
+  "conditionId": "KR-2024-0011",
+  "demographics": {
+   "age": 52,
+   "sex": "M",
+   "country": "한국",
+   "site": "서울대병원"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "LTFU",
+   "treatmentDuration": 210,
+   "comorbidities": [
+    "알코올 의존"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180011",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB D435V",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 3,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "공동",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "EMB",
+     "result": "R"
+    }
+   ]
+  },
+  "registrationDate": "2024-05-28",
+  "lastUpdateDate": "2024-12-15"
+ },
+ {
+  "id": 12,
+  "conditionId": "KR-2024-0012",
+  "demographics": {
+   "age": 41,
+   "sex": "F",
+   "country": "한국",
+   "site": "삼성서울병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180012",
+   "lineage": "L4.2.2",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-06-10",
+  "lastUpdateDate": "2024-12-10"
+ },
+ {
+  "id": 13,
+  "conditionId": "KR-2024-0013",
+  "demographics": {
+   "age": 58,
+   "sex": "M",
+   "country": "한국",
+   "site": "국립결핵병원"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 480,
+   "comorbidities": [
+    "당뇨"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180013",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "inhA c-15t"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 5,
+   "ctCount": 2,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "침윤",
+    "섬유화",
+    "기관지확장"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-06-22",
+  "lastUpdateDate": "2025-02-01"
+ },
+ {
+  "id": 14,
+  "conditionId": "KR-2024-0014",
+  "demographics": {
+   "age": 30,
+   "sex": "M",
+   "country": "한국",
+   "site": "서울대병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "결절",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-07-05",
+  "lastUpdateDate": "2025-01-05"
+ },
+ {
+  "id": 15,
+  "conditionId": "KR-2024-0015",
+  "demographics": {
+   "age": 75,
+   "sex": "F",
+   "country": "한국",
+   "site": "국립결핵병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Died",
+   "treatmentDuration": 60,
+   "comorbidities": [
+    "만성신부전",
+    "당뇨"
+   ]
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 1,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "흉수",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-07-18",
+  "lastUpdateDate": "2024-09-18"
+ },
+ {
+  "id": 16,
+  "conditionId": "KR-2024-0016",
+  "demographics": {
+   "age": 36,
+   "sex": "M",
+   "country": "한국",
+   "site": "삼성서울병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180016",
+   "lineage": "L4.0",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "Negative",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-08-02",
+  "lastUpdateDate": "2025-02-02"
+ },
+ {
+  "id": 17,
+  "conditionId": "KR-2024-0017",
+  "demographics": {
+   "age": 44,
+   "sex": "F",
+   "country": "한국",
+   "site": "서울대병원"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 540,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180017",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 4,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "공동",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-08-15",
+  "lastUpdateDate": "2025-02-15"
+ },
+ {
+  "id": 18,
+  "conditionId": "KR-2024-0018",
+  "demographics": {
+   "age": 50,
+   "sex": "M",
+   "country": "한국",
+   "site": "국립결핵병원"
+  },
+  "clinical": {
+   "diagnosisType": "Pre-XDR-TB",
+   "treatmentOutcome": "Failed",
+   "treatmentDuration": 660,
+   "comorbidities": [
+    "당뇨",
+    "HIV"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180018",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T",
+    "gyrA D94G"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 7,
+   "ctCount": 3,
+   "petCtCount": 2,
+   "cxrFindings": [
+    "공동",
+    "침윤",
+    "섬유화"
+   ]
+  },
+  "lab": {
+   "microscopy": "3+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "R"
+    },
+    {
+     "drug": "AMK",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-09-01",
+  "lastUpdateDate": "2025-02-28"
+ },
+ {
+  "id": 19,
+  "conditionId": "KR-2024-0019",
+  "demographics": {
+   "age": 27,
+   "sex": "M",
+   "country": "한국",
+   "site": "삼성서울병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180019",
+   "lineage": "L4.0",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "결절"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-09-20",
+  "lastUpdateDate": "2025-03-01"
+ },
+ {
+  "id": 20,
+  "conditionId": "KR-2024-0020",
+  "demographics": {
+   "age": 63,
+   "sex": "F",
+   "country": "한국",
+   "site": "서울대병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 180,
+   "comorbidities": [
+    "고혈압"
+   ]
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 3,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤",
+    "석회화"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-10-05",
+  "lastUpdateDate": "2025-03-01"
+ },
+ {
+  "id": 21,
+  "conditionId": "MN-2024-0001",
+  "demographics": {
+   "age": 32,
+   "sex": "M",
+   "country": "몽골",
+   "site": "울란바토르 국립병원"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 540,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180021",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 4,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "공동",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    }
+   ]
+  },
+  "registrationDate": "2024-01-22",
+  "lastUpdateDate": "2024-10-15"
+ },
+ {
+  "id": 22,
+  "conditionId": "MN-2024-0002",
+  "demographics": {
+   "age": 47,
+   "sex": "F",
+   "country": "몽골",
+   "site": "울란바토르 국립병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180022",
+   "lineage": "L2.2.1",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-02-14",
+  "lastUpdateDate": "2024-08-14"
+ },
+ {
+  "id": 23,
+  "conditionId": "MN-2024-0003",
+  "demographics": {
+   "age": 56,
+   "sex": "M",
+   "country": "몽골",
+   "site": "다르항 병원"
+  },
+  "clinical": {
+   "diagnosisType": "XDR-TB",
+   "treatmentOutcome": "Failed",
+   "treatmentDuration": 720,
+   "comorbidities": [
+    "알코올 의존"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180023",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T",
+    "gyrA D94G",
+    "rrs a1401g"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 6,
+   "ctCount": 2,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "공동",
+    "침윤",
+    "섬유화"
+   ]
+  },
+  "lab": {
+   "microscopy": "3+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "R"
+    },
+    {
+     "drug": "AMK",
+     "result": "R"
+    }
+   ]
+  },
+  "registrationDate": "2024-03-10",
+  "lastUpdateDate": "2025-01-20"
+ },
+ {
+  "id": 24,
+  "conditionId": "MN-2024-0004",
+  "demographics": {
+   "age": 25,
+   "sex": "F",
+   "country": "몽골",
+   "site": "울란바토르 국립병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "결절"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-04-18",
+  "lastUpdateDate": "2024-10-18"
+ },
+ {
+  "id": 25,
+  "conditionId": "MN-2024-0005",
+  "demographics": {
+   "age": 38,
+   "sex": "M",
+   "country": "몽골",
+   "site": "다르항 병원"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 480,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180025",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB H445Y",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 3,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤",
+    "공동"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-05-22",
+  "lastUpdateDate": "2024-12-22"
+ },
+ {
+  "id": 26,
+  "conditionId": "MN-2024-0006",
+  "demographics": {
+   "age": 42,
+   "sex": "M",
+   "country": "몽골",
+   "site": "울란바토르 국립병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "LTFU",
+   "treatmentDuration": 90,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 1,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-06-15",
+  "lastUpdateDate": "2024-09-15"
+ },
+ {
+  "id": 27,
+  "conditionId": "MN-2024-0007",
+  "demographics": {
+   "age": 60,
+   "sex": "F",
+   "country": "몽골",
+   "site": "다르항 병원"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 540,
+   "comorbidities": [
+    "당뇨"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180027",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "inhA c-15t"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 5,
+   "ctCount": 1,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "침윤",
+    "섬유화"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "EMB",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-07-20",
+  "lastUpdateDate": "2025-02-10"
+ },
+ {
+  "id": 28,
+  "conditionId": "MN-2024-0008",
+  "demographics": {
+   "age": 29,
+   "sex": "M",
+   "country": "몽골",
+   "site": "울란바토르 국립병원"
+  },
+  "clinical": {
+   "diagnosisType": "Pre-XDR-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 600,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180028",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T",
+    "gyrA A90V"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 4,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "공동",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "R"
+    }
+   ]
+  },
+  "registrationDate": "2024-08-30",
+  "lastUpdateDate": "2025-03-01"
+ },
+ {
+  "id": 29,
+  "conditionId": "VN-2024-0001",
+  "demographics": {
+   "age": 35,
+   "sex": "M",
+   "country": "베트남",
+   "site": "호치민 폐병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180029",
+   "lineage": "L1.1.1",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "결절",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-02-05",
+  "lastUpdateDate": "2024-08-05"
+ },
+ {
+  "id": 30,
+  "conditionId": "VN-2024-0002",
+  "demographics": {
+   "age": 50,
+   "sex": "F",
+   "country": "베트남",
+   "site": "하노이 국립결핵연구소"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 540,
+   "comorbidities": [
+    "당뇨"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180030",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 4,
+   "ctCount": 1,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "공동",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-03-18",
+  "lastUpdateDate": "2024-12-01"
+ },
+ {
+  "id": 31,
+  "conditionId": "VN-2024-0003",
+  "demographics": {
+   "age": 28,
+   "sex": "M",
+   "country": "베트남",
+   "site": "호치민 폐병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-04-22",
+  "lastUpdateDate": "2024-10-22"
+ },
+ {
+  "id": 32,
+  "conditionId": "VN-2024-0004",
+  "demographics": {
+   "age": 64,
+   "sex": "M",
+   "country": "베트남",
+   "site": "하노이 국립결핵연구소"
+  },
+  "clinical": {
+   "diagnosisType": "XDR-TB",
+   "treatmentOutcome": "Died",
+   "treatmentDuration": 300,
+   "comorbidities": [
+    "HIV",
+    "간경변"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180032",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T",
+    "gyrA D94G",
+    "rrs a1401g"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 5,
+   "ctCount": 2,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "공동",
+    "침윤",
+    "흉수"
+   ]
+  },
+  "lab": {
+   "microscopy": "3+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "R"
+    },
+    {
+     "drug": "AMK",
+     "result": "R"
+    }
+   ]
+  },
+  "registrationDate": "2024-05-30",
+  "lastUpdateDate": "2024-11-30"
+ },
+ {
+  "id": 33,
+  "conditionId": "VN-2024-0005",
+  "demographics": {
+   "age": 41,
+   "sex": "F",
+   "country": "베트남",
+   "site": "호치민 폐병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180033",
+   "lineage": "L1.1.1",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "석회화"
+   ]
+  },
+  "lab": {
+   "microscopy": "Negative",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-07-08",
+  "lastUpdateDate": "2025-01-08"
+ },
+ {
+  "id": 34,
+  "conditionId": "VN-2024-0006",
+  "demographics": {
+   "age": 37,
+   "sex": "M",
+   "country": "베트남",
+   "site": "하노이 국립결핵연구소"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 480,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180034",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB H445Y",
+    "inhA c-15t"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 3,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤",
+    "공동"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    }
+   ]
+  },
+  "registrationDate": "2024-08-20",
+  "lastUpdateDate": "2025-02-20"
+ },
+ {
+  "id": 35,
+  "conditionId": "VN-2024-0007",
+  "demographics": {
+   "age": 53,
+   "sex": "F",
+   "country": "베트남",
+   "site": "호치민 폐병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "LTFU",
+   "treatmentDuration": 60,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 1,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-09-15",
+  "lastUpdateDate": "2024-11-15"
+ },
+ {
+  "id": 36,
+  "conditionId": "IN-2024-0001",
+  "demographics": {
+   "age": 30,
+   "sex": "M",
+   "country": "인도",
+   "site": "뭄바이 의과대학"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180036",
+   "lineage": "L3.1.1",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-01-30",
+  "lastUpdateDate": "2024-07-30"
+ },
+ {
+  "id": 37,
+  "conditionId": "IN-2024-0002",
+  "demographics": {
+   "age": 45,
+   "sex": "F",
+   "country": "인도",
+   "site": "델리 AIIMS"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 540,
+   "comorbidities": [
+    "당뇨",
+    "HIV"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180037",
+   "lineage": "L3.1.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 5,
+   "ctCount": 2,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "공동",
+    "침윤",
+    "흉수"
+   ]
+  },
+  "lab": {
+   "microscopy": "3+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-03-15",
+  "lastUpdateDate": "2024-12-15"
+ },
+ {
+  "id": 38,
+  "conditionId": "IN-2024-0003",
+  "demographics": {
+   "age": 22,
+   "sex": "M",
+   "country": "인도",
+   "site": "뭄바이 의과대학"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "결절"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-05-10",
+  "lastUpdateDate": "2024-11-10"
+ },
+ {
+  "id": 39,
+  "conditionId": "IN-2024-0004",
+  "demographics": {
+   "age": 58,
+   "sex": "M",
+   "country": "인도",
+   "site": "델리 AIIMS"
+  },
+  "clinical": {
+   "diagnosisType": "Pre-XDR-TB",
+   "treatmentOutcome": "Failed",
+   "treatmentDuration": 600,
+   "comorbidities": [
+    "당뇨"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180039",
+   "lineage": "L3.1.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T",
+    "gyrA A90V"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 6,
+   "ctCount": 2,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "공동",
+    "침윤",
+    "섬유화"
+   ]
+  },
+  "lab": {
+   "microscopy": "3+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "R"
+    }
+   ]
+  },
+  "registrationDate": "2024-07-01",
+  "lastUpdateDate": "2025-02-28"
+ },
+ {
+  "id": 40,
+  "conditionId": "IN-2024-0005",
+  "demographics": {
+   "age": 33,
+   "sex": "F",
+   "country": "인도",
+   "site": "뭄바이 의과대학"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180040",
+   "lineage": "L3.1.1",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-09-05",
+  "lastUpdateDate": "2025-03-01"
+ },
+ {
+  "id": 41,
+  "conditionId": "ZA-2024-0001",
+  "demographics": {
+   "age": 38,
+   "sex": "M",
+   "country": "남아공",
+   "site": "케이프타운 대학병원"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 540,
+   "comorbidities": [
+    "HIV"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180041",
+   "lineage": "L4.3.4.2",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 3,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤",
+    "공동"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-02-20",
+  "lastUpdateDate": "2024-11-20"
+ },
+ {
+  "id": 42,
+  "conditionId": "ZA-2024-0002",
+  "demographics": {
+   "age": 26,
+   "sex": "F",
+   "country": "남아공",
+   "site": "요하네스버그 병원"
+  },
+  "clinical": {
+   "diagnosisType": "XDR-TB",
+   "treatmentOutcome": "Died",
+   "treatmentDuration": 240,
+   "comorbidities": [
+    "HIV"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180042",
+   "lineage": "L4.3.4.2",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T",
+    "gyrA D94G",
+    "rrs a1401g"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 4,
+   "ctCount": 2,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "공동",
+    "침윤",
+    "흉수"
+   ]
+  },
+  "lab": {
+   "microscopy": "3+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "R"
+    },
+    {
+     "drug": "AMK",
+     "result": "R"
+    }
+   ]
+  },
+  "registrationDate": "2024-04-10",
+  "lastUpdateDate": "2024-12-10"
+ },
+ {
+  "id": 43,
+  "conditionId": "ZA-2024-0003",
+  "demographics": {
+   "age": 44,
+   "sex": "M",
+   "country": "남아공",
+   "site": "케이프타운 대학병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": [
+    "HIV"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180043",
+   "lineage": "L4.3.4.2",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-06-01",
+  "lastUpdateDate": "2024-12-01"
+ },
+ {
+  "id": 44,
+  "conditionId": "ZA-2024-0004",
+  "demographics": {
+   "age": 51,
+   "sex": "F",
+   "country": "남아공",
+   "site": "요하네스버그 병원"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 480,
+   "comorbidities": [
+    "HIV",
+    "당뇨"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180044",
+   "lineage": "L4.3.4.2",
+   "resistanceMutations": [
+    "rpoB D435V",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 4,
+   "ctCount": 1,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "공동",
+    "침윤",
+    "섬유화"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-08-05",
+  "lastUpdateDate": "2025-02-28"
+ },
+ {
+  "id": 45,
+  "conditionId": "ZA-2024-0005",
+  "demographics": {
+   "age": 35,
+   "sex": "M",
+   "country": "남아공",
+   "site": "케이프타운 대학병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 180,
+   "comorbidities": [
+    "HIV"
+   ]
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-10-10",
+  "lastUpdateDate": "2025-03-01"
+ },
+ {
+  "id": 46,
+  "conditionId": "ID-2024-0001",
+  "demographics": {
+   "age": 40,
+   "sex": "M",
+   "country": "인도네시아",
+   "site": "자카르타 폐병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180046",
+   "lineage": "L1.2.1",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤",
+    "결절"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-03-05",
+  "lastUpdateDate": "2024-09-05"
+ },
+ {
+  "id": 47,
+  "conditionId": "ID-2024-0002",
+  "demographics": {
+   "age": 55,
+   "sex": "F",
+   "country": "인도네시아",
+   "site": "자카르타 폐병원"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "LTFU",
+   "treatmentDuration": 180,
+   "comorbidities": [
+    "당뇨"
+   ]
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180047",
+   "lineage": "L2.2.1",
+   "resistanceMutations": [
+    "rpoB S450L",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 3,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "공동",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    }
+   ]
+  },
+  "registrationDate": "2024-05-20",
+  "lastUpdateDate": "2024-11-20"
+ },
+ {
+  "id": 48,
+  "conditionId": "PH-2024-0001",
+  "demographics": {
+   "age": 33,
+   "sex": "M",
+   "country": "필리핀",
+   "site": "마닐라 폐센터"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": false,
+   "sraId": null,
+   "lineage": null,
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-06-28",
+  "lastUpdateDate": "2024-12-28"
+ },
+ {
+  "id": 49,
+  "conditionId": "PH-2024-0002",
+  "demographics": {
+   "age": 48,
+   "sex": "F",
+   "country": "필리핀",
+   "site": "마닐라 폐센터"
+  },
+  "clinical": {
+   "diagnosisType": "MDR-TB",
+   "treatmentOutcome": "Completed",
+   "treatmentDuration": 480,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180049",
+   "lineage": "L1.2.1",
+   "resistanceMutations": [
+    "rpoB H445Y",
+    "katG S315T"
+   ]
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": true,
+   "hasPetCt": true,
+   "cxrCount": 4,
+   "ctCount": 1,
+   "petCtCount": 1,
+   "cxrFindings": [
+    "공동",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "2+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "R"
+    },
+    {
+     "drug": "RIF",
+     "result": "R"
+    },
+    {
+     "drug": "FQ",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-08-12",
+  "lastUpdateDate": "2025-02-12"
+ },
+ {
+  "id": 50,
+  "conditionId": "MM-2024-0001",
+  "demographics": {
+   "age": 29,
+   "sex": "M",
+   "country": "미얀마",
+   "site": "양곤 종합병원"
+  },
+  "clinical": {
+   "diagnosisType": "DS-TB",
+   "treatmentOutcome": "Cured",
+   "treatmentDuration": 180,
+   "comorbidities": []
+  },
+  "genomics": {
+   "hasSequence": true,
+   "sraId": "SRR180050",
+   "lineage": "L1.1.1",
+   "resistanceMutations": []
+  },
+  "imaging": {
+   "hasCxr": true,
+   "hasCt": false,
+   "hasPetCt": false,
+   "cxrCount": 2,
+   "ctCount": 0,
+   "petCtCount": 0,
+   "cxrFindings": [
+    "결절",
+    "침윤"
+   ]
+  },
+  "lab": {
+   "microscopy": "1+",
+   "culture": "Positive",
+   "dstResults": [
+    {
+     "drug": "INH",
+     "result": "S"
+    },
+    {
+     "drug": "RIF",
+     "result": "S"
+    }
+   ]
+  },
+  "registrationDate": "2024-10-01",
+  "lastUpdateDate": "2025-03-01"
+ }
+]

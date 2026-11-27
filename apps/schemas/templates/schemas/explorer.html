@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% t "데이터 구조 탐색" "Browse Data Schemas" %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/schemas.css' %}">{% endblock %}
+{% block content %}
+{# 원본 src/pages/Schemas/SchemaExplorer.tsx #}
+<div class="container-wide container" x-data>
+  <div class="sc-between mb-6" style="align-items:flex-start">
+    <div>
+      <h1 class="text-2xl font-bold sc-row">{% icon "database" "w-6 h-6 text-teal" %} {% t "커스텀 데이터 구조" "Custom Data Schemas" %}</h1>
+      <p class="text-sm text-muted mt-1">{% t "연구자가 정의한 커스텀 데이터 구조를 탐색하고 활용하세요" "Browse and use custom data schemas defined by researchers" %}</p>
+    </div>
+    <div class="sc-row">
+      <button type="button" class="btn btn-secondary" hx-get="/schemas/import" hx-target="#modal-root"
+              data-tip="{% t 'JSON 파일을 불러와 새 데이터 구조로 등록하는 창을 엽니다.' 'Open a dialog to import a JSON file as a new data schema.' %}">{% icon "upload" "w-4 h-4" %} {% t "JSON 가져오기" "Import JSON" %}</button>
+      <a href="/schemas/create" class="btn btn-teal" data-tip="{% t '필드를 직접 구성해 새 데이터 구조를 만드는 화면으로 이동합니다.' 'Go to the builder to create a new data schema from scratch.' %}">{% icon "plus" "w-4 h-4" %} {% t "새 데이터 구조 만들기" "Create Data Schema" %}</a>
+    </div>
+  </div>
+
+  <form class="sc-toolbar" action="/schemas" method="get" hx-get="/schemas" hx-target="#schema-grid" hx-swap="outerHTML"
+        hx-push-url="true" hx-trigger="input changed delay:300ms from:input[name=q], change from:select, submit">
+    <div class="input-icon">{% icon "search" "w-4 h-4" %}
+      <input class="input input-sm" type="search" name="q" value="{{ state.q }}" autocomplete="off" aria-label="{% t '검색' 'Search' %}"
+             placeholder="{% t '데이터 구조명, 설명, 태그 검색...' 'Search by name, description, tag...' %}"></div>
+    <span class="sc-row">{% icon "sliders-horizontal" "w-4 h-4 text-muted" %}
+      <select name="category" class="sc-select" aria-label="{% t '카테고리' 'Category' %}">
+        <option value="">{% t "전체 카테고리" "All Categories" %}</option>
+        {% for v, l in categories %}<option value="{{ v }}"{% if state.category == v %} selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+      <select name="status" class="sc-select" aria-label="{% t '상태' 'Status' %}">
+        <option value="">{% t "전체 상태" "All Statuses" %}</option>
+        <option value="published"{% if state.status == "published" %} selected{% endif %}>{% t "발행됨" "Published" %}</option>
+        <option value="draft"{% if state.status == "draft" %} selected{% endif %}>{% t "초안" "Draft" %}</option>
+        <option value="archived"{% if state.status == "archived" %} selected{% endif %}>{% t "보관됨" "Archived" %}</option>
+      </select>
+      <select name="sort" class="sc-select" aria-label="{% t '정렬' 'Sort' %}">
+        <option value="newest"{% if state.sort == "newest" %} selected{% endif %}>{% t "최신순" "Newest" %}</option>
+        <option value="usage"{% if state.sort == "usage" %} selected{% endif %}>{% t "사용자순" "Most Users" %}</option>
+        <option value="data"{% if state.sort == "data" %} selected{% endif %}>{% t "데이터건수순" "Most Records" %}</option>
+        <option value="name"{% if state.sort == "name" %} selected{% endif %}>{% t "이름순" "Name" %}</option>
+      </select></span>
+    <noscript><button class="btn btn-secondary btn-sm">{% t "적용" "Apply" %}</button></noscript>
+  </form>
+
+  {% include "schemas/_grid.html" %}
+  <div id="modal-root"></div>
+</div>
+{% endblock %}

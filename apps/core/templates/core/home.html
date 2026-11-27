@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% t "홈" "Home" %}{% endblock %}
+{% block head %}<script src="{% static 'vendor/chart.umd.min.js' %}" defer></script>{% endblock %}
+{% block content %}
+{# 원본 src/pages/Home/index.tsx — 수치는 apps.core.dashboard 가 DB 에서 집계 #}
+
+{# ════ Hero ════ #}
+<section class="hero">
+  <svg class="hero-pattern" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <pattern id="dna" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+        <circle cx="15" cy="15" r="2" fill="currentColor"/><circle cx="45" cy="45" r="2" fill="currentColor"/>
+        <line x1="15" y1="15" x2="45" y2="45" stroke="currentColor" stroke-width="0.5"/>
+        <circle cx="45" cy="15" r="1.5" fill="currentColor"/><circle cx="15" cy="45" r="1.5" fill="currentColor"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#dna)"/>
+  </svg>
+  <div class="hero-inner">
+    <h1 class="hero-title">{% if is_en %}TB-Specialized<br>Research Support Platform{% else %}결핵 특화<br>연구지원 플랫폼{% endif %}</h1>
+    <p class="hero-tagline">TBRS Platform : TB Research Support Platform</p>
+    <p class="hero-sub">{% t "임상 · 유전체 · 영상 데이터의 통합 탐색과 분석" "Integrated exploration and analysis of clinical, genomic, and imaging data" %}</p>
+    <div class="flex gap-4 mt-8 flex-wrap">
+      {% if user.is_authenticated %}
+        <a href="/depot" class="btn btn-hero-primary" data-tip="{% t '조건으로 대상자를 골라 분석하는 데이터 탐색 화면으로 이동합니다.' 'Go to Data Explorer to select and analyze subjects by conditions.' %}">{% t "데이터 탐색 시작" "Start Exploring Data" %} {% icon "arrow-right" "w-4 h-4" %}</a>
+        <a href="/data" class="btn btn-hero-ghost" data-tip="{% t '연구 데이터 제공을 신청하는 화면으로 이동합니다.' 'Go to the page for requesting research data.' %}">{% t "연구 데이터 요청" "Request Research Data" %}</a>
+      {% else %}
+        <a href="/login" class="btn btn-hero-primary" data-tip="{% t '로그인 화면으로 이동합니다. 로그인하면 데이터 탐색을 쓸 수 있습니다.' 'Go to the login page. Log in to use Data Explorer.' %}">{% t "데이터 탐색 시작" "Start Exploring Data" %} {% icon "arrow-right" "w-4 h-4" %}</a>
+        <a href="/login" class="btn btn-hero-ghost" data-tip="{% t '로그인 화면으로 이동합니다. 로그인하면 연구 데이터를 요청할 수 있습니다.' 'Go to the login page. Log in to request research data.' %}">{% t "연구 데이터 요청" "Request Research Data" %}</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{# ════ 통계 카드 ════ #}
+<section class="home-section home-stats">
+  <div class="grid-4">
+    {% t "건" " cases" as sfx_cases %}{% t "건" " seqs" as sfx_seqs %}{% t "장" " images" as sfx_images %}
+    {% include "core/_stat_card.html" with title_ko="총 환자 케이스" title_en="Total Patient Cases" value=stats.total_cases change=stats.change_cases icon_name="users" tone="navy" suffix=sfx_cases %}
+    {% include "core/_stat_card.html" with title_ko="유전체 시퀀스" title_en="Genomic Sequences" value=stats.total_sequences change=stats.change_sequences icon_name="dna" tone="teal" suffix=sfx_seqs %}
+    {% include "core/_stat_card.html" with title_ko="CXR · CT · PET-CT 영상" title_en="CXR · CT · PET-CT Images" value=stats.total_images change=stats.change_images icon_name="scan-line" tone="info" suffix=sfx_images %}
+    <div class="stat-card stat-card-hover" data-testid="stat-sites">
+      <div class="flex-1">
+        <p class="stat-title">{% t "협력기관 / 국가" "Partner Sites / Countries" %}</p>
+        <p class="stat-value"><span data-countup="{{ stats.partner_sites }}">{{ stats.partner_sites }}</span>{% if is_en %} sites / {{ stats.countries }} countries{% else %}개 / {{ stats.countries }}개국{% endif %}</p>
+        {% include "core/_change.html" with change=stats.change_sites %}
+      </div>
+      <div class="stat-icon tone-success">{% icon "building-2" "w-5 h-5" %}</div>
+    </div>
+  </div>
+</section>
+
+{# ════ 데이터 기여 현황 ════ #}
+<section class="home-section mt-8">
+  <h3 class="home-subhead">{% icon "cloud-upload" "w-4 h-4" %} {% t "데이터 기여 현황 (최근 30일)" "Data Contributions (Last 30 Days)" %}
+    <span class="text-xs text-muted font-medium" data-testid="contrib-range">{{ contrib_start|date:"Y-m-d" }} ~ {{ contrib_end|date:"Y-m-d" }}</span></h3>
+  <div class="grid-4 gap-3">
+    {% for c in contributions %}
+      <div class="card card-sm flex items-center gap-3" data-testid="contrib-{{ c.key }}">
+        <div class="flex-1" style="min-width:0">
+          <p class="text-xs text-muted truncate">{{ c.label }}</p>
+          <p class="text-lg font-bold {{ c.color }}">{% if is_en %}+{{ c.count }}{% else %}+{{ c.count }}건{% endif %}</p>
+        </div>
+        <svg class="sparkline" viewBox="0 0 64 32" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points="{{ c.points }}" fill="none" stroke="#2A7F8E" stroke-width="1.5"/>
+        </svg>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+{# ════ 커스텀 스키마 현황 (3단계에서 스키마 모델 연결) ════ #}
+<section class="home-section mt-3">
+  <div class="grid-4 gap-3">
+    <div class="card card-sm flex items-center gap-3">
+      <div class="icon-tile tone-indigo">{% icon "blocks" "w-5 h-5" %}</div>
+      <div><p class="text-xs text-muted">{% t "활성 커스텀 데이터 구조" "Active Custom Data Schemas" %}</p>
+        <p class="text-lg font-bold text-indigo">{% if is_en %}{{ schema_stats.active }}{% else %}{{ schema_stats.active }}개{% endif %}</p></div>
+    </div>
+    <div class="card card-sm flex items-center gap-3">
+      <div class="icon-tile tone-indigo">{% icon "database" "w-5 h-5" %}</div>
+      <div><p class="text-xs text-muted">{% t "커스텀 데이터 건수" "Custom Data Records" %}</p>
+        <p class="text-lg font-bold text-indigo">{% if is_en %}{{ schema_stats.records }}{% else %}{{ schema_stats.records }}건{% endif %}</p></div>
+    </div>
+  </div>
+</section>
+
+{# ════ 분석 도구 ════ #}
+<section class="home-section mt-16 fade-in">
+  <h2 class="section-title">{% t "분석 도구" "Analysis Tools" %}</h2>
+  <div class="grid-6">
+    {% for tool in tools %}
+      <a href="{{ tool.to }}" class="card tile-link" data-tip="{% if is_en %}Go to {{ tool.name }} to start working.{% else %}'{{ tool.name }}' 화면으로 이동해 분석을 시작합니다.{% endif %}">
+        <div class="icon-tile icon-tile-lg {{ tool.color }} mb-4">{% icon tool.icon "w-6 h-6" %}</div>
+        <h3 class="font-semibold mb-1">{{ tool.name }}</h3>
+        <p class="text-sm text-muted mb-4">{{ tool.desc }}</p>
+        <span class="tile-cta">{% t "시작하기" "Get Started" %} {% icon "arrow-right" "w-4 h-4" %}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+{# ════ 주요 연구사업 ════ #}
+<section class="home-section mt-16 fade-in">
+  <h2 class="section-title">{% t "주요 연구사업" "Key Research Programs" %}</h2>
+  <div class="grid-4">
+    {% for prog in programs %}
+      <a href="#" class="card tile-link" data-tip="{% if is_en %}Open the introduction page for {{ prog.title }}.{% else %}'{{ prog.title }}' 연구사업의 소개 페이지를 엽니다.{% endif %}">
+        <div class="icon-tile {{ prog.color }} mb-3">{% icon prog.icon "w-5 h-5" %}</div>
+        <h3 class="font-semibold mb-1 tile-title">{{ prog.title }}</h3>
+        <p class="text-sm text-muted">{{ prog.desc }}</p>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+{# ════ 뉴스·주요성과 ════ #}
+<section class="home-section mt-16 fade-in">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="section-title flex items-center gap-2" style="margin:0">{% icon "newspaper" "w-5 h-5" %} {% t "뉴스·주요성과" "News & Highlights" %}</h2>
+    <a href="#" class="text-sm text-teal link-underline flex items-center gap-1" data-tip="{% t '뉴스와 주요성과 전체 목록을 봅니다.' 'View the full list of news and highlights.' %}">{% t "더보기" "More" %} {% icon "arrow-right" "w-3_5 h-3_5" %}</a>
+  </div>
+  <div class="grid-4">
+    {% for item in news %}
+      <a href="#" class="card tile-link news-card" data-tip="{% t '이 소식의 전체 내용을 엽니다.' 'Open the full story.' %}">
+        <div class="news-bar {{ item.color }}"></div>
+        <div class="news-body">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="news-tag {{ item.color }}">{% if item.tag == "뉴스" %}{% icon "newspaper" "w-3 h-3" %}{% else %}{% icon "award" "w-3 h-3" %}{% endif %} {{ item.tag_label }}</span>
+            <span class="text-11 text-muted">{{ item.date }}</span>
+          </div>
+          <h3 class="text-sm font-semibold mb-2 tile-title clamp-2">{{ item.title }}</h3>
+          <p class="text-xs text-muted clamp-2">{{ item.desc }}</p>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+{# ════ 게시판 + 월별 트렌드 ════ #}
+<section class="home-section mt-16 fade-in">
+  <div class="grid-3-1">
+    <div class="card card-p5" x-data="{ tab: 0 }">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="card-title flex items-center gap-2">{% icon "file-text" "w-4 h-4 text-navy" %} {% t "게시판" "Board" %}</h3>
+        <a href="#" class="text-xs text-teal link-underline flex items-center gap-1" data-tip="{% t '게시판으로 이동해 전체 게시글을 봅니다.' 'Go to the board to see all posts.' %}">{% t "전체보기" "View All" %} {% icon "arrow-right" "w-3 h-3" %}</a>
+      </div>
+      <div class="tabs tabs-sm mb-4" role="tablist">
+        {% for tab in board %}
+          <button type="button" class="tab" role="tab" :aria-selected="tab === {{ forloop.counter0 }}" @click="tab = {{ forloop.counter0 }}" data-tip="{{ tab.help }}">
+            {% if tab.icon %}{% icon tab.icon "w-3 h-3" %}{% endif %} {{ tab.label }}
+          </button>
+        {% endfor %}
+      </div>
+      {% for tab in board %}
+        <ul class="board-list" x-show="tab === {{ forloop.counter0 }}" {% if not forloop.first %}x-cloak{% endif %}>
+          {% for item in tab.items %}
+            <li><a href="#" class="board-item" data-tip="{% t '이 게시글의 본문을 엽니다.' 'Open this post.' %}">
+              <span class="flex items-center gap-2" style="min-width:0">
+                <span class="board-tag {% if item.tag == '공지' or item.tag == '공고' %}tone-navy{% elif item.tag == '채용' %}tone-teal{% else %}tone-gray{% endif %}">{{ item.tag_label }}</span>
+                <span class="text-sm truncate board-title">{{ item.title }}</span>
+              </span>
+              <span class="text-xs text-muted nowrap">{{ item.date }}</span>
+            </a></li>
+          {% endfor %}
+        </ul>
+      {% endfor %}
+    </div>
+    <div class="card card-p5">
+      <h3 class="card-title flex items-center gap-2 mb-4">{% icon "activity" "w-4 h-4 text-teal" %} {% t "월별 데이터 등록 추이" "Monthly Data Registration Trend" %}</h3>
+      <div class="chart-box" style="height:240px"><canvas id="chart-trend" aria-label="{% t '월별 데이터 등록 추이' 'Monthly Data Registration Trend' %}"></canvas></div>
+      {% with first=trends|first last=trends|last %}<p class="text-11 text-muted mt-2">{% t "등록일 기준" "By registration date" %} · {{ first.month }} ~ {{ last.month }}</p>{% endwith %}
+    </div>
+  </div>
+</section>
+
+{# ════ 분포 (약제내성 유형 · 치료 결과) ════ #}
+<section class="home-section mt-6 fade-in">
+  <div class="grid-2">
+    <div class="card card-p5">
+      <h3 class="card-title mb-4">{% t "약제내성 유형 분포" "Drug Resistance Type Distribution" %}</h3>
+      <div class="dist-row">
+        <div class="chart-box" style="height:200px;width:200px"><canvas id="chart-resistance"></canvas></div>
+        <ul class="dist-legend">
+          {% for r in resistance %}<li><span class="swatch" data-idx="{{ forloop.counter0 }}"></span>{{ r.key }} <strong>{{ r.count }}</strong> <span class="text-muted">({{ r.percentage }}%)</span></li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="card card-p5">
+      <h3 class="card-title mb-4">{% t "치료 결과 분포" "Treatment Outcome Distribution" %}</h3>
+      <div class="chart-box" style="height:200px"><canvas id="chart-outcome"></canvas></div>
+    </div>
+  </div>
+</section>
+
+{# ════ 최신 업데이트 ════ #}
+<section class="home-section mt-16 fade-in">
+  <h2 class="section-title">{% t "최신 업데이트" "Latest Updates" %}</h2>
+  <div class="grid-3">
+    <div class="card card-p5">
+      <h3 class="card-title mb-4">{% t "참여 국가별 데이터 분포" "Data Distribution by Country" %}</h3>
+      {% if countries %}
+        <div class="grid-2 gap-3 country-grid">
+          {% for c in countries %}
+            <div class="country-tile" data-testid="country-{{ c.country }}">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-lg">{{ c.flag }}</span>
+                <div><p class="text-xs font-semibold">{% if is_en %}{{ c.en }}{% else %}{{ c.country }}{% endif %}</p>
+                  <p class="text-10 text-muted">{% if is_en %}{{ c.cases }} cases{% else %}{{ c.cases }}건{% endif %}</p></div>
+              </div>
+              <div class="bar-track"><div class="bar-fill" style="width: {{ c.pct_of_max|stringformat:'s' }}%"></div></div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-sm text-muted text-center" style="padding:32px 0">{% t "등록된 데이터가 없습니다" "No data registered yet" %}</p>
+      {% endif %}
+    </div>
+
+    <div class="card card-p5">
+      <h3 class="card-title flex items-center gap-2 mb-4">{% icon "cloud-upload" "w-4 h-4 text-teal" %} {% t "최근 업로드 활동" "Recent Upload Activity" %}</h3>
+      {% if activity %}
+        <ul class="stack-sm">
+          {% for item in activity %}
+            <li class="flex gap-3"><div class="icon-tile icon-tile-sm {{ item.color }}">{% icon item.icon "w-4 h-4" %}</div>
+              <div style="min-width:0"><p class="text-sm"><span class="font-medium">{{ item.org }}</span>{% if is_en %} {{ item.action }}{% else %}에서 {{ item.action }}{% endif %}</p>
+                <p class="text-xs text-muted">{{ item.at|timesince }}</p></div></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state empty-sm" data-testid="activity-empty">
+          <span class="icon-circle">{% icon "cloud-upload" "w-5 h-5" %}</span>
+          <p class="text-sm">{% t "아직 업로드 활동이 없습니다" "No upload activity yet" %}</p>
+          <p class="text-xs mt-1">{% t "데이터 업로드가 승인되면 여기에 표시됩니다." "Approved data uploads will appear here." %}</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card card-p5">
+      <h3 class="card-title mb-4">{% t "공지사항" "Notices" %}</h3>
+      <ul class="stack">
+        {% for n in notices %}
+          <li><a href="#" class="notice-item">
+            <span class="flex items-center gap-1 text-xs text-muted mb-1">{% icon "calendar" "w-3 h-3" %} {{ n.date }}</span>
+            <p class="text-sm tile-title">{{ n.title }}</p></a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+
+{# ════ 관련 사이트 ════ #}
+<section class="home-section mt-16 mb-16 fade-in">
+  <h2 class="section-title">{% t "관련 사이트" "Related Sites" %}</h2>
+  <div class="grid-6 grid-6-sites">
+    {% for site in sites %}
+      <a href="{{ site.url|default:'#' }}" class="card site-tile"{% if site.url %} target="_blank" rel="noopener noreferrer"{% endif %}>
+        <div class="site-icon">{% icon site.icon "w-5 h-5" %}</div>
+        <p class="text-xs font-semibold mb-1 tile-title">{{ site.name }}</p>
+        <p class="text-10 text-muted">{{ site.desc }}</p>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+{{ chart_data|json_script:"home-chart-data" }}
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/home.js' %}" defer></script>{% endblock %}

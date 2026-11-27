@@ -1,0 +1,97 @@
+{% load static %}
+{# 원본 components/layout/Header.tsx #}
+<header class="site-header" x-data="{ mobileNav: false, userMenu: false, submenu: null }">
+  <div class="header-inner">
+    <a href="/" class="brand">
+      <span class="brand-logo">{% icon "microscope" "w-5 h-5" %}</span>
+      <span class="brand-name">TBRS Platform</span>
+    </a>
+
+    <nav class="gnb" aria-label="{% t '주 메뉴' 'Main menu' %}">
+      {% for item in nav_items %}
+        {% if item.submenu %}
+          <div class="gnb-dropdown" @click.outside="if (submenu === '{{ item.to }}') submenu = null">
+            <button type="button" class="gnb-link{% if item.active %} active{% endif %}" data-tip="{{ item.help }}"
+                    @click="submenu = (submenu === '{{ item.to }}' ? null : '{{ item.to }}')"
+                    :aria-expanded="submenu === '{{ item.to }}'">
+              {% if item.icon %}{% icon item.icon "w-3_5 h-3_5" %}{% endif %}
+              {{ item.label }}
+              {% icon "chevron-down" "w-3 h-3" %}
+            </button>
+            <div class="dropdown-menu" x-show="submenu === '{{ item.to }}'" x-cloak x-transition.opacity>
+              {% for sub in item.submenu %}
+                <a href="{{ sub.to }}" class="dropdown-item" data-tip="{{ sub.help }}" data-tip-side="right">{{ sub.label }}</a>
+              {% endfor %}
+            </div>
+          </div>
+        {% else %}
+          <a href="{{ item.to }}" class="gnb-link{% if item.active %} active{% endif %}" data-tip="{{ item.help }}"
+             {% if item.active %}aria-current="page"{% endif %}>
+            {% if item.icon %}{% icon item.icon "w-3_5 h-3_5" %}{% endif %}
+            {{ item.label }}
+            {% if item.badge %}{% icon item.badge "w-3 h-3 text-slate-400" %}{% endif %}
+          </a>
+        {% endif %}
+      {% endfor %}
+      {% if nav_manual %}
+        <a href="{{ nav_manual.to }}" class="gnb-link{% if nav_manual.active %} active{% endif %}" data-tip="{{ nav_manual.help }}">
+          {% icon "book-text" "w-3_5 h-3_5" %} {{ nav_manual.label }}
+        </a>
+      {% endif %}
+    </nav>
+
+    <div class="header-spacer-mobile"></div>
+    <button type="button" class="icon-btn hamburger" @click="mobileNav = !mobileNav" :aria-expanded="mobileNav"
+            aria-label="{% t '메뉴 열기' 'Open menu' %}">
+      {% icon "menu" "w-5 h-5" %}
+    </button>
+
+    <div class="header-right">
+      {% include "partials/lang_toggle.html" %}
+      {% if user.is_authenticated %}
+        <div class="user-menu" @click.outside="userMenu = false">
+          <button type="button" class="user-menu-btn" @click="userMenu = !userMenu" :aria-expanded="userMenu">
+            <span class="avatar{% if is_portal_admin %} avatar-admin{% endif %}">{{ user.initial }}</span>
+            <span class="user-name">{{ user.shown_name }}</span>
+            {% icon "chevron-down" "w-4 h-4 text-muted" %}
+          </button>
+          <div class="dropdown-menu dropdown-right" x-show="userMenu" x-cloak x-transition.opacity>
+            <a href="/profile" class="dropdown-item">{% icon "user" "w-4 h-4 text-muted" %} {% t "내 프로필" "My Profile" %}</a>
+            {% if is_portal_admin %}
+              <hr class="dropdown-sep">
+              <a href="/admin" class="dropdown-item">{% icon "shield-check" "w-4 h-4 text-teal" %} {% t "관리자 페이지" "Admin Page" %}</a>
+            {% endif %}
+            <hr class="dropdown-sep">
+            <form method="post" action="/logout">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-item text-danger">{% icon "log-out" "w-4 h-4" %} {% t "로그아웃" "Log Out" %}</button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        {# [베타 임시] 샘플 자료 다운로드 — 베타 종료 시 삭제 #}
+        {% for d in beta_samples %}
+          <a href="{% static d.href %}" download="{{ d.file }}" class="beta-dl hide-mobile">{% icon "download" "w-3_5 h-3_5" %} {{ d.label }}</a>
+        {% endfor %}
+        <a href="/login" class="btn btn-primary btn-sm">{% icon "log-in" "w-4 h-4" %} {% t "로그인" "Log In" %}</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Mobile navigation dropdown #}
+  <div class="mobile-nav" x-show="mobileNav" x-cloak x-transition>
+    {% for item in nav_items %}
+      <a href="{{ item.to }}" class="mobile-nav-link{% if item.active %} active{% endif %}">{{ item.label }}</a>
+    {% endfor %}
+    {% if nav_manual %}
+      <a href="{{ nav_manual.to }}" class="mobile-nav-link{% if nav_manual.active %} active{% endif %}">{% icon "book-text" "w-3_5 h-3_5" %} {{ nav_manual.label }}</a>
+    {% endif %}
+    {% if not user.is_authenticated %}
+      {% for d in beta_samples %}
+        <a href="{% static d.href %}" download="{{ d.file }}" class="mobile-nav-link">{% icon "download" "w-4 h-4" %} {{ d.label }}</a>
+      {% endfor %}
+      <hr class="dropdown-sep">
+      <a href="/login" class="mobile-nav-link text-navy">{% icon "log-in" "w-4 h-4" %} {% t "로그인" "Log In" %}</a>
+    {% endif %}
+  </div>
+</header>

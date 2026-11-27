@@ -1,0 +1,5 @@
+<div>
+  <label class="text-muted font-medium" style="font-size:10px;display:block;margin-bottom:4px" for="dar-{{ name }}">{{ label }}</label>
+  <input id="dar-{{ name }}" type="{{ type|default:'text' }}" name="{{ name }}" value="{{ value|default:'' }}" placeholder="{{ placeholder }}" maxlength="{{ maxlength }}" class="input input-sm{% if error %} is-invalid{% endif %}" style="font-size:12px">
+  {% if error %}<p class="field-error" data-error="{{ name }}">{% icon "circle-alert" "w-3 h-3" %} {{ error }}</p>{% endif %}
+</div>

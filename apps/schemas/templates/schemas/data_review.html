@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% t "유효성 검사 결과" "Validation Results" %} · {{ name }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/schemas.css' %}">{% endblock %}
+{% block content %}
+{# 원본 SchemaData Step2Validation — 검사는 서버가 했다(제출 시 한 번 더) #}
+<div class="container">
+  {% include "schemas/_data_head.html" %}
+  <div style="max-width:768px;margin:0 auto">
+    <h2 class="text-base font-semibold mb-4">{% t "유효성 검사 결과" "Validation Results" %}</h2>
+    <div class="de-summary" data-testid="summary">
+      <div><p class="text-2xl font-bold">{{ count }}</p><p class="text-xs text-muted">{% t "총 레코드" "Total Records" %}</p></div>
+      <div class="{% if error_total %}bad{% else %}ok{% endif %}"><p class="text-2xl font-bold {% if error_total %}text-danger{% else %}text-success{% endif %}" data-testid="error-count">{{ error_total }}</p><p class="text-xs text-muted">{% t "오류" "Errors" %}</p></div>
+      <div class="{% if warning_total %}warn{% else %}ok{% endif %}"><p class="text-2xl font-bold {% if warning_total %}text-warning{% else %}text-success{% endif %}">{{ warning_total }}</p><p class="text-xs text-muted">{% t "경고" "Warnings" %}</p></div>
+    </div>
+    {% if p.mode == "csv" and preview_headers %}
+      <div class="card card-sm mb-4"><p class="text-xs text-muted mb-2">{{ p.raw.file }} — {% if is_en %}{{ count }} rows parsed{% else %}{{ count }}건 파싱 완료{% endif %}</p>
+        <div class="table-wrap" style="max-height:220px"><table class="table table-compact"><thead><tr><th>#</th>{% for h in preview_headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+          <tbody>{% for row in preview_rows %}<tr><td class="text-muted">{{ forloop.counter }}</td>{% for v in row %}<td class="text-xs truncate" style="max-width:150px">{{ v|default:"—" }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div></div>
+    {% endif %}
+    {% if errors %}
+      <div class="de-issues" data-testid="errors"><p class="text-sm font-medium text-danger" style="padding:12px 16px">{% if is_en %}Errors ({{ error_total }}){% else %}오류 ({{ error_total }}건){% endif %}</p>
+        <ul>{% for e in errors %}<li><span class="font-mono text-muted">{% if e.row %}{% if is_en %}Row {{ e.row }}{% else %}행 {{ e.row }}{% endif %} · {% endif %}{{ e.field }}</span> <span style="margin-left:8px">{{ e.text }}</span>{% if e.value %} <span class="text-muted">({% t "값" "value" %}: {{ e.value }})</span>{% endif %}</li>{% endfor %}</ul></div>
+    {% endif %}
+    {% if warnings %}
+      <div class="de-issues"><p class="text-sm font-medium text-warning" style="padding:12px 16px">{% if is_en %}Warnings ({{ warning_total }}){% else %}경고 ({{ warning_total }}건){% endif %}</p>
+        <ul>{% for w in warnings %}<li><span class="font-mono text-muted">{% if w.row %}{% if is_en %}Row {{ w.row }}{% else %}행 {{ w.row }}{% endif %} · {% endif %}{{ w.field }}</span> <span style="margin-left:8px">{{ w.text }}</span>{% if w.value %} <span class="text-muted">({{ w.value }})</span>{% endif %}</li>{% endfor %}</ul></div>
+    {% endif %}
+    {% if not errors and not warnings %}
+      <div class="alert alert-success mb-4" style="flex-direction:column;padding:24px">{% icon "circle-check" "w-10 h-10" %}
+        <p class="text-sm font-medium">{% t "유효성 검사를 통과했습니다" "Validation passed" %}</p>
+        <p class="text-xs">{% if is_en %}{% if count == 1 %}The record is valid{% else %}All {{ count }} records are valid{% endif %}{% else %}{{ count }}건의 데이터가 모두 정상입니다{% endif %}</p></div>
+    {% endif %}
+    <div class="sc-between" style="padding-top:16px">
+      <a href="{{ back_url }}" class="text-xs text-muted" data-tip="{% t '입력 단계로 돌아가 값을 고칩니다.' 'Go back to fix your input.' %}">{% t "← 입력 수정" "← Edit Input" %}</a>
+      {% if error_total %}
+        <span class="btn" aria-disabled="true" data-tip="{% t '차단 오류가 남아 있어 제출할 수 없습니다. 입력을 먼저 수정합니다.' 'Blocking errors remain. Fix your input before submitting.' %}">{% t "오류를 먼저 수정하세요" "Fix errors first" %}</span>
+      {% else %}
+        <form method="post" action="/schemas/{{ schema.schema_id }}/data/submit/{{ p.pk }}">{% csrf_token %}
+          <button type="submit" class="btn btn-teal" data-testid="final-submit" data-tip="{% t '검사를 통과한 데이터를 최종 등록합니다.' 'Submit the validated records for registration.' %}">{% t "데이터 제출" "Submit Data" %}</button></form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

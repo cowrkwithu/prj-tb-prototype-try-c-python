@@ -1,0 +1,9 @@
+<div class="stack" data-testid="tab-imaging">
+  <div class="depot-stats">
+    <div class="mini-stat"><p>{% t "CXR 보유" "With CXR" %}</p><strong data-testid="stat-cxr">{{ a.cxr }}{% if not is_en %}명{% endif %}</strong></div>
+    <div class="mini-stat"><p>{% t "CT 보유" "With CT" %}</p><strong data-testid="stat-ct">{{ a.ct }}{% if not is_en %}명{% endif %}</strong></div>
+    <div class="mini-stat"><p>{% t "PET-CT 보유" "With PET-CT" %}</p><strong data-testid="stat-pet">{{ a.pet }}{% if not is_en %}명{% endif %}</strong></div>
+    <div class="mini-stat"><p>{% t "총 CXR 장수" "Total CXR Images" %}</p><strong data-testid="stat-cxr-images">{{ a.cxr_images }}{% if not is_en %}장{% endif %}</strong></div>
+  </div>
+  <div class="card card-sm"><p class="h4">{% t "CXR 소견 분포" "CXR Findings Distribution" %}</p><div class="chart-box" style="height:250px"><canvas data-chart="findings"></canvas></div></div>
+</div>

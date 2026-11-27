@@ -1,0 +1,36 @@
+{# 필드 상세 모달 (원본 FieldDetailContent) #}
+<div class="modal-backdrop" x-data="{ open: true }" x-show="open" @keydown.escape.window="open = false; $el.remove()" @click.self="$el.remove()">
+  <div class="modal modal-lg" role="dialog" aria-modal="true">
+    <div class="modal-header"><h3 class="modal-title">{% t "필드 상세 정보" "Field Details" %}</h3>
+      <button type="button" class="icon-btn sm" @click="$root.remove()" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+    <div class="modal-body stack">
+      <div class="grid-2 detail-grid">
+        <div><label class="text-xs text-muted">{% t "표시명" "Display Name" %}</label><p class="font-semibold" data-testid="detail-name">{{ display_name }}</p></div>
+        <div><label class="text-xs text-muted">{% t "필드명" "Field Name" %}</label><p class="font-mono font-semibold">{{ e.field_name }}</p></div>
+        <div><label class="text-xs text-muted">{% t "카테고리" "Category" %}</label><p>{{ category_name }}</p></div>
+        <div><label class="text-xs text-muted">{% t "데이터 타입" "Data Type" %}</label><p><span class="badge badge-info">{{ type_label }}</span></p></div>
+      </div>
+      <div><label class="text-xs text-muted">{% t "설명" "Description" %}</label><p class="text-sm">{{ description }}</p></div>
+      <div><label class="text-xs text-muted block mb-1">{% t "제약조건" "Constraints" %}</label>
+        <div class="soft-box stack-xs text-sm">
+          {% if c.maxLength is not None %}<p>{% t "최대 길이" "Max length" %}: {{ c.maxLength }}</p>{% endif %}
+          {% if c.min is not None %}<p>{% t "최솟값" "Min" %}: {{ c.min }}</p>{% endif %}
+          {% if c.max is not None %}<p>{% t "최댓값" "Max" %}: {{ c.max }}</p>{% endif %}
+          {% if c.precision is not None %}<p>{% t "소수 자릿수" "Decimal places" %}: {{ c.precision }}</p>{% endif %}
+          {% if c.unit %}<p>{% t "단위" "Unit" %}: {{ c.unit }}</p>{% endif %}
+          {% if code_system %}<p>{% t "코드체계" "Code system" %}: {{ code_system }}</p>{% endif %}
+          {% if c.pattern %}<p>{% t "패턴" "Pattern" %}: <code class="code">{{ c.pattern }}</code></p>{% endif %}
+          {% if options %}<div><p class="mb-1">{% if is_en %}Options ({{ options|length }}):{% else %}선택지 ({{ options|length }}개):{% endif %}</p>
+            <div class="flex flex-wrap gap-1">{% for o in options %}<span class="badge badge-sm badge-neutral">{{ o.label }}</span>{% endfor %}</div></div>{% endif %}
+          {% if no_constraints %}<p class="text-muted">{% t "제약조건 없음" "No constraints" %}</p>{% endif %}
+        </div></div>
+      {% if e.hl7_fhir_mapping or e.cdisc_mapping %}
+        <div><label class="text-xs text-muted block mb-1">{% t "표준 매핑" "Standard Mappings" %}</label>
+          <div class="soft-box stack-xs text-sm">
+            {% if e.hl7_fhir_mapping %}<p>HL7 FHIR: <code class="code">{{ e.hl7_fhir_mapping }}</code></p>{% endif %}
+            {% if e.cdisc_mapping %}<p>CDISC: <code class="code">{{ e.cdisc_mapping }}</code></p>{% endif %}
+          </div></div>
+      {% endif %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,29 @@
+{# 원본 components/schema/SchemaCard.tsx #}
+<div class="sc-card" data-testid="schema-card-{{ c.s.schema_id }}">
+  <div class="sc-row mb-3 flex-wrap">
+    <span class="sc-chip tone-{{ c.category_tone }}">{{ c.category }}</span>
+    <span class="badge badge-sm badge-{{ c.status.variant }}">{{ c.status.label }}</span>
+    {% if c.visibility == "public" %}<span class="badge badge-sm badge-info">{{ c.visibility_label }}</span>{% elif c.visibility == "shared" %}<span class="badge badge-sm badge-neutral">{{ c.visibility_label }}</span>{% endif %}
+  </div>
+  <h3 title="{{ c.name }}">{{ c.name }}</h3>
+  <p class="text-sm text-muted clamp-2 mb-3">{{ c.description }}</p>
+  <div class="sc-row text-xs text-muted mb-1">{% icon "user" "w-3_5 h-3_5" %}<span>{{ c.owner }} · {{ c.institution }}</span></div>
+  <div class="sc-row text-xs text-muted">{% icon "calendar" "w-3_5 h-3_5" %}<span>{% if is_en %}Created {{ c.created }}{% else %}{{ c.created }} 생성{% endif %} · v{{ c.s.version }}</span></div>
+  <div class="sc-stats">
+    <div class="sc-stat">{% icon "file-text" "w-3_5 h-3_5 text-muted" %}<b>{{ c.field_count }}{% if not is_en %}<small class="text-muted">개</small>{% endif %}</b><span>{% t "필드" "Fields" %}</span></div>
+    <div class="sc-stat">{% icon "users" "w-3_5 h-3_5 text-muted" %}<b>{{ c.usage_count }}{% if not is_en %}<small class="text-muted">명</small>{% endif %}</b><span>{% t "사용자" "Users" %}</span></div>
+    <div class="sc-stat">{% icon "database" "w-3_5 h-3_5 text-muted" %}<b>{{ c.data_count }}{% if not is_en %}<small class="text-muted">건</small>{% endif %}</b><span>{% t "데이터" "Records" %}</span></div>
+  </div>
+  {% if c.tags %}<div class="sc-row flex-wrap mb-3" style="gap:4px">{% icon "hash" "w-3 h-3 text-muted" %}{% for tg in c.tags_head %}<span class="sc-tag">#{{ tg }}</span>{% endfor %}{% if c.tags_more %}<span class="text-10 text-muted">+{{ c.tags_more }}</span>{% endif %}</div>{% endif %}
+  <div class="sc-card-actions">
+    <a href="/schemas/{{ c.s.schema_id }}" class="btn btn-xs btn-outline-teal" data-tip="{% t '필드 구조·데이터 현황·버전 이력을 보는 상세 화면으로 이동합니다.' 'Open details with fields, data and version history.' %}">{% t "상세보기" "Details" %}</a>
+    {% if c.s.status == "published" %}
+      <a href="/schemas/{{ c.s.schema_id }}/data" class="btn btn-xs btn-teal" data-tip="{% t '이 데이터 구조로 데이터를 입력하는 화면으로 이동합니다.' 'Go to the data entry screen for this schema.' %}">{% t "데이터입력" "Enter Data" %}</a>
+    {% else %}
+      <span class="btn btn-xs" aria-disabled="true" data-tip="{% t '발행된 데이터 구조에서만 데이터를 입력할 수 있습니다.' 'Data entry is available only for published schemas.' %}">{% t "데이터입력" "Enter Data" %}</span>
+    {% endif %}
+    <form method="post" action="/schemas/{{ c.s.schema_id }}/duplicate" class="sc-icon-only">{% csrf_token %}
+      <button type="submit" class="btn btn-xs btn-secondary" aria-label="{% t '복제' 'Duplicate' %}" data-tip="{% t '이 데이터 구조를 초안 상태의 사본으로 복제합니다.' 'Duplicate this data schema as a new draft.' %}">{% icon "file" "w-3_5 h-3_5" %}</button>
+    </form>
+  </div>
+</div>

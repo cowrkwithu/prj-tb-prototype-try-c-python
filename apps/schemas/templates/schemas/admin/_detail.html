@@ -1,0 +1,51 @@
+<div class="modal-backdrop" x-data @keydown.escape.window="$el.remove()" @click.self="$el.remove()">
+  <div class="modal modal-xl" role="dialog" aria-modal="true" aria-labelledby="adm-title">
+    <div class="modal-header"><h3 class="modal-title" id="adm-title">{{ row.name }}</h3>
+      <button type="button" class="icon-btn sm" @click="$root.remove()" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+    <div class="modal-body stack">
+      <div class="sc-row flex-wrap"><span class="badge badge-{{ row.status.variant }}">{{ row.status.label }}</span><span class="badge badge-info">{{ row.category }}</span>
+        <span class="text-xs text-muted">v{{ s.version }} · <span class="font-mono">{{ s.schema_id }}</span></span></div>
+      <p class="text-sm text-muted">{{ row.description }}</p>
+      <dl class="grid-3 text-sm" style="gap:8px 24px">
+        <div><dt class="text-xs text-muted">{% t "작성자" "Owner" %}</dt><dd>{{ row.owner }} ({{ row.institution }})</dd></div>
+        <div><dt class="text-xs text-muted">{% t "연결 필드" "Link field" %}</dt><dd>{{ link }}</dd></div>
+        <div><dt class="text-xs text-muted">{% t "입력 데이터 / 사용자" "Records / Users" %}</dt><dd>{{ row.data_count }} / {{ row.usage_count }}</dd></div>
+        <div><dt class="text-xs text-muted">{% t "생성일" "Created" %}</dt><dd>{{ row.created }}</dd></div>
+        <div><dt class="text-xs text-muted">{% t "수정일" "Updated" %}</dt><dd>{{ row.updated }}</dd></div>
+        <div><dt class="text-xs text-muted">{% t "발행일" "Published" %}</dt><dd>{{ row.published|default:"—" }}</dd></div>
+      </dl>
+      <div class="soft-box sc-row flex-wrap" style="gap:12px">
+        <form method="post" action="/admin/schemas/{{ s.schema_id }}/visibility" class="sc-row">{% csrf_token %}
+          <label class="text-xs font-medium text-muted" for="vis-{{ s.pk }}">{% t "공개 범위" "Visibility" %}</label>
+          <select id="vis-{{ s.pk }}" name="visibility" class="sc-select" onchange="this.form.submit()" data-tip="{% t '이 구조를 볼 수 있는 범위를 바꿉니다. 변경은 관리 이력에 남습니다.' 'Change who can see this schema. The change is recorded in the admin history.' %}">
+            {% for v, l in visibilities %}<option value="{{ v }}"{% if s.visibility == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+          <noscript><button class="btn btn-xs btn-secondary">{% t "변경" "Change" %}</button></noscript></form>
+        <div class="sc-row ml-auto flex-wrap">
+          {% for b in buttons %}<button type="button" class="btn btn-sm {{ b.cls }}" hx-get="/admin/schemas/{{ s.schema_id }}/confirm?action={{ b.action }}" hx-target="closest .modal-backdrop" hx-swap="outerHTML" data-tip="{{ b.tip }}">{% icon b.icon "w-4 h-4" %} {{ b.label }}</button>{% endfor %}
+          <a href="/schemas/{{ s.schema_id }}" class="btn btn-sm btn-secondary" data-tip="{% t '연구자 화면의 데이터 구조 상세 페이지를 엽니다.' 'Open the researcher-facing schema detail page.' %}">{% icon "link" "w-4 h-4" %} {% t "연구자 화면" "Researcher view" %}</a>
+          {% if row.data_count %}
+            <span class="btn btn-sm" aria-disabled="true" data-tip="{% t '입력된 데이터가 있어 삭제할 수 없습니다. 더 이상 쓰지 않으려면 보관하세요.' 'Cannot delete: data has been entered. Archive it instead.' %}">{% icon "trash-2" "w-4 h-4" %} {% t "삭제" "Delete" %}</span>
+          {% else %}
+            <button type="button" class="btn btn-sm btn-secondary text-danger" hx-get="/admin/schemas/{{ s.schema_id }}/confirm?action=delete" hx-target="closest .modal-backdrop" hx-swap="outerHTML" data-tip="{% t '입력된 데이터가 없는 구조를 영구 삭제합니다.' 'Permanently delete this schema (no data entered).' %}">{% icon "trash-2" "w-4 h-4" %} {% t "삭제" "Delete" %}</button>
+          {% endif %}
+        </div>
+      </div>
+      <section>
+        <h3 class="sc-row text-sm font-semibold mb-2">{% icon "file-text" "w-4 h-4 text-teal" %} {% if is_en %}Fields ({{ fields|length }}){% else %}필드 정의 ({{ fields|length }}){% endif %}
+          <span class="text-xs text-muted" style="font-weight:400;margin-left:8px">{% if is_en %}{{ dict_count }} from dictionary · {{ fields|length|add:0 }} total{% else %}데이터사전 연계 {{ dict_count }}개 · 전체 {{ fields|length }}개{% endif %}</span></h3>
+        <div class="table-wrap" style="max-height:288px;overflow:auto"><table class="table table-compact">
+          <thead><tr><th>{% t "표시명" "Display name" %}</th><th>{% t "필드명" "Field name" %}</th><th>{% t "타입" "Type" %}</th><th>{% t "그룹" "Group" %}</th><th class="text-center">{% t "필수" "Req." %}</th><th>{% t "출처" "Source" %}</th></tr></thead>
+          <tbody>{% for f in fields %}<tr><td class="font-semibold">{{ f.display }}</td><td class="font-mono text-muted">{{ f.f.field_name }}</td><td>{{ f.type }}</td><td class="text-muted">{{ f.group }}</td>
+            <td class="text-center">{% if f.f.is_required %}{% icon "circle-check" "w-3_5 h-3_5 text-teal" %}{% endif %}</td>
+            <td>{% if f.f.source_dictionary_id %}<span class="sc-row text-teal" style="gap:4px">{% icon "book-open" "w-3 h-3" %}{% t "데이터사전" "Dictionary" %}{% if f.f.source_modified %}{% t " (수정)" " (modified)" %}{% endif %}</span>{% else %}<span class="sc-row text-muted" style="gap:4px">{% icon "pencil" "w-3 h-3" %}{% t "직접 정의" "Custom" %}</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+        {% if rules %}<p class="text-xs text-muted mt-2">{% icon "database" "w-3 h-3" %} {% if is_en %}{{ rules|length }} validation rule(s): {% else %}검증 규칙 {{ rules|length }}개: {% endif %}{{ rules|join:", " }}</p>{% endif %}
+      </section>
+      <section>
+        <h3 class="sc-row text-sm font-semibold mb-2">{% icon "history" "w-4 h-4 text-teal" %} {% t "관리 이력" "Admin History" %}</h3>
+        {% if history %}<ul class="stack-xs">{% for h in history %}<li class="sc-row text-xs" style="gap:12px"><span class="text-muted" style="width:80px">{{ h.at }}</span>
+          <span><strong>{{ h.action }}</strong>{% if h.detail %} — {{ h.detail }}{% endif %}{% if h.note %} <span class="text-muted">· {{ h.note }}</span>{% endif %}</span><span class="text-muted ml-auto">{{ h.by }}</span></li>{% endfor %}</ul>
+        {% else %}<p class="text-xs text-muted">{% t "아직 관리자 조치 기록이 없습니다." "No admin actions recorded yet." %}</p>{% endif %}
+      </section>
+    </div>
+  </div>
+</div>

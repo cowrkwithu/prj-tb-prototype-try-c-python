@@ -1,0 +1,242 @@
+{
+ "cxr": [
+  {
+   "file": "cxr/CHNCXR_0549_1.jpg",
+   "source": "CHNCXR_0549_1",
+   "width": 992,
+   "height": 1024,
+   "rois": [
+    {
+     "x": 61.43,
+     "y": 14.55,
+     "width": 10.16,
+     "height": 15.72
+    },
+    {
+     "x": 72.36,
+     "y": 30.57,
+     "width": 2.64,
+     "height": 1.27
+    },
+    {
+     "x": 60.74,
+     "y": 32.52,
+     "width": 5.47,
+     "height": 9.18
+    },
+    {
+     "x": 72.07,
+     "y": 32.52,
+     "width": 11.62,
+     "height": 9.18
+    },
+    {
+     "x": 65.62,
+     "y": 43.85,
+     "width": 0.78,
+     "height": 3.03
+    },
+    {
+     "x": 72.07,
+     "y": 43.85,
+     "width": 11.33,
+     "height": 14.94
+    },
+    {
+     "x": 65.62,
+     "y": 47.56,
+     "width": 4.98,
+     "height": 14.84
+    },
+    {
+     "x": 75.68,
+     "y": 59.57,
+     "width": 7.71,
+     "height": 2.83
+    }
+   ]
+  },
+  {
+   "file": "cxr/CHNCXR_0361_1.jpg",
+   "source": "CHNCXR_0361_1",
+   "width": 1007,
+   "height": 1024,
+   "rois": [
+    {
+     "x": 31.64,
+     "y": 8.59,
+     "width": 9.08,
+     "height": 4.2
+    },
+    {
+     "x": 32.62,
+     "y": 13.67,
+     "width": 9.18,
+     "height": 12.6
+    },
+    {
+     "x": 70.41,
+     "y": 23.83,
+     "width": 8.89,
+     "height": 28.52
+    },
+    {
+     "x": 63.96,
+     "y": 27.93,
+     "width": 5.86,
+     "height": 23.63
+    },
+    {
+     "x": 18.16,
+     "y": 34.28,
+     "width": 3.91,
+     "height": 3.91
+    }
+   ]
+  },
+  {
+   "file": "cxr/CHNCXR_0401_1.jpg",
+   "source": "CHNCXR_0401_1",
+   "width": 854,
+   "height": 1024,
+   "rois": [
+    {
+     "x": 27.83,
+     "y": 15.62,
+     "width": 17.38,
+     "height": 19.63
+    },
+    {
+     "x": 66.89,
+     "y": 29.79,
+     "width": 8.59,
+     "height": 2.34
+    },
+    {
+     "x": 66.89,
+     "y": 33.3,
+     "width": 6.93,
+     "height": 6.74
+    },
+    {
+     "x": 19.73,
+     "y": 56.54,
+     "width": 5.66,
+     "height": 4.79
+    }
+   ]
+  },
+  {
+   "file": "cxr/CHNCXR_0448_1.jpg",
+   "source": "CHNCXR_0448_1",
+   "width": 856,
+   "height": 1024,
+   "rois": [
+    {
+     "x": 33.59,
+     "y": 29.49,
+     "width": 3.22,
+     "height": 4.3
+    },
+    {
+     "x": 15.82,
+     "y": 32.91,
+     "width": 17.09,
+     "height": 42.09
+    },
+    {
+     "x": 34.67,
+     "y": 38.28,
+     "width": 2.15,
+     "height": 33.01
+    },
+    {
+     "x": 64.36,
+     "y": 41.21,
+     "width": 22.36,
+     "height": 18.16
+    }
+   ]
+  },
+  {
+   "file": "cxr/CHNCXR_0424_1.jpg",
+   "source": "CHNCXR_0424_1",
+   "width": 1024,
+   "height": 1012,
+   "rois": [
+    {
+     "x": 32.13,
+     "y": 35.94,
+     "width": 12.21,
+     "height": 23.44
+    },
+    {
+     "x": 22.85,
+     "y": 41.5,
+     "width": 8.79,
+     "height": 19.34
+    }
+   ]
+  }
+ ],
+ "volume": {
+  "axialCount": 116,
+  "coronalCount": 98,
+  "mipFrames": 24,
+  "axialSize": [
+   512,
+   512
+  ],
+  "coronalSize": [
+   512,
+   445
+  ],
+  "mipSize": [
+   608,
+   340
+  ],
+  "sliceThicknessMm": 3.0,
+  "pixelSpacingMm": 0.781,
+  "zRangeMm": [
+   -159.5,
+   -504.5
+  ],
+  "studyDate": "2010-07-21",
+  "lesion": {
+   "sliceRange": [
+    68,
+    72
+   ],
+   "peakSlice": 70,
+   "axialBox": {
+    "x": 36.52,
+    "y": 55.27,
+    "width": 5.27,
+    "height": 6.25
+   },
+   "suvMax": 5.3,
+   "side": "right",
+   "coronalRows": [
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50
+   ],
+   "coronalBox": {
+    "x": 36.52,
+    "width": 5.27,
+    "y": 56.9,
+    "height": 6.9
+   }
+  }
+ },
+ "sources": {
+  "cxr": "NLM Shenzhen Hospital CXR Set — National Library of Medicine, NIH & Shenzhen No.3 People's Hospital (Jaeger et al., IEEE TMI 2014). Internal demonstration only.",
+  "volume": "TCIA Lung-PET-CT-Dx, Lung_Dx-A0166 (Li P et al., 2020, doi:10.7937/TCIA.2020.NNC2-0461), CC BY 4.0. Lung cancer patient — not a tuberculosis study."
+ }
+}

@@ -1,0 +1,36 @@
+{# 어노테이션 단계 — 원본 ImagingUpload step 3 #}
+{{ initial_findings|json_script:"imaging-findings" }}
+<form method="post" action="/upload/imaging/data" class="stack" x-data="imagingForm('{{ fd.tb_activity|default:''|escapejs }}')">
+  {% include "uploads/steps/_form_head.html" %}
+  <h2 class="font-semibold">{% t "어노테이션 입력" "Enter Annotations" %}</h2>
+  <div class="flex flex-wrap items-start gap-6">
+    <div class="soft-box flex flex-col items-center justify-center shrink-0" style="width:256px;height:256px">
+      {% icon "image" "w-12 h-12 text-slate-400" %}
+      <span class="text-xs text-slate-400 mt-2">{% if is_en %}{{ mode }} Preview{% else %}{{ mode }} 미리보기{% endif %}</span>
+      {% if preview_file %}<span class="text-11 text-muted mt-1 truncate" style="max-width:220px">{{ preview_file.original_name }}</span>{% endif %}
+    </div>
+    <div class="flex-1 stack-sm" style="min-width:280px">
+      <div class="form-grid-2">
+        <div><label class="flabel" for="a-desc">{% t "촬영 설명" "Study Description" %}</label><input id="a-desc" class="input" name="study_description" value="{{ fd.study_description|default:'' }}" maxlength="200"></div>
+        <div><span class="flabel">{% t "TB 활성도" "TB Activity" %}</span><input type="hidden" name="tb_activity" :value="activity">
+          <div class="flex flex-wrap gap-2 mt-1">{% for a in tb_activity %}<button type="button" class="opt-btn" :class="activity === '{{ a }}' && 'on'" @click="activity = '{{ a }}'" data-tip="{% if is_en %}Set this study's TB activity to {{ a }}.{% else %}이 영상의 TB 활성도를 {{ a }}(으)로 지정합니다.{% endif %}">{{ a }}</button>{% endfor %}</div></div>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-2"><span class="text-xs font-semibold">{% t "판독소견" "Findings" %}</span>
+          <button type="button" class="inline-flex items-center gap-1 text-xs text-teal" @click="add()" data-tip="{% t '판독소견 입력 행을 하나 추가합니다.' 'Add a new finding row.' %}">{% icon "plus" "w-3 h-3" %} {% t "소견 추가" "Add Finding" %}</button></div>
+        <template x-for="(a, i) in findings" :key="a.id">
+          <div class="form-grid-4 mb-2 items-center">
+            <select class="select input input-xs" name="ann_finding" x-model="a.finding"><option value="">{% t "소견 유형" "Finding Type" %}</option>{% for g in finding_groups %}<optgroup label="{{ g.label }}">{% for f in g.items %}<option>{{ f }}</option>{% endfor %}</optgroup>{% endfor %}</select>
+            <select class="select input input-xs" name="ann_location" x-model="a.location"><option value="">{% t "위치" "Location" %}</option>{% for l in locations %}<option>{{ l }}</option>{% endfor %}</select>
+            <select class="select input input-xs" name="ann_severity" x-model="a.severity"><option value="">{% t "심각도" "Severity" %}</option>{% for s in severities %}<option>{{ s }}</option>{% endfor %}</select>
+            <div class="flex gap-1"><input class="input input-xs flex-1" name="ann_description" x-model="a.description" placeholder="{% t '설명' 'Description' %}" maxlength="200">
+              <button type="button" class="icon-btn sm hover-danger" @click="findings.splice(i, 1)" aria-label="{% t '소견 삭제' 'Delete finding' %}" data-tip="{% t '이 판독소견 행을 삭제합니다.' 'Delete this finding row.' %}">{% icon "x" "w-3_5 h-3_5" %}</button></div>
+          </div>
+        </template>
+      </div>
+      <div><label class="flabel" for="a-imp">{% t "전체 인상 (Overall impression)" "Overall Impression" %}</label><textarea id="a-imp" class="textarea" rows="3" name="impression" maxlength="500">{{ fd.impression|default:'' }}</textarea></div>
+    </div>
+  </div>
+  {% include "uploads/steps/_form_errors.html" %}
+  {% include "uploads/steps/_form_actions.html" with back_ko="DICOM 비식별화 검증 단계로 돌아갑니다." back_en="Go back to the DICOM de-identification check." next_ko="다음 (비식별화 확인)" next_en="Next (De-identification)" next_tip_ko="입력한 어노테이션으로 비식별화 확인 단계로 넘어갑니다." next_tip_en="Continue to the de-identification check with these annotations." %}
+</form>

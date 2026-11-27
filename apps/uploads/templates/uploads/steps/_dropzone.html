@@ -1,0 +1,14 @@
+{# 원본 components/upload/FileDropzone.tsx — 끌어다 놓기·클릭 선택. 실제 검증은 서버가 한다. #}
+<label class="dropzone" x-data="dropzone({{ multiple|yesno:'true,false' }})" :class="drag && 'drag'"
+       @dragover.prevent="drag = true" @dragleave.prevent="drag = false" @drop.prevent="drop($event)"
+       data-tip="{% t '클릭하면 파일 선택 창이 열립니다. 파일을 끌어다 놓아도 추가됩니다.' 'Click to open the file picker, or drag and drop files here.' %}">
+  <input type="file" name="{{ field_name|default:'file' }}" accept="{{ accept }}" {% if multiple %}multiple{% endif %} x-ref="input" @change="pick()" data-testid="file-input">
+  <span class="text-slate-400" :class="drag && 'text-teal'">{% icon "cloud-upload" "w-12 h-12" %}</span>
+  <p class="font-medium mt-2">{{ label }}</p>
+  {% if hint %}<p class="text-xs text-muted mt-1">{{ hint }}</p>{% endif %}
+  <p class="text-xs text-slate-400 mt-2">{% if is_en %}Up to {{ max_files }} files · {{ max_size }} per file{% else %}최대 {{ max_files }}개 · 파일당 {{ max_size }}{% endif %}</p>
+  <ul class="file-list mt-4 text-left" x-show="names.length" x-cloak>
+    <template x-for="n in names" :key="n.name"><li :class="n.bad && 'bad'">{% icon "file-text" "w-4 h-4 text-slate-400" %}<span class="flex-1 truncate" x-text="n.name"></span><span class="text-xs text-slate-400" x-text="n.size"></span>
+      <span class="badge badge-warning" x-show="!n.bad">{% t "대기중" "Pending" %}</span><span class="text-xs text-danger" x-show="n.bad" x-text="n.bad"></span></li></template>
+  </ul>
+</label>

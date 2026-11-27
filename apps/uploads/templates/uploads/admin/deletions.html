@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{% t "삭제 요청 관리" "Deletion Requests" %}{% endblock %}
+{% block content %}
+{# 원본 MyUploadsTab '삭제 요청은 관리자 승인 후 처리됩니다' — 관리자 처리 화면(원본에는 없음, 2단계 이월분) #}
+<div class="container stack">
+  <div><h1 class="text-xl font-bold text-navy">{% t "삭제 요청 관리" "Deletion Requests" %}</h1>
+    <p class="text-sm text-muted mt-1">{% t "제출자가 요청한 업로드 삭제를 검토해 승인하거나 반려합니다. 승인하면 업로드와 그 업로드가 반영한 데이터·파일이 삭제됩니다." "Review uploads that submitters asked to delete and approve or reject. Approving deletes the upload and the data and files it applied." %}</p></div>
+  <div class="sum-card sum-yellow flex items-center gap-3">{% icon "trash-2" "w-5 h-5" %}<p class="text-sm font-medium" data-testid="deletion-pending-count">{% if is_en %}Pending deletion requests: {{ pending }}{% else %}처리 대기 삭제 요청 {{ pending }}건{% endif %}</p></div>
+  <div class="table-wrap">
+    <table class="table table-clickable" data-testid="deletion-list">
+      <thead><tr><th>{% t "업로드 ID" "Upload ID" %}</th><th>{% t "유형" "Type" %}</th><th>{% t "기관" "Institution" %}</th><th>{% t "제출자" "Submitter" %}</th><th class="text-right">{% t "레코드" "Records" %}</th><th>{% t "상태" "Status" %}</th><th>{% t "삭제 요청일" "Requested" %}</th><th class="text-center">{% t "작업" "Action" %}</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+          <tr onclick="location.href='/admin/deletions/{{ r.sub.upload_id }}'" data-upload="{{ r.sub.upload_id }}">
+            <td class="font-mono text-xs">{{ r.sub.upload_id }}</td><td class="text-xs">{{ r.domain_label }}</td><td class="text-xs">{{ r.org }}</td><td class="text-xs">{{ r.submitter }}</td>
+            <td class="text-xs text-right">{{ r.sub.total_records }}</td><td>{% include "uploads/_status_badge.html" with status=r.status %}</td>
+            <td class="text-xs text-muted">{{ r.sub.deletion_requested_at|date:"Y-m-d H:i" }}</td>
+            <td class="text-center"><a href="/admin/deletions/{{ r.sub.upload_id }}" class="btn-outline-teal" data-tip="{% t '삭제될 데이터를 확인하고 승인 또는 반려합니다.' 'Check the data to be deleted, then approve or reject.' %}">{% t "검토" "Review" %} {% icon "chevron-right" "w-3 h-3" %}</a></td>
+          </tr>
+        {% empty %}<tr><td colspan="8" class="text-center text-muted" style="padding:32px">{% t "처리할 삭제 요청이 없습니다" "No deletion requests to process" %}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page.paginator.num_pages > 1 %}
+    <div class="pager">
+      {% if page.has_previous %}<a class="pager-btn" href="?page={{ page.previous_page_number }}">{% icon "chevron-left" "w-3_5 h-3_5" %} {% t "이전" "Previous" %}</a>{% else %}<span class="pager-btn disabled">{% t "이전" "Previous" %}</span>{% endif %}
+      <span class="text-xs text-muted">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a class="pager-btn" href="?page={{ page.next_page_number }}">{% t "다음" "Next" %} {% icon "chevron-right" "w-3_5 h-3_5" %}</a>{% else %}<span class="pager-btn disabled">{% t "다음" "Next" %}</span>{% endif %}
+    </div>
+  {% endif %}
+  <div class="card card-sm">
+    <h2 class="card-title mb-2">{% t "최근 삭제된 업로드" "Recently Deleted Uploads" %}</h2>
+    <div class="table-wrap"><table class="table table-compact" data-testid="deleted-log">
+      <thead><tr><th>{% t "업로드 ID" "Upload ID" %}</th><th>{% t "유형" "Type" %}</th><th>{% t "제출자" "Submitter" %}</th><th>{% t "승인자" "Approved by" %}</th><th>{% t "삭제일" "Deleted" %}</th></tr></thead>
+      <tbody>{% for d in done %}<tr><td class="font-mono text-xs">{{ d.log.upload_id }}</td><td class="text-xs">{{ d.domain_label }}</td><td class="text-xs">{{ d.log.submitter_label|default:"-" }}</td><td class="text-xs">{{ d.log.reviewer.shown_name|default:"-" }}</td><td class="text-xs text-muted">{{ d.log.deleted_at|date:"Y-m-d H:i" }}</td></tr>
+      {% empty %}<tr><td colspan="5" class="text-center text-muted">{% t "삭제 기록이 없습니다" "No deletions yet" %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}

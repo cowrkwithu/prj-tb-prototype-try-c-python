@@ -1,0 +1,13 @@
+{# 한/영 전환 토글 (원본 LanguageToggle.tsx) — 세션 저장을 위해 POST #}
+<form method="post" action="/lang" class="lang-toggle-form {{ extra_class|default:'' }}">
+  {% csrf_token %}
+  <input type="hidden" name="lang" value="{% if is_en %}ko{% else %}en{% endif %}">
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  <button type="submit" role="switch" aria-checked="{% if is_en %}true{% else %}false{% endif %}"
+          class="lang-toggle{% if is_en %} is-en{% endif %}" data-tip="{% t '화면의 모든 메뉴와 설명을 영어로 바꿉니다.' 'Switch all menus and descriptions on screen to Korean.' %}"
+          aria-label="{% t '언어 전환 (한국어/영어)' 'Switch language (Korean/English)' %}">
+    <span class="lang-toggle-knob"></span>
+    <span class="lang-toggle-opt{% if not is_en %} on{% endif %}">한</span>
+    <span class="lang-toggle-opt{% if is_en %} on{% endif %}">EN</span>
+  </button>
+</form>

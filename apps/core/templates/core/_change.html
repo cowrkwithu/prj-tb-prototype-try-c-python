@@ -1,0 +1,6 @@
+{% if change is not None %}
+  <div class="stat-change {% if change >= 0 %}text-success{% else %}text-danger{% endif %}">
+    {% if change >= 0 %}{% icon "trending-up" "w-3_5 h-3_5" %}{% else %}{% icon "trending-down" "w-3_5 h-3_5" %}{% endif %}
+    <span>{% if change >= 0 %}+{% endif %}{% if is_en %}{{ change }}% vs last month{% else %}{{ change }}% 전월 대비{% endif %}</span>
+  </div>
+{% endif %}

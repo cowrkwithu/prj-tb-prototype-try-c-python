@@ -1,0 +1,123 @@
+[
+ {
+  "id": 1,
+  "name": "한국 MDR-TB 데이터셋",
+  "nameEn": "Korea MDR-TB Dataset",
+  "description": "한국 내 다제내성 결핵 환자 데이터셋. 유전체 시퀀싱 데이터 보유 환자를 중심으로 약제내성 변이 분석용.",
+  "descriptionEn": "Multidrug-resistant TB patients in Korea, focused on those with genome sequencing data, for drug-resistance mutation analysis.",
+  "conditions": [
+   {
+    "field": "demographics.country",
+    "operator": "eq",
+    "value": "한국"
+   },
+   {
+    "field": "clinical.diagnosisType",
+    "operator": "in",
+    "value": [
+     "MDR-TB",
+     "Pre-XDR-TB",
+     "XDR-TB"
+    ]
+   },
+   {
+    "field": "genomics.hasSequence",
+    "operator": "eq",
+    "value": true
+   }
+  ],
+  "patientIds": [
+   2,
+   4,
+   6,
+   8,
+   11,
+   13,
+   17,
+   18
+  ],
+  "createdDate": "2024-09-15"
+ },
+ {
+  "id": 2,
+  "name": "아시아 치료 실패 데이터셋",
+  "nameEn": "Asia Treatment Failure Dataset",
+  "description": "아시아 지역 치료 실패(Failed) 또는 사망(Died) 환자 데이터셋. 치료 결과에 영향을 미치는 임상·유전체 요인 분석용.",
+  "descriptionEn": "Patients in Asia whose treatment failed (Failed) or who died (Died), for analyzing clinical and genomic factors affecting treatment outcomes.",
+  "conditions": [
+   {
+    "field": "demographics.country",
+    "operator": "in",
+    "value": [
+     "한국",
+     "몽골",
+     "베트남",
+     "인도",
+     "인도네시아",
+     "필리핀",
+     "미얀마"
+    ]
+   },
+   {
+    "field": "clinical.treatmentOutcome",
+    "operator": "in",
+    "value": [
+     "Failed",
+     "Died"
+    ]
+   }
+  ],
+  "patientIds": [
+   4,
+   9,
+   15,
+   18,
+   23,
+   32,
+   39
+  ],
+  "createdDate": "2024-10-20"
+ },
+ {
+  "id": 3,
+  "name": "영상 데이터 보유 데이터셋",
+  "nameEn": "Imaging Data Dataset",
+  "description": "CXR과 CT 영상을 모두 보유한 환자 데이터셋. AI 기반 영상 분석 모델 학습 및 검증용.",
+  "descriptionEn": "Patients with both CXR and CT images, for training and validating AI-based imaging analysis models.",
+  "conditions": [
+   {
+    "field": "imaging.hasCxr",
+    "operator": "eq",
+    "value": true
+   },
+   {
+    "field": "imaging.hasCt",
+    "operator": "eq",
+    "value": true
+   },
+   {
+    "field": "imaging.cxrCount",
+    "operator": "gte",
+    "value": 3
+   }
+  ],
+  "patientIds": [
+   2,
+   4,
+   8,
+   9,
+   13,
+   18,
+   23,
+   27,
+   30,
+   32,
+   37,
+   39,
+   42,
+   44,
+   49
+  ],
+  "createdDate": "2024-11-05"
+ }
+]

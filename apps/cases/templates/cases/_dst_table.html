@@ -1,0 +1,7 @@
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>{% t "약제" "Drug" %}</th><th>{% t "결과" "Result" %}</th></tr></thead>
+  <tbody>{% for r in rows %}
+    <tr><td class="text-sm font-medium">{{ r.drug }}</td>
+      <td>{% if r.result %}<span class="dst-pill dst-{{ r.result }}">{{ r.label }}</span>{% else %}<span class="text-xs text-muted">{% t "검사 안 함" "Not tested" %}</span>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table></div>

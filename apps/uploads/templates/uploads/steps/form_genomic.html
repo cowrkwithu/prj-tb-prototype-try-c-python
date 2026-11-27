@@ -1,0 +1,25 @@
+{# 메타데이터 단계(개별) — 원본 GenomicUpload step 2 (individual) #}
+<form method="post" action="/upload/genomic/data" class="stack">
+  {% include "uploads/steps/_form_head.html" %}
+  <h2 class="font-semibold">{% t "메타데이터 입력" "Enter Metadata" %}</h2>
+  <div class="form-grid-2">
+    <div><label class="flabel" for="g-cid">Condition ID *</label><input id="g-cid" class="input{% if field_errors.condition_id %} is-invalid{% endif %}" name="condition_id" value="{{ fd.condition_id|default:'' }}" maxlength="40">
+      {% if field_errors.condition_id %}<p class="field-error">{{ field_errors.condition_id }}</p>{% endif %}</div>
+    <div><label class="flabel" for="g-sid">Specimen ID *</label><input id="g-sid" class="input{% if field_errors.specimen_id %} is-invalid{% endif %}" name="specimen_id" value="{{ fd.specimen_id|default:'' }}" maxlength="60">
+      {% if field_errors.specimen_id %}<p class="field-error">{{ field_errors.specimen_id }}</p>{% endif %}</div>
+    <div><label class="flabel" for="g-pf">{% t "시퀀싱 플랫폼 *" "Sequencing Platform *" %}</label>
+      <select id="g-pf" class="select input{% if field_errors.platform %} is-invalid{% endif %}" name="platform"><option value="">{% t "선택" "Select" %}</option>{% for p in platforms %}<option{% if fd.platform == p %} selected{% endif %}>{{ p }}</option>{% endfor %}</select>
+      {% if field_errors.platform %}<p class="field-error">{{ field_errors.platform }}</p>{% endif %}</div>
+    <div><span class="flabel">{% t "시퀀싱 방법 *" "Sequencing Method *" %}</span>
+      <div class="radio-row">{% for m in seq_methods %}<label><input type="radio" name="method" value="{{ m }}"{% if fd.method == m %} checked{% endif %}> {{ m }}</label>{% endfor %}</div>
+      {% if field_errors.method %}<p class="field-error">{{ field_errors.method }}</p>{% endif %}</div>
+    <div><label class="flabel" for="g-cov">{% t "커버리지 (X)" "Coverage (X)" %}</label><input id="g-cov" type="number" class="input" name="coverage" value="{{ fd.coverage|default:'' }}">
+      {% if field_errors.coverage %}<p class="field-error">{{ field_errors.coverage }}</p>{% endif %}</div>
+    <div><label class="flabel" for="g-sra">SRA Accession</label><input id="g-sra" class="input" name="sra_accession" value="{{ fd.sra_accession|default:'' }}" placeholder="SRR12345678" maxlength="40">
+      {% if field_errors.sra_accession %}<p class="field-error">{{ field_errors.sra_accession }}</p>{% endif %}</div>
+    <div><label class="flabel" for="g-lin">Lineage</label>
+      <select id="g-lin" class="select input" name="lineage"><option value="">{% t "선택" "Select" %}</option>{% for l in lineages %}<option{% if fd.lineage == l %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  </div>
+  {% include "uploads/steps/_form_errors.html" %}
+  {% include "uploads/steps/_form_actions.html" with back_ko="시퀀스 파일 업로드 단계로 돌아갑니다." back_en="Go back to sequence file upload." next_ko="다음 (비식별화 확인)" next_en="Next (De-identification)" next_tip_ko="입력한 메타데이터로 비식별화 확인 단계로 넘어갑니다." next_tip_en="Continue to the de-identification check with this metadata." %}
+</form>

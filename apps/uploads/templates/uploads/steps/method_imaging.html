@@ -1,0 +1,17 @@
+<form method="post" action="/upload/{{ domain }}/mode" class="stack-sm" x-data="{ mode: '{{ mode|default:'CXR' }}' }">
+  {% csrf_token %}
+  {% if sub %}<input type="hidden" name="id" value="{{ sub.upload_id }}">{% endif %}
+  <input type="hidden" name="conditionId" value="{{ prefill_cid }}">
+  <input type="hidden" name="mode" :value="mode">
+  <h2 class="font-semibold">{% t "모달리티 선택" "Select Modality" %}</h2>
+  <div class="flex flex-wrap gap-3">
+    {% for m in modes %}
+      <button type="button" class="choice-pill" :class="mode === '{{ m }}' && 'on'" @click="mode = '{{ m }}'" data-mode="{{ m }}"
+              data-tip="{% if is_en %}Set the imaging modality to upload to {{ m }}.{% else %}업로드할 영상 모달리티를 {{ m }}(으)로 지정합니다.{% endif %}">
+        {% if m == "CXR" %}{% t "흉부 X선 (CXR)" "Chest X-ray (CXR)" %}{% elif m == "CT" %}{% t "컴퓨터 단층촬영 (CT)" "Computed Tomography (CT)" %}{% else %}{% t "양전자방출 단층촬영 (PET-CT)" "Positron Emission Tomography (PET-CT)" %}{% endif %}</button>
+    {% endfor %}
+  </div>
+  <div class="flex justify-end">
+    <button type="submit" class="btn btn-teal" data-tip="{% t '선택한 모달리티로 영상 파일 업로드 단계로 넘어갑니다.' 'Continue to image file upload with the selected modality.' %}">{% t "다음" "Next" %} {% icon "arrow-right" "w-4 h-4" %}</button>
+  </div>
+</form>

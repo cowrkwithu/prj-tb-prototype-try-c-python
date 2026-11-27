@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{% t "내 업로드" "My Uploads" %}{% endblock %}
+{% block content %}
+<div class="container stack">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div><h1 class="text-2xl font-bold text-navy">{% t "내 업로드" "My Uploads" %}</h1>
+      <p class="text-muted mt-1">{% t "내가 올린 데이터의 검증 상태와 검증자 코멘트를 확인하고, 임시저장을 이어서 작성합니다." "Check the review status and reviewer comments of your uploads, and continue drafts." %}</p></div>
+    <a href="/upload" class="btn btn-secondary btn-sm">{% icon "arrow-left" "w-4 h-4" %} {% t "업로드 허브로 이동" "Go to Upload Hub" %}</a>
+  </div>
+  {% include "uploads/_my_uploads.html" %}
+</div>
+{% endblock %}

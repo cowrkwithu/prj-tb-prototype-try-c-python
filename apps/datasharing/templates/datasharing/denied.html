@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{% t "데이터 접근 신청(DAR)이 필요합니다" "A Data Access Request (DAR) is required" %}{% endblock %}
+{% block content %}
+{# 다운로드 주소를 직접 연 경우의 서버측 게이트(403) — 원본 DatasetsTab 게이트 모달 문구 #}
+<div class="container-narrow">
+  <div class="card stack-sm" data-testid="download-denied" data-state="{{ state }}">
+    <div class="flex items-start gap-3">
+      <div class="ds-icon">{% if state == "pending" %}{% icon "clock" "w-5 h-5 text-warning" %}{% else %}{% icon "shield-check" "w-5 h-5" %}{% endif %}</div>
+      <div>
+        <h1 class="text-lg font-bold text-navy">{% if state == "pending" %}{% t "데이터 접근 신청을 심사 중입니다" "Your data access request is under review" %}{% else %}{% t "데이터 접근 신청(DAR)이 필요합니다" "A Data Access Request (DAR) is required" %}{% endif %}</h1>
+        <p class="text-sm font-semibold text-navy mt-1">{{ label }}</p>
+        {% if state == "pending" %}
+          <p class="text-xs text-muted mt-1">{% t "승인이 완료되면 데이터를 다운로드할 수 있습니다. 진행 상황은 신청 현황에서 확인하세요." "You can download the data once it is approved. Check progress in the request status." %}</p>
+        {% else %}
+          <p class="text-xs text-muted mt-1">{% t "이 데이터를 다운로드하려면 먼저 데이터 접근 신청(DAR)을 제출하고 승인을 받아야 합니다. 개별 레코드는 승인 전까지 제공되지 않습니다." "To download this data, you must first submit a Data Access Request (DAR) and have it approved. Individual records are not provided until approval." %}</p>
+        {% endif %}
+      </div>
+    </div>
+    <div class="flex justify-end gap-2">
+      <a href="/data" class="btn btn-secondary btn-sm">{% t "데이터셋 목록" "Dataset List" %}</a>
+      {% if state == "pending" %}<a href="/data?tab=dar#dar-status" class="btn btn-teal btn-sm">{% t "신청 현황 보기" "View Request Status" %}</a>
+      {% else %}<a href="/data?tab=dar&amp;types={{ dar_type }}" class="btn btn-teal btn-sm">{% t "데이터 접근 신청" "Data Access Request" %}</a>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

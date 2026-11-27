@@ -1,0 +1,26 @@
+<div id="schema-admin-list">
+  <p class="text-xs text-muted mb-2" style="text-align:right">{% if is_en %}{{ rows|length }} schemas{% else %}{{ rows|length }}건{% endif %}</p>
+  <div class="table-wrap">
+    <table class="table table-clickable" data-testid="admin-schema-table">
+      <thead><tr><th>{% t "데이터 구조" "Data Schema" %}</th><th>{% t "작성자" "Owner" %}</th><th class="text-center">{% t "상태" "Status" %}</th><th class="text-center">{% t "공개 범위" "Visibility" %}</th>
+        <th class="text-right">{% t "필드" "Fields" %}</th><th class="text-right">{% t "데이터" "Records" %}</th><th class="text-center">{% t "수정일" "Updated" %}</th><th class="text-right">{% t "조치" "Actions" %}</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+          <tr hx-get="/admin/schemas/{{ r.s.schema_id }}" hx-target="#modal-root" data-schema="{{ r.s.schema_id }}">
+            <td><p class="font-semibold">{{ r.name }}</p><p class="text-xs text-muted mt-1">{{ r.category }} · v{{ r.s.version }} · <span class="font-mono">{{ r.s.schema_id }}</span></p></td>
+            <td><p>{{ r.owner }}</p><p class="text-xs text-muted">{{ r.institution }}</p></td>
+            <td class="text-center"><span class="badge badge-{{ r.status.variant }}">{{ r.status.label }}</span></td>
+            <td class="text-center text-xs text-muted">{{ r.visibility_label }}</td>
+            <td class="text-right"><span data-tip="{% if is_en %}{{ r.dict_field_count }} of {{ r.field_count }} fields come from the standard dictionary.{% else %}전체 {{ r.field_count }}개 중 {{ r.dict_field_count }}개가 표준 데이터사전에서 가져온 필드입니다.{% endif %}">{{ r.field_count }} <span class="text-xs text-muted">({% t "사전" "dict" %} {{ r.dict_field_count }})</span></span></td>
+            <td class="text-right">{{ r.data_count }}</td>
+            <td class="text-center text-xs text-muted">{{ r.updated }}</td>
+            <td><div class="sc-row" style="justify-content:flex-end;gap:6px">
+              {% for b in r.buttons %}<button type="button" class="btn btn-xs {{ b.cls }}" hx-get="/admin/schemas/{{ r.s.schema_id }}/confirm?action={{ b.action }}" hx-target="#modal-root" @click.stop data-tip="{{ b.tip }}" data-testid="act-{{ b.action }}-{{ r.s.schema_id }}">{% icon b.icon "w-3_5 h-3_5" %} {{ b.label }}</button>{% endfor %}
+              <button type="button" class="icon-btn sm" hx-get="/admin/schemas/{{ r.s.schema_id }}" hx-target="#modal-root" @click.stop aria-label="{% t '상세 보기' 'View details' %}" data-tip="{% t '구조 정의와 관리 이력을 자세히 봅니다.' 'View the schema definition and admin history.' %}">{% icon "eye" "w-4 h-4" %}</button>
+            </div></td>
+          </tr>
+        {% empty %}<tr><td colspan="8" class="text-center text-muted" style="padding:48px">{% icon "layers" "w-10 h-10" %}<br>{% t "조건에 맞는 데이터 구조가 없습니다" "No data schemas match the filters" %}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

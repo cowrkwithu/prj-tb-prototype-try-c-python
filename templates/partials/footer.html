@@ -1,0 +1,21 @@
+{# 원본 components/layout/Footer.tsx #}
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-row">
+      <div class="footer-info">
+        <p class="footer-org">{% t "국립보건연구원 · National Institute of Health" "Korea National Institute of Health" %}</p>
+        <p>{% t "(28159) 충북 청주시 흥덕구 오송읍 오송생명2로 187 | 콜센터 1339" "187 Osongsaengmyeong 2-ro, Osong-eup, Heungdeok-gu, Cheongju-si, Chungcheongbuk-do (28159) | Call Center 1339" %}</p>
+      </div>
+      <nav class="footer-links">
+        <a href="#" data-tip="{% t '플랫폼 이용약관 전문을 확인합니다.' 'View the full terms of use for this platform.' %}">{% t "이용약관" "Terms of Use" %}</a>
+        <span class="sep">|</span>
+        <a href="#" data-tip="{% t '개인정보를 어떻게 수집·이용·보호하는지 안내하는 방침을 확인합니다.' 'View how personal information is collected, used and protected.' %}">{% t "개인정보처리방침" "Privacy Policy" %}</a>
+        <span class="sep">|</span>
+        <a href="#" data-tip="{% t '논문 등에 플랫폼 데이터를 인용하는 방법을 확인합니다.' 'See how to cite platform data in papers and other work.' %}">{% t "인용 가이드라인" "Citation Guidelines" %}</a>
+        <span class="sep">|</span>
+        <a href="#" data-tip="{% t '이 사이트의 이메일 주소 무단 수집 거부 고지를 확인합니다.' 'View the notice prohibiting unauthorized email address collection.' %}">{% t "이메일무단수집거부" "No Unauthorized Email Collection" %}</a>
+      </nav>
+    </div>
+    <div class="footer-copy">&copy; {% now "Y" %} TBRS Platform. All rights reserved.</div>
+  </div>
+</footer>

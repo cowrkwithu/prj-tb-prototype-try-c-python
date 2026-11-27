@@ -1,0 +1,87 @@
+{# 원본 DarTab.tsx — 입력 검증은 서버(forms.DarForm)가 원본 규칙·문구로 다시 한다. 신청 현황은 본인 신청(DB) #}
+<div class="stack" data-testid="tab-dar">
+  {% if submitted %}
+    <div class="empty-state" data-testid="dar-submitted">
+      <div class="icon-circle" style="background:var(--color-success-bg);color:var(--color-success)">{% icon "circle-check" "w-6 h-6" %}</div>
+      <h3 class="text-sm font-bold text-navy">{% t "신청서가 제출되었습니다" "Your request has been submitted" %}</h3>
+      <p class="text-xs text-muted mt-1">{% if is_en %}Request No. {{ submitted.request_id }}{% else %}신청번호 {{ submitted.request_id }}{% endif %}</p>
+      <p class="text-xs text-muted mt-1">{% t "검토 후 등록된 이메일로 결과를 안내드립니다." "We will send the review result to your registered email." %}</p>
+      <p class="text-muted mt-1" style="font-size:11px">{% t "승인이 완료되면 데이터셋 탭에서 해당 데이터를 다운로드할 수 있습니다." "Once approved, you can download the data from the Datasets tab." %}</p>
+      <a href="/data?tab=dar" class="btn-outline-teal mt-3" style="display:inline-flex" data-tip="{% t '입력 내용을 비우고 새 데이터 접근 신청서를 처음부터 작성합니다.' 'Clear the form and start a new data access request from scratch.' %}">{% t "새 신청서 작성" "New Request" %}</a>
+    </div>
+  {% else %}
+  <form method="post" action="/data/dar" class="card stack-sm" novalidate data-testid="dar-form"
+        x-data="{ types: [{% for x in dar_values.data_types %}'{{ x|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}], purpose: '{{ dar_values.purpose|default:''|escapejs }}', toggle(id) { this.types = this.types.includes(id) ? this.types.filter(x => x !== id) : [...this.types, id] } }">
+    {% csrf_token %}
+    <h3 class="text-sm font-bold text-navy">{% t "데이터 접근 신청 (DAR)" "Data Access Request (DAR)" %}</h3>
+    {% if dar_error %}<div class="alert alert-error" data-testid="dar-error">{{ dar_error }}</div>{% endif %}
+    <fieldset class="stack-sm" style="border:0;padding:0;margin:0">
+      <legend class="text-xs font-semibold text-navy mb-2">{% t "연구자 정보" "Researcher Information" %}</legend>
+      <div class="form-grid-2">
+        {% t "이름 *" "Name *" as l %}{% t "홍길동" "John Doe" as ph %}{% include "datasharing/_field.html" with name="name" label=l value=dar_values.name placeholder=ph error=dar_errors.name maxlength=100 %}
+        {% t "소속기관 *" "Institution *" as l %}{% t "서울대학교" "Seoul National University" as ph %}{% include "datasharing/_field.html" with name="institution" label=l value=dar_values.institution placeholder=ph error=dar_errors.institution maxlength=200 %}
+        {% t "이메일 *" "Email *" as l %}{% include "datasharing/_field.html" with name="email" type="email" label=l value=dar_values.email placeholder="researcher@institution.ac.kr" error=dar_errors.email maxlength=254 %}
+        {% include "datasharing/_field.html" with name="orcid" label="ORCID" value=dar_values.orcid placeholder="0000-0000-0000-0000" error=dar_errors.orcid maxlength=19 %}
+      </div>
+    </fieldset>
+    <fieldset class="stack-sm" style="border:0;padding:0;margin:0">
+      <legend class="text-xs font-semibold text-navy mb-2">{% t "승인권자 정보" "Approver Information" %}</legend>
+      <div class="form-grid-3">
+        {% t "이름 *" "Name *" as l %}{% t "김교수" "Prof. Kim" as ph %}{% include "datasharing/_field.html" with name="approver_name" label=l value=dar_values.approver_name placeholder=ph error=dar_errors.approver_name maxlength=100 %}
+        {% t "직책 *" "Title *" as l %}{% t "교수 / PI" "Professor / PI" as ph %}{% include "datasharing/_field.html" with name="approver_title" label=l value=dar_values.approver_title placeholder=ph error=dar_errors.approver_title maxlength=100 %}
+        {% t "이메일 *" "Email *" as l %}{% include "datasharing/_field.html" with name="approver_email" type="email" label=l value=dar_values.approver_email placeholder="approver@institution.ac.kr" error=dar_errors.approver_email maxlength=254 %}
+      </div>
+    </fieldset>
+    <fieldset style="border:0;padding:0;margin:0">
+      <legend class="text-xs font-semibold text-navy mb-2">{% t "요청 데이터 *" "Requested Data *" %}</legend>
+      <div class="form-grid-3">
+        {% for o in type_options %}
+          <label class="dt-option{% if o.state != 'none' %} locked{% endif %}" :class="types.includes('{{ o.id|escapejs }}') && 'on'" data-type="{{ o.id }}"
+                 data-tip="{% if o.state == 'approved' %}{% t '이미 승인된 데이터 유형입니다.' 'This data type is already approved.' %}{% elif o.state == 'pending' %}{% t '이미 심사 중인 데이터 유형입니다.' 'This data type is already under review.' %}{% elif is_en %}Add or remove {{ o.label_text }} data in the request.{% else %}{{ o.label_text }} 데이터를 요청 목록에 추가하거나 뺍니다.{% endif %}">
+            <span class="flex items-center gap-2"><input type="checkbox" name="data_types" value="{{ o.id }}" {% if o.id in dar_values.data_types %}checked{% endif %} {% if o.state != 'none' %}disabled{% endif %} @change="toggle('{{ o.id|escapejs }}')">
+              <span class="text-xs font-semibold text-navy">{{ o.label_text }}</span>
+              {% if o.state == "approved" %}<span class="dar-status dar-approved">{% t "승인" "Approved" %}</span>{% elif o.state == "pending" %}<span class="dar-status dar-pending">{% t "검토중" "Under Review" %}</span>{% endif %}</span>
+            <span class="text-muted" style="font-size:10px;display:block;margin:4px 0 0 24px">{{ o.desc }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      {% if dar_errors.data_types %}<p class="field-error">{% icon "circle-alert" "w-3 h-3" %} {{ dar_errors.data_types }}</p>{% endif %}
+    </fieldset>
+    <div>
+      <label class="text-muted font-medium" style="font-size:10px;display:block;margin-bottom:4px" for="dar-purpose">{% t "연구 목적 *" "Research Purpose *" %}</label>
+      <textarea id="dar-purpose" name="purpose" rows="5" maxlength="5000" x-model="purpose" class="textarea{% if dar_errors.purpose %} is-invalid{% endif %}" style="font-size:12px" placeholder="{% t '데이터를 활용한 연구 목적, 방법론, 예상 결과 등을 상세히 기술하세요. (최소 30자)' 'Describe in detail the research purpose, methodology and expected results. (min. 30 characters)' %}">{{ dar_values.purpose|default:"" }}</textarea>
+      <div class="flex justify-between">{% if dar_errors.purpose %}<p class="field-error">{% icon "circle-alert" "w-3 h-3" %} {{ dar_errors.purpose }}</p>{% else %}<span></span>{% endif %}
+        <span class="text-muted" style="font-size:9px" x-text="{% if is_en %}purpose.length + ' chars'{% else %}purpose.length + '자'{% endif %}"></span></div>
+    </div>
+    <div>
+      <label class="flex items-start gap-2" style="cursor:pointer">
+        <input type="checkbox" name="dua_agreed" value="1" {% if dar_values.dua_agreed %}checked{% endif %} style="margin-top:2px;width:16px;height:16px;accent-color:var(--color-teal)">
+        <span class="text-xs text-muted" style="line-height:1.6">{% t "본인은 " "I have read the " %}<span class="font-semibold text-navy">{% t "데이터 이용 동의서(DUA)" "Data Use Agreement (DUA)" %}</span>{% t "의 내용을 숙지하였으며," " and" %} {% t "데이터를 연구 목적으로만 사용하고 제3자에게 재배포하지 않을 것을 동의합니다." "agree to use the data for research purposes only and not to redistribute it to third parties." %} {% t "개인정보보호법 및 관련 규정을 준수하겠습니다." "I will comply with the Personal Information Protection Act and related regulations." %}</span>
+      </label>
+      {% if dar_errors.dua_agreed %}<p class="field-error">{% icon "circle-alert" "w-3 h-3" %} {{ dar_errors.dua_agreed }}</p>{% endif %}
+    </div>
+    <div data-tip="{% t '필수 항목을 확인한 뒤 데이터 접근 신청서를 제출해 심사를 요청합니다.' 'Check required fields and submit the data access request for review.' %}" style="display:inline-block">
+      <button type="submit" class="btn btn-teal" data-testid="dar-submit">{% icon "send" "w-4 h-4" %} {% t "신청서 제출" "Submit Request" %}</button>
+    </div>
+  </form>
+  {% endif %}
+
+  <div class="table-wrap" id="dar-status">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--color-border);background:var(--color-gray-50)"><h3 class="text-xs font-semibold text-navy">{% t "신청 현황" "Request Status" %}</h3></div>
+    <table class="table table-compact" data-testid="dar-status-table">
+      <thead><tr><th>{% t "신청번호" "Request No." %}</th><th>{% t "신청자" "Applicant" %}</th><th>{% t "소속" "Institution" %}</th><th>{% t "신청일" "Date" %}</th><th>{% t "요청 데이터" "Requested Data" %}</th><th class="text-center">{% t "상태" "Status" %}</th></tr></thead>
+      <tbody>
+        {% for r in my_requests %}
+          <tr data-dar="{{ r.obj.request_id }}">
+            <td class="font-mono text-navy">{{ r.obj.request_id }}</td><td>{{ r.obj.name }}</td><td class="text-muted">{{ r.obj.institution }}</td>
+            <td class="text-muted">{{ r.obj.created_at|date:"Y-m-d" }}</td>
+            <td><div class="flex gap-1">{% for x in r.types %}<span class="type-chip">{{ x }}</span>{% endfor %}</div></td>
+            <td class="text-center"><span class="dar-status {{ r.status_cls }}">{{ r.status_label }}</span>
+              {% if r.obj.status == "rejected" and r.obj.review_comment %}<p class="text-muted mt-1" style="font-size:10px">{% t "반려 사유:" "Reason:" %} {{ r.obj.review_comment }}</p>{% endif %}
+              {% if r.obj.status == "approved" and r.approved|length < r.types|length %}<p class="text-muted mt-1" style="font-size:10px">{% t "승인:" "Approved:" %} {{ r.approved|join:", " }}</p>{% endif %}</td>
+          </tr>
+        {% empty %}<tr><td colspan="6" class="text-center text-muted" style="padding:24px">{% t "아직 신청한 내역이 없습니다" "No requests yet" %}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

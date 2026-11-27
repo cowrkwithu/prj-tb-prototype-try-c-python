@@ -1,0 +1,66 @@
+{# 원본 DatasetSchemaModal.tsx — HTMX 로 #schema-modal 에 넣는 조각. 검색·묶음 칩·행 펼치기는 Alpine(서버가 만든 행을 거르기만 함) #}
+<div class="modal-backdrop" x-data="{ q: '', group: '__all__', shown: {{ total|add:0 }},
+       match(el) { const q = this.q.trim().toLowerCase(); return (this.group === '__all__' || el.dataset.group === this.group) && (!q || el.dataset.search.includes(q) || el.querySelector('[data-desc]').textContent.toLowerCase().includes(q)) },
+       recount() { this.$nextTick(() => { this.shown = [...this.$root.querySelectorAll('tbody[data-row]')].filter(el => this.match(el)).length }) },
+       close() { this.$root.remove() } }"
+     x-init="$watch('q', () => recount()); $watch('group', () => recount())"
+     @click.self="close()" @keydown.escape.window="close()" data-testid="schema-modal" data-kind="{{ kind }}">
+  <div class="modal modal-xl" role="dialog" aria-modal="true">
+    <div class="modal-header"><h3 class="modal-title">{% t "데이터 구조" "Data Schema" %}</h3>
+      <button type="button" class="icon-btn sm" @click="close()" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button></div>
+    <div class="modal-body stack-sm">
+      <div class="flex items-start gap-3">
+        <div class="ds-icon{% if kind == 'custom' %} indigo{% endif %}" style="width:36px;height:36px">{% if kind == "custom" %}{% icon "blocks" "w-4 h-4" %}{% else %}{% icon "book-open" "w-4 h-4" %}{% endif %}</div>
+        <div style="min-width:0">
+          <h3 class="text-sm font-bold text-navy">{{ title }}{% if subtitle %} <span class="text-xs text-muted" style="font-weight:400;margin-left:8px">{{ subtitle }}</span>{% endif %}{% if kind == "custom" %} <span class="badge badge-sm badge-info">v{{ version }}</span>{% endif %}</h3>
+          <p class="text-xs text-muted mt-1" style="line-height:1.6">{{ description }}</p>
+          <p class="text-muted mt-1" style="font-size:10px" data-testid="schema-source">{% if kind == "custom" %}{% if is_en %}Custom data schema · link key + {{ field_count }} fields · Registered by {{ institution }}{% else %}커스텀 데이터 구조 · 연결 키 + 필드 {{ field_count }}개 · 등록 {{ institution }}{% endif %}{% else %}{% if is_en %}Source: standard data dictionary (Integrated Data Dictionary {{ version }}) · {{ field_count }} fields{% else %}출처: 표준 데이터사전(통합데이터사전 {{ version }}) · 필드 {{ field_count }}개{% endif %}{% endif %}</p>
+          {% if kind != "custom" %}<p class="text-muted" style="font-size:10px;margin-top:2px"><span class="font-semibold">{% t "포함 카테고리" "Included categories" %}:</span> {% if included %}{{ included|join:", " }}{% else %}{% t "없음" "None" %}{% endif %}</p>{% endif %}
+        </div>
+      </div>
+
+      {% if not rows %}
+        <div class="empty-state" style="border:1px dashed var(--color-border);border-radius:8px;background:var(--color-gray-50);padding:40px 24px" data-testid="schema-empty">
+          {% icon "inbox" "w-8 h-8 text-muted" %}
+          <p class="text-sm font-semibold mt-2">{% t "정의된 필드가 없습니다" "No fields defined yet" %}</p>
+          <p class="text-xs text-muted mt-1">{% if kind == "custom" %}{% t "이 데이터 구조에는 아직 필드가 등록되지 않았습니다." "No fields have been registered in this data schema yet." %}{% else %}{% t "표준 데이터사전(v3.2.0)에 이 데이터셋에 해당하는 항목이 아직 없습니다. 사전에 항목이 추가되면 여기에 표시됩니다." "The standard data dictionary (v3.2.0) has no items for this dataset yet. They will appear here once added to the dictionary." %}{% endif %}</p>
+        </div>
+      {% else %}
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="input-icon" data-tip="{% t '필드 ID·표시명·설명에서 찾습니다.' 'Search field IDs, display names and descriptions.' %}">{% icon "search" "w-3_5 h-3_5" %}
+            <input x-model.debounce.150ms="q" class="input input-xs" style="width:224px;padding-left:30px" placeholder="{% t '필드 검색' 'Search fields' %}" aria-label="{% t '필드 검색' 'Search fields' %}"></div>
+          {% if show_groups %}
+            <div class="flex flex-wrap gap-1">
+              <button type="button" class="group-chip" :aria-pressed="group === '__all__'" @click="group = '__all__'">{% t "전체" "All" %} {{ total }}</button>
+              {% for g in groups %}<button type="button" class="group-chip" :aria-pressed="group === '{{ g.id|escapejs }}'" @click="group = '{{ g.id|escapejs }}'">{{ g.label }} {{ g.count }}</button>{% endfor %}
+            </div>
+          {% endif %}
+          <span class="ml-auto text-muted" style="font-size:10px">{% if is_en %}Showing <span x-text="shown">{{ total }}</span> of {{ total }}{% else %}<span x-text="shown">{{ total }}</span> / {{ total }}개 표시{% endif %}</span>
+        </div>
+        <div class="sm-scroll">
+          <table class="sm-table">
+            <thead><tr><th style="width:32px"><span class="sr-only">{% t "펼치기" "Expand" %}</span></th><th style="width:112px">{% t "필드 ID" "Field ID" %}</th><th style="width:160px">{% t "표시명" "Display Name" %}</th><th style="width:96px">{% t "데이터 타입" "Data Type" %}</th><th style="width:64px;text-align:center">{% t "필수" "Required" %}</th><th style="width:160px">{% t "단위·허용값·제약" "Unit / Allowed Values / Constraints" %}</th><th>{% t "설명" "Description" %}</th></tr></thead>
+            {% for sec in sections %}
+              {% if show_groups %}<tbody data-group-head="{{ sec.group.id }}" x-show="group === '__all__' && [...$el.parentElement.querySelectorAll('tbody[data-row]')].some(el => el.dataset.group === '{{ sec.group.id|escapejs }}' && match(el))"><tr class="grp"><td colspan="7">{{ sec.group.label }} <span class="text-muted" style="font-weight:400">({{ sec.group.count }})</span></td></tr></tbody>{% endif %}
+              {% for r in sec.rows %}
+                <tbody data-row data-group="{{ r.group }}" data-search="{{ r.code|lower }} {{ r.name|lower }}" x-data="{ o: false }" x-show="match($el)">
+                  <tr class="main" @click="o = !o" :style="o && 'background:var(--color-gray-50)'">
+                    <td style="text-align:center"><button type="button" class="icon-btn sm" @click.stop="o = !o" :aria-expanded="o" :style="o && 'transform:rotate(90deg)'" aria-label="{% if is_en %}Show full details of {{ r.code }}{% else %}{{ r.code }} 전체 내용 보기{% endif %}">&#9656;</button></td>
+                    <td class="font-mono" style="font-size:11px">{{ r.code }}</td>
+                    <td>{{ r.name }}</td>
+                    <td style="white-space:nowrap">{% if r.link_key %}<span class="badge badge-sm badge-warning">{% t "연결 키" "Link key" %}</span>{% else %}<span class="badge badge-sm badge-info">{{ r.type_label }}</span>{% endif %}</td>
+                    <td style="text-align:center;white-space:nowrap">{% if r.required is None %}<span class="text-muted">—</span>{% elif r.required %}<span class="font-semibold text-danger">{% t "필수" "Yes" %}</span>{% else %}<span class="text-muted">{% t "선택" "No" %}</span>{% endif %}</td>
+                    <td class="text-muted"><span :class="o ? '' : 'clamp-3'" x-show="!o">{{ r.constraint|default:"—" }}</span><span x-show="o" x-cloak>{{ r.constraint_full|default:"—" }}</span></td>
+                    <td class="text-muted"><span data-desc :class="o ? '' : 'clamp-2'" style="white-space:pre-line">{{ r.description|default:"—" }}</span></td>
+                  </tr>
+                </tbody>
+              {% endfor %}
+            {% endfor %}
+            <tbody x-show="shown === 0" x-cloak><tr><td colspan="7" class="text-center text-muted" style="padding:32px">{% t "검색 조건에 맞는 필드가 없습니다." "No fields match your search." %}</td></tr></tbody>
+          </table>
+        </div>
+        <p class="text-muted" style="font-size:10px">{% t "행을 누르면 전체 설명과 허용값이 펼쳐집니다." "Click a row to expand its full description and allowed values." %}{% if kind != "custom" %} {% t '표준 데이터사전에는 필수 여부가 정의되어 있지 않아 "—"로 표시합니다. 필수 항목은 업로드 서식·데이터 구조별로 정해집니다.' 'The standard data dictionary does not define whether a field is required, so it is shown as "—". Required fields are set per upload template or data schema.' %}{% endif %}</p>
+      {% endif %}
+    </div>
+  </div>
+</div>

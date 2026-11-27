@@ -1,0 +1,180 @@
+{
+ "totalCases": 2847,
+ "totalGenomicSequences": 1523,
+ "totalImages": 5421,
+ "partnerSites": 34,
+ "countries": 8,
+ "monthlyTrends": [
+  {
+   "month": "2026-01",
+   "cases": 185,
+   "sequences": 92,
+   "images": 340
+  },
+  {
+   "month": "2026-02",
+   "cases": 210,
+   "sequences": 105,
+   "images": 385
+  },
+  {
+   "month": "2026-03",
+   "cases": 238,
+   "sequences": 120,
+   "images": 420
+  },
+  {
+   "month": "2026-04",
+   "cases": 225,
+   "sequences": 130,
+   "images": 410
+  },
+  {
+   "month": "2026-05",
+   "cases": 252,
+   "sequences": 142,
+   "images": 460
+  },
+  {
+   "month": "2026-06",
+   "cases": 240,
+   "sequences": 135,
+   "images": 445
+  },
+  {
+   "month": "2026-07",
+   "cases": 268,
+   "sequences": 148,
+   "images": 490
+  },
+  {
+   "month": "2026-08",
+   "cases": 255,
+   "sequences": 140,
+   "images": 475
+  },
+  {
+   "month": "2026-09",
+   "cases": 242,
+   "sequences": 132,
+   "images": 455
+  },
+  {
+   "month": "2026-10",
+   "cases": 230,
+   "sequences": 125,
+   "images": 430
+  },
+  {
+   "month": "2026-11",
+   "cases": 260,
+   "sequences": 150,
+   "images": 500
+  },
+  {
+   "month": "2026-12",
+   "cases": 242,
+   "sequences": 138,
+   "images": 461
+  }
+ ],
+ "countryDistribution": [
+  {
+   "country": "한국",
+   "flag": "🇰🇷",
+   "cases": 820,
+   "sequences": 480
+  },
+  {
+   "country": "몽골",
+   "flag": "🇲🇳",
+   "cases": 385,
+   "sequences": 210
+  },
+  {
+   "country": "베트남",
+   "flag": "🇻🇳",
+   "cases": 340,
+   "sequences": 185
+  },
+  {
+   "country": "인도",
+   "flag": "🇮🇳",
+   "cases": 420,
+   "sequences": 195
+  },
+  {
+   "country": "남아공",
+   "flag": "🇿🇦",
+   "cases": 380,
+   "sequences": 200
+  },
+  {
+   "country": "인도네시아",
+   "flag": "🇮🇩",
+   "cases": 210,
+   "sequences": 105
+  },
+  {
+   "country": "필리핀",
+   "flag": "🇵🇭",
+   "cases": 170,
+   "sequences": 88
+  },
+  {
+   "country": "미얀마",
+   "flag": "🇲🇲",
+   "cases": 122,
+   "sequences": 60
+  }
+ ],
+ "resistanceDistribution": [
+  {
+   "type": "DS-TB",
+   "count": 1424,
+   "percentage": 50
+  },
+  {
+   "type": "MDR-TB",
+   "count": 854,
+   "percentage": 30
+  },
+  {
+   "type": "Pre-XDR-TB",
+   "count": 285,
+   "percentage": 10
+  },
+  {
+   "type": "XDR-TB",
+   "count": 284,
+   "percentage": 10
+  }
+ ],
+ "outcomeDistribution": [
+  {
+   "outcome": "Cured",
+   "count": 1139,
+   "percentage": 40
+  },
+  {
+   "outcome": "Completed",
+   "count": 712,
+   "percentage": 25
+  },
+  {
+   "outcome": "Failed",
+   "count": 427,
+   "percentage": 15
+  },
+  {
+   "outcome": "Died",
+   "count": 285,
+   "percentage": 10
+  },
+  {
+   "outcome": "LTFU",
+   "count": 284,
+   "percentage": 10
+  }
+ ]
+}

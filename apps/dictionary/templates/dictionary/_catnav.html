@@ -1,0 +1,10 @@
+<nav id="dict-catnav" class="dict-catnav"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% for cat in categories %}
+    <a href="{{ cat.url }}" class="dict-cat{% if cat.active %} active{% endif %}" hx-get="{{ cat.url }}" hx-target="#dict-main" hx-swap="outerHTML" hx-push-url="true"
+       @click="$refs.q && ($refs.q.value = '')" data-tip-side="right"
+       data-tip="{% if is_en %}Show the standard fields of {{ cat.name }} on the right.{% else %}'{{ cat.name }}' 분류의 표준 필드 목록을 오른쪽에 보여줍니다.{% endif %}">
+      {% icon cat.icon "w-4 h-4 shrink-0" %}<span class="flex-1">{{ cat.name }}</span>
+      <span class="badge badge-sm {% if cat.active %}badge-info{% else %}badge-neutral{% endif %}">{{ cat.count }}</span>
+    </a>
+  {% endfor %}
+</nav>

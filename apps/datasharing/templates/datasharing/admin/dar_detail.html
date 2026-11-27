@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ dar.request_id }} · {% t "데이터 접근 신청 관리" "Data Access Requests" %}{% endblock %}
+{% block content %}
+<div class="container stack" x-data="{ modal: null }">
+  <a href="/admin/dar" class="inline-flex items-center gap-1 text-sm text-teal link-underline">{% icon "arrow-left" "w-4 h-4" %} {% t "목록으로 돌아가기" "Back to list" %}</a>
+  <div class="flex flex-wrap items-center gap-3"><h1 class="text-xl font-bold text-navy font-mono" data-testid="dar-id">{{ dar.request_id }}</h1><span class="dar-status {{ row.status_cls }}" data-testid="dar-status">{{ row.status_label }}</span></div>
+  <div class="grid-2">
+    <div class="card card-sm">
+      <h3 class="text-sm font-semibold text-navy mb-2">{% t "연구자 정보" "Researcher Information" %}</h3>
+      <div class="stack-xs text-sm">
+        <div><span class="text-muted">{% t "이름:" "Name:" %}</span> <strong>{{ dar.name }}</strong> <span class="text-xs text-muted">({% t "계정" "account" %} {{ dar.applicant.username }})</span></div>
+        <div><span class="text-muted">{% t "소속기관:" "Institution:" %}</span> {{ dar.institution }}</div>
+        <div><span class="text-muted">{% t "이메일:" "Email:" %}</span> {{ dar.email }}</div>
+        <div><span class="text-muted">ORCID:</span> {{ dar.orcid|default:"-" }}</div>
+      </div>
+    </div>
+    <div class="card card-sm">
+      <h3 class="text-sm font-semibold text-navy mb-2">{% t "승인권자 정보" "Approver Information" %}</h3>
+      <div class="stack-xs text-sm">
+        <div><span class="text-muted">{% t "이름:" "Name:" %}</span> <strong>{{ dar.approver_name }}</strong></div>
+        <div><span class="text-muted">{% t "직책:" "Title:" %}</span> {{ dar.approver_title }}</div>
+        <div><span class="text-muted">{% t "이메일:" "Email:" %}</span> {{ dar.approver_email }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="card card-sm">
+    <h3 class="text-sm font-semibold text-navy mb-2">{% t "요청 데이터" "Requested Data" %}</h3>
+    <div class="flex gap-1 mb-3">{% for x in row.types %}<span class="type-chip">{{ x }}</span>{% endfor %}</div>
+    <h3 class="text-sm font-semibold text-navy mb-2">{% t "연구 목적" "Research Purpose" %}</h3>
+    <p class="text-sm" style="white-space:pre-line" data-testid="dar-purpose">{{ dar.purpose }}</p>
+    <p class="text-xs text-muted mt-2">{% t "DUA 동의:" "DUA agreed:" %} {{ dar.dua_agreed_at|date:"Y-m-d H:i" }} · {% t "신청일:" "Submitted:" %} {{ dar.created_at|date:"Y-m-d H:i" }}</p>
+  </div>
+  {% if dar.status != "pending" %}
+    <div class="card card-sm" data-testid="dar-review-result">
+      <h3 class="text-sm font-semibold text-navy mb-2">{% t "검토 결과" "Review Result" %}</h3>
+      <p class="text-sm">{{ row.status_label }} · {{ dar.reviewer.shown_name|default:"-" }} · {{ dar.reviewed_at|date:"Y-m-d H:i" }}</p>
+      {% if row.approved %}<p class="text-sm mt-1">{% t "승인된 데이터 유형:" "Approved data types:" %} {{ row.approved|join:", " }}</p>{% endif %}
+      {% if dar.review_comment %}<p class="text-sm mt-1">{% if dar.status == "rejected" %}{% t "반려 사유:" "Rejection reason:" %}{% else %}{% t "검토 의견:" "Comment:" %}{% endif %} {{ dar.review_comment }}</p>{% endif %}
+    </div>
+  {% elif own_request %}
+    <div class="alert alert-warning" data-testid="own-request">{% t "본인이 제출한 신청은 검토할 수 없습니다(직무 분리). 다른 관리자가 검토해야 합니다." "You cannot review your own request (separation of duties). Another administrator must review it." %}</div>
+  {% else %}
+    <div class="card card-sm" data-testid="dar-actions">
+      <form method="post" action="/admin/dar/{{ dar.request_id }}/approve" class="stack-sm">{% csrf_token %}
+        <h3 class="text-sm font-semibold text-navy">{% t "승인할 데이터 유형" "Data Types to Approve" %}</h3>
+        <div class="flex flex-wrap gap-3">
+          {% for o in type_options %}{% if o.requested %}
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="types" value="{{ o.id }}" checked style="accent-color:var(--color-teal)"> {{ o.label }} <span class="text-xs text-muted">({{ o.desc }})</span></label>
+          {% endif %}{% endfor %}
+        </div>
+        <textarea class="textarea" name="comment" rows="2" maxlength="2000" placeholder="{% t '검토 의견 (선택)' 'Review comment (optional)' %}"></textarea>
+        <div class="flex gap-2">
+          <button type="submit" class="btn btn-teal btn-sm" data-testid="dar-approve">{% icon "circle-check" "w-4 h-4" %} {% t "승인" "Approve" %}</button>
+          <button type="button" class="btn btn-danger btn-sm" @click="modal = 'reject'">{% icon "circle-x" "w-4 h-4" %} {% t "반려" "Reject" %}</button>
+        </div>
+      </form>
+    </div>
+    <div class="modal-backdrop" x-show="modal === 'reject'" x-cloak @click.self="modal = null" @keydown.escape.window="modal = null">
+      <div class="modal modal-sm" role="dialog" aria-modal="true"><div class="modal-header"><h3 class="modal-title">{% t "신청 반려" "Reject Request" %}</h3></div>
+        <form method="post" action="/admin/dar/{{ dar.request_id }}/reject" class="modal-body stack-sm">{% csrf_token %}
+          <p class="text-sm">{% t "반려 사유를 입력해주세요." "Please enter the reason for rejection." %}</p>
+          <textarea class="textarea" rows="3" name="reason" required maxlength="2000"></textarea>
+          <div class="flex justify-end gap-2"><button type="button" class="btn btn-secondary btn-sm" @click="modal = null">{% t "취소" "Cancel" %}</button>
+            <button type="submit" class="btn btn-danger btn-sm">{% t "반려" "Reject" %}</button></div></form></div></div>
+  {% endif %}
+  {% if history %}
+    <div class="card card-sm">
+      <h3 class="text-sm font-semibold text-navy mb-2">{% t "이 신청자의 다른 신청" "Other Requests by This Applicant" %}</h3>
+      <table class="table table-compact"><tbody>{% for h in history %}<tr><td class="font-mono text-xs"><a class="link-underline" href="/admin/dar/{{ h.obj.request_id }}">{{ h.obj.request_id }}</a></td><td class="text-xs">{{ h.obj.created_at|date:"Y-m-d" }}</td><td>{% for x in h.types %}<span class="type-chip">{{ x }}</span> {% endfor %}</td><td><span class="dar-status {{ h.status_cls }}">{{ h.status_label }}</span></td></tr>{% endfor %}</tbody></table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

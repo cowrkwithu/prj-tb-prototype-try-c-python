@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{% t "데이터 신청" "Data Request" %}{% endblock %}
+{% block content %}
+{# 원본 src/pages/DataSharing/index.tsx — 4탭(URL 상태 ?tab=) #}
+<div class="container-wide">
+  <h1 class="text-lg font-bold text-navy mb-1">{% t "데이터 신청" "Data Request" %}</h1>
+  <p class="text-xs text-muted mb-5">{% t "TBRS Platform의 데이터셋, API, 데이터 접근 신청을 관리합니다." "Manage datasets, APIs and data access requests for the TBRS Platform." %}</p>
+  <nav class="tabs tabs-sm ds-tabs" role="tablist" data-testid="data-tabs">
+    {% for x in tabs %}
+      <a href="?tab={{ x.key }}" class="tab{% if tab == x.key %} active{% endif %}" role="tab" aria-selected="{% if tab == x.key %}true{% else %}false{% endif %}" data-tip="{{ x.help_text }}" data-tab="{{ x.key }}">{% icon x.icon "w-3_5 h-3_5" %} {{ x.label_text }}</a>
+    {% endfor %}
+  </nav>
+  {% if tab == "datasets" %}{% include "datasharing/_datasets.html" %}
+  {% elif tab == "api" %}{% include "datasharing/_api.html" %}
+  {% elif tab == "dar" %}{% include "datasharing/_dar.html" %}
+  {% else %}<div data-testid="tab-uploads">{% include "uploads/_my_uploads.html" %}</div>{% endif %}
+</div>
+{% endblock %}

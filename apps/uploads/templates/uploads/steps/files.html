@@ -1,0 +1,66 @@
+{# 파일 단계 — 원본 GenomicUpload step 1 / ImagingUpload step 1 (FileDropzone). 형식·크기·매직바이트는 서버가 검사한다. #}
+{# 파일은 화면이 '파일 1개 = 요청 1개'로 순차 전송한다(진행률·실패 파일만 재시도). 서버도 요청당 1개만 받는다. #}
+<form method="post" action="/upload/{{ domain }}/files" enctype="multipart/form-data" class="stack-sm"
+      x-data="fileUploader({ url: '/upload/{{ domain }}/files', id: '{{ sub.upload_id|default:'' }}', mode: '{{ mode|default:''|escapejs }}', maxFiles: {{ max_files }}, maxBytes: {{ max_bytes }} })"
+      @submit="if (busy || pending()) { $event.preventDefault(); }">
+  {% csrf_token %}
+  <input type="hidden" name="id" :value="id" {% if sub %}value="{{ sub.upload_id }}"{% endif %}>
+  {% if not sub %}<input type="hidden" name="mode" value="{{ mode }}">{% endif %}
+  <h2 class="font-semibold">{% if domain == "genomic" %}{% t "시퀀스 파일 업로드" "Upload Sequence Files" %}{% else %}{% t "영상 파일 업로드" "Upload Image Files" %}{% endif %}</h2>
+  {% if domain == "genomic" %}
+    {% t "FASTA/FASTQ 파일을 드래그하거나 클릭하여 선택" "Drag FASTA/FASTQ files here or click to select" as dz_label %}
+    {% t "허용 형식: .fasta, .fa, .fastq, .fq, .fastq.gz, .fq.gz · 최대 500MB/파일" "Allowed formats: .fasta, .fa, .fastq, .fq, .fastq.gz, .fq.gz · Max 500MB per file" as dz_hint %}
+  {% else %}
+    {% if mode == "CXR" %}{% t "허용 형식: DICOM, JPG, PNG · 최대 50MB/파일" "Allowed formats: DICOM, JPG, PNG · Max 50MB per file" as dz_hint %}
+    {% elif mode == "PET-CT" %}{% t "허용 형식: DICOM (PET·CT 시리즈 함께) · 최대 2GB/스터디" "Allowed formats: DICOM (PET and CT series together) · Max 2GB per study" as dz_hint %}
+    {% else %}{% t "허용 형식: DICOM · 최대 2GB/시리즈" "Allowed formats: DICOM · Max 2GB per series" as dz_hint %}{% endif %}
+  {% endif %}
+  <label class="dropzone" :class="drag && 'drag'" @dragover.prevent="drag = true" @dragleave.prevent="drag = false" @drop.prevent="drop($event)"
+         data-tip="{% t '클릭하면 파일 선택 창이 열립니다. 파일을 끌어다 놓아도 추가됩니다.' 'Click to open the file picker, or drag and drop files here.' %}">
+    <input type="file" name="files" accept="{{ accept }}" multiple x-ref="input" @change="pick()" data-testid="file-input">
+    <span class="text-slate-400" :class="drag && 'text-teal'">{% icon "cloud-upload" "w-12 h-12" %}</span>
+    <p class="font-medium mt-2">{{ dz_label|default:files_label }}</p>
+    <p class="text-xs text-muted mt-1">{{ dz_hint }}</p>
+    <p class="text-xs text-slate-400 mt-2">{% if is_en %}Up to {{ max_files }} files · {{ max_size }} per file · sent one file at a time{% else %}최대 {{ max_files }}개 · 파일당 {{ max_size }} · 파일마다 하나씩 차례로 전송{% endif %}</p>
+  </label>
+  <ul class="file-list" x-show="queue.length" x-cloak data-testid="upload-queue">
+    <template x-for="q in queue" :key="q.key">
+      <li :class="q.state === 'failed' && 'bad'">
+        {% icon "file-text" "w-4 h-4 text-slate-400" %}<span class="flex-1 truncate" x-text="q.name"></span><span class="text-xs text-slate-400" x-text="q.size"></span>
+        <span class="badge badge-sm badge-warning" x-show="q.state === 'pending'">{% t "대기중" "Pending" %}</span>
+        <span class="flex items-center gap-2" x-show="q.state === 'uploading'" style="min-width:120px"><span class="bar-track flex-1" style="height:6px"><span class="bar-fill" :style="`width:${q.pct}%`"></span></span><span class="text-xs" x-text="q.pct + '%'"></span></span>
+        <span class="badge badge-sm badge-success" x-show="q.state === 'done'">{% t "업로드됨" "Uploaded" %}</span>
+        <span class="text-xs text-danger" x-show="q.state === 'failed'" x-text="q.msg"></span>
+        <button type="button" class="btn-outline-teal" x-show="q.state === 'failed'" @click="retry(q)" data-tip="{% t '실패한 이 파일만 다시 보냅니다.' 'Send only this failed file again.' %}">{% icon "refresh-cw" "w-3 h-3" %} {% t "재시도" "Retry" %}</button>
+        <button type="button" class="icon-btn sm hover-danger" x-show="q.state === 'pending' || q.state === 'failed'" @click="drop1(q)" aria-label="{% t '파일 제거' 'Remove file' %}">{% icon "x" "w-4 h-4" %}</button>
+      </li>
+    </template>
+  </ul>
+  {% if stored_files %}
+    <ul class="file-list" data-testid="stored-files">
+      {% for s in stored_files %}<li>{% icon "file-text" "w-4 h-4 text-slate-400" %}<span class="flex-1 truncate">{{ s.f.original_name }}</span><span class="text-xs text-slate-400">{{ s.size }}</span>
+        {% if s.f.meta.dicom %}{% if s.f.meta.dicom.parsed %}<span class="badge badge-sm badge-teal">DICOM</span>{% else %}<span class="badge badge-sm badge-warning">{% t "헤더 판독 불가" "Header unreadable" %}</span>{% endif %}{% endif %}
+        <span class="badge badge-sm badge-success">{% t "업로드됨" "Uploaded" %}</span>
+        <button type="submit" form="rm-{{ s.f.pk }}" class="icon-btn sm hover-danger" aria-label="{% t '파일 제거' 'Remove file' %}" data-tip="{% if is_en %}Remove '{{ s.f.original_name }}' from the upload list.{% else %}'{{ s.f.original_name }}' 파일을 업로드 목록에서 제거합니다.{% endif %}">{% icon "x" "w-4 h-4" %}</button></li>{% endfor %}
+    </ul>
+    <p class="text-sm text-muted">{% if is_en %}{{ stored_files|length }} files total, {{ total_size }}{% else %}총 {{ stored_files|length }}개 파일, {{ total_size }}{% endif %}</p>
+  {% endif %}
+  {% if domain == "imaging" %}
+    <div class="form-grid-2">
+      <div><label class="flabel" for="i-cid">Condition ID *</label><input id="i-cid" class="input{% if field_errors.condition_id %} is-invalid{% endif %}" name="condition_id" value="{{ cid }}" maxlength="40">
+        {% if field_errors.condition_id %}<p class="field-error">{{ field_errors.condition_id }}</p>{% endif %}</div>
+      <div><label class="flabel" for="i-date">{% t "촬영일 *" "Study Date *" %}</label><input id="i-date" type="date" class="input{% if field_errors.study_date %} is-invalid{% endif %}" name="study_date" value="{{ study_date }}">
+        {% if field_errors.study_date %}<p class="field-error">{{ field_errors.study_date }}</p>{% endif %}</div>
+    </div>
+  {% endif %}
+  <div class="step-actions">
+    {% include "uploads/steps/_back.html" with help_ko="업로드 방식 선택 단계로 돌아갑니다." help_en="Go back to upload method selection." %}
+    <div class="flex items-center gap-2">
+      <button type="submit" name="action" value="add" class="btn btn-secondary btn-sm" data-testid="add-files" @click.prevent="start()" :disabled="busy || !pending()" data-tip="{% t '선택한 파일을 서버로 올려 형식·크기를 검사하고 목록에 추가합니다.' 'Upload the selected files, check their format and size, and add them to the list.' %}">{% icon "upload" "w-4 h-4" %} {% t "파일 올리기" "Upload Files" %}</button>
+      <button type="submit" name="action" value="next" class="btn btn-teal" data-testid="next" :disabled="busy || pending()"
+              data-tip="{% if domain == 'genomic' %}{% t '선택한 파일로 메타데이터 입력 단계로 넘어갑니다. 시퀀스 파일이 하나 이상 있어야 합니다.' 'Continue to metadata entry with the selected files. At least one sequence file is required.' %}{% else %}{% t '선택한 파일의 DICOM 비식별화 검증 단계로 넘어갑니다. 영상 파일이 하나 이상 있어야 합니다.' 'Continue to the DICOM de-identification check. At least one image file is required.' %}{% endif %}">
+        {% if domain == "genomic" %}{% t "다음 (메타데이터)" "Next (Metadata)" %}{% else %}{% t "다음 (DICOM 검증)" "Next (DICOM Check)" %}{% endif %} {% icon "arrow-right" "w-4 h-4" %}</button>
+    </div>
+  </div>
+</form>
+{% for s in stored_files %}<form id="rm-{{ s.f.pk }}" method="post" action="/upload/{{ domain }}/files/{{ s.f.pk }}/remove" hidden>{% csrf_token %}<input type="hidden" name="id" value="{{ sub.upload_id }}"></form>{% endfor %}

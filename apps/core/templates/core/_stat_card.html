@@ -1,0 +1,9 @@
+{# 원본 components/common/StatCard.tsx — 카운트업은 static/js/app.js [data-countup] #}
+<div class="stat-card stat-card-hover">
+  <div class="flex-1">
+    <p class="stat-title">{% t title_ko title_en %}</p>
+    <p class="stat-value"><span data-countup="{{ value }}">{{ value|stringformat:"d" }}</span>{{ suffix }}</p>
+    {% include "core/_change.html" %}
+  </div>
+  <div class="stat-icon tone-{{ tone }}">{% icon icon_name "w-5 h-5" %}</div>
+</div>

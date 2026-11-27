@@ -1,0 +1,38 @@
+{# DICOM 비식별화 검증 — 원본 ImagingUpload step 2. 원본은 고정 표(목업)였으나 여기서는 실제 헤더를 판독한다. #}
+<div class="stack-sm">
+  <h2 class="font-semibold">{% t "DICOM 비식별화 검증" "DICOM De-identification Check" %}</h2>
+  {% for d in dicom_files %}
+    <div class="stack-xs">
+      <p class="text-sm font-medium flex items-center gap-2">{% icon "file" "w-4 h-4 text-slate-400" %} {{ d.f.original_name }}</p>
+      {% if not d.info %}
+        <p class="text-xs text-muted soft-box">{% t "DICOM 파일이 아닙니다(JPG/PNG) — 헤더 검사 대상이 아니므로 영상 안에 환자 정보가 찍혀 있지 않은지 직접 확인하세요." "Not a DICOM file (JPG/PNG) — there is no header to check; make sure no patient information is burned into the image." %}</p>
+      {% elif not d.info.parsed %}
+        <div class="alert alert-error" data-testid="dicom-unreadable">{% icon "shield-alert" "w-4 h-4" %} <span>{% t "DICOM 헤더를 끝까지 판독하지 못해 식별정보가 없는지 확인할 수 없습니다 — 제출할 수 없습니다." "The DICOM header could not be fully read, so the absence of identifiers cannot be confirmed — it cannot be submitted." %}
+          <span class="text-xs">({% if is_en %}{{ d.info.error_en|default:d.info.error }}{% else %}{{ d.info.error }}{% endif %})</span></span></div>
+      {% else %}
+        <div class="table-wrap"><table class="table table-compact" data-testid="dicom-table">
+          <thead><tr><th>{% t "DICOM 태그" "DICOM Tag" %}</th><th>{% t "태그명" "Tag Name" %}</th><th>{% t "현재 값" "Current Value" %}</th><th class="text-center">{% t "상태" "Status" %}</th></tr></thead>
+          <tbody>{% for tg in d.info.tags %}<tr>
+            <td class="font-mono text-xs text-muted">{{ tg.tag }}</td><td>{{ tg.name }}</td>
+            <td>{% if not tg.value %}{% t "[비어있음]" "[Empty]" %}{% elif tg.risky %}<span class="font-mono">{{ tg.value|slice:":2" }}***</span>{% else %}{{ tg.value }}{% endif %}</td>
+            <td class="text-center">{% if tg.risky %}<span class="badge badge-danger">{% t "위험" "Risk" %}</span>{% else %}<span class="badge badge-success">{% t "안전" "Safe" %}</span>{% endif %}</td>
+          </tr>{% endfor %}</tbody></table></div>
+      {% endif %}
+    </div>
+  {% endfor %}
+  <p class="text-xs text-muted">{% t "참고: 업로드 전 dcmtk의 dcmodify 또는 DICOM Anonymizer 도구 사용을 권장합니다" "Note: Using dcmtk dcmodify or a DICOM Anonymizer tool before upload is recommended" %}</p>
+  {% if dicom_risky %}
+    <div class="alert alert-error" data-testid="dicom-risky">{% icon "shield-alert" "w-4 h-4" %} {% t "DICOM 헤더에 환자 식별정보가 남아 있습니다 — 익명화한 파일로 다시 올리기 전에는 제출할 수 없습니다" "Patient identifiers remain in the DICOM header — you cannot submit until you re-upload anonymized files" %}</div>
+  {% elif dicom_unreadable %}
+    <div class="alert alert-error">{% icon "shield-alert" "w-4 h-4" %} {% t "판독하지 못한 DICOM 파일이 있어 제출할 수 없습니다 — 파일을 빼거나 익명화 도구로 다시 저장해 올리세요" "Some DICOM files could not be read, so the upload cannot be submitted — remove them or re-save with an anonymization tool" %}</div>
+  {% else %}
+    <div class="alert alert-success">{% icon "circle-check" "w-4 h-4" %} {% t "DICOM 비식별화 검증 완료 — 위험 태그 없음" "DICOM de-identification check complete — no risky tags" %}</div>
+  {% endif %}
+  <form method="post" action="/upload/{{ domain }}/proceed">
+    {% csrf_token %}<input type="hidden" name="id" value="{{ sub.upload_id }}"><input type="hidden" name="from" value="dicom">
+    <div class="step-actions">
+      {% include "uploads/steps/_back.html" with help_ko="영상 파일 업로드 단계로 돌아갑니다." help_en="Go back to image file upload." %}
+      <button type="submit" class="btn btn-teal" data-testid="next" data-tip="{% t '어노테이션 입력 단계로 넘어갑니다.' 'Continue to annotation entry.' %}">{% t "다음 (어노테이션)" "Next (Annotation)" %} {% icon "arrow-right" "w-4 h-4" %}</button>
+    </div>
+  </form>
+</div>

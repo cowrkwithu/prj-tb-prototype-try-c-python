@@ -1,0 +1,39 @@
+{# 제출 완료 — 원본 UploadProgress + 완료 화면. 원본은 진행률을 흉내 냈지만 여기서는 실제 상태(검증 대기/승인/반려)를 보여 준다. #}
+<div class="text-center stack" style="padding:16px 0" data-testid="done">
+  {% if sub.status == "pending" %}
+    {% icon "circle-check" "w-12 h-12 text-success" %}
+    <h2 class="text-xl font-bold text-success">{% t "업로드 완료" "Upload Complete" %}</h2>
+    <div class="progress-panel pending">
+      <div class="flex items-center gap-3">{% icon "clock" "w-5 h-5" %}<span class="font-medium">{% t "관리자 검증 대기 중" "Awaiting administrator review" %}</span><span class="text-xs text-muted ml-auto">{{ sub.source_filename|default:"web_form_entry" }}</span></div>
+      <div class="progress-grid">
+        <div><p class="font-semibold text-success">{{ sub.valid_records }}</p><p class="text-xs">{% t "유효" "Valid" %}</p></div>
+        <div><p class="font-semibold text-warning">{{ sub.warning_records }}</p><p class="text-xs">{% t "경고" "Warning" %}</p></div>
+        <div><p class="font-semibold text-danger">{{ sub.error_records }}</p><p class="text-xs">{% t "오류" "Error" %}</p></div>
+      </div>
+    </div>
+  {% elif sub.status == "approved" %}
+    {% icon "circle-check" "w-12 h-12 text-success" %}
+    <h2 class="text-xl font-bold text-success">{% t "승인 완료 — 포털에 반영되었습니다" "Approved — published to the portal" %}</h2>
+  {% elif sub.status == "rejected" %}
+    {% icon "circle-x" "w-12 h-12 text-danger" %}
+    <h2 class="text-xl font-bold text-danger">{% t "반려되었습니다" "Rejected" %}</h2>
+    {% if sub.review_comment %}<div class="alert alert-error" style="justify-content:center">{% t "반려 사유: " "Rejection reason: " %}{{ sub.review_comment }}</div>{% endif %}
+  {% endif %}
+  <div class="soft-box text-left text-sm stack-xs" style="display:inline-block;min-width:280px">
+    <p><span class="text-muted">{% t "업로드 ID:" "Upload ID:" %}</span> <span class="font-mono">{{ sub.upload_id }}</span></p>
+    <p><span class="text-muted">{% t "데이터 유형:" "Data Type:" %}</span> {% t meta.name.0 meta.name.1 %}</p>
+    <p><span class="text-muted">{% t "레코드 수:" "Records:" %}</span> {% if is_en %}{{ sub.total_records }}{% else %}{{ sub.total_records }}건{% endif %}</p>
+    {% if sub.files.all %}<p><span class="text-muted">{% t "파일:" "Files:" %}</span> {% if is_en %}{{ sub.files.all|length }}{% else %}{{ sub.files.all|length }}개{% endif %}</p>{% endif %}
+    <p><span class="text-muted">{% t "제출 일시:" "Submitted At:" %}</span> {{ sub.submitted_at|date:"Y-m-d H:i" }}</p>
+  </div>
+  {% if sub.status == "pending" %}
+    {% if domain == "genomic" %}<p class="text-sm text-muted">{% t "유전체 시퀀스는 관리자 검증(승인) 후 케이스에 반영됩니다." "Genomic sequences are linked to the case after administrator approval." %}</p>
+    {% elif domain == "imaging" %}<p class="text-sm text-muted">{% t "영상 데이터는 관리자 검증(승인) 후 케이스에 반영됩니다." "Imaging data is linked to the case after administrator approval." %}</p>{% endif %}
+  {% endif %}
+  <div class="flex flex-wrap justify-center gap-3">
+    <a href="/upload/report/{{ sub.upload_id }}.csv" class="btn btn-secondary btn-sm" data-tip="{% t '업로드 ID·행별 검증 결과를 CSV 로 내려받습니다.' 'Download the upload ID and per-row validation results as CSV.' %}">{% icon "download" "w-4 h-4" %} {% t "업로드 결과 다운로드 (CSV)" "Download Upload Result (CSV)" %}</a>
+    <a href="/upload/{{ domain }}" class="btn btn-teal btn-sm" data-tip="{% t '입력 내용을 초기화하고 처음 단계부터 새 업로드를 시작합니다.' 'Reset the form and start a new upload from the first step.' %}">{% t "추가 업로드" "Upload More" %}</a>
+    <a href="/upload" class="btn btn-outline-teal" data-tip="{% t '데이터 업로드 센터 첫 화면으로 돌아갑니다.' 'Return to the Data Upload Center main page.' %}">{% t "업로드 허브로 이동" "Go to Upload Hub" %}</a>
+    <a href="/upload/mine" class="btn btn-secondary btn-sm" data-tip="{% t '내가 올린 업로드의 검증 상태와 검증자 코멘트를 봅니다.' 'See the review status and reviewer comments of your uploads.' %}">{% t "내 업로드" "My Uploads" %}</a>
+  </div>
+</div>

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% t "대상자 등록조회" "Cases" %}{% endblock %}
+{% block head %}<script src="{% static 'vendor/chart.umd.min.js' %}" defer></script>{% endblock %}
+{% block content %}
+{# 원본 src/pages/CaseEditor — 좌측 목록(35%) + 우측 상세 #}
+<div class="case-editor">
+  <div class="case-left">
+    <div class="case-left-head">
+      <a href="/upload/clinical" class="btn btn-primary btn-block" data-tip="{% t '임상 데이터 업로드 화면으로 이동해 새 환자 케이스를 등록합니다.' 'Go to clinical data upload to register a new patient case.' %}">{% icon "plus" "w-4 h-4" %} {% t "새 케이스 등록" "Register New Case" %}</a>
+    </div>
+    <form id="case-filter-form" class="case-search" action="/cases" method="get"
+          hx-get="/cases" hx-target="#case-list" hx-swap="outerHTML" hx-push-url="true"
+          hx-trigger="input changed delay:300ms from:#case-q, change, submit"
+          hx-include="#case-selected-id"
+          x-data="caseFilters({{ active_filter_count }})" @change="recount()">
+      <div class="flex items-center gap-2">
+        <div class="input-icon flex-1">
+          {% icon "search" "w-4 h-4" %}
+          <input id="case-q" class="input input-sm" type="search" name="q" value="{{ state.q }}" autocomplete="off"
+                 placeholder="{% t '환자ID / 진단명 / 국적 검색' 'Search patient ID / diagnosis / nationality' %}">
+        </div>
+        <button type="button" class="icon-btn bordered" :class="{ 'is-on': open }" @click="open = !open" aria-label="{% t '필터' 'Filters' %}"
+                :data-tip="open ? '{% t "필터 패널을 접습니다. 선택한 필터는 그대로 적용됩니다." "Collapse the filter panel. Selected filters stay applied." %}' : '{% t "국적·약제내성·치료결과·영상 보유 여부로 케이스 목록을 거르는 필터 패널을 펼칩니다." "Expand filters to narrow cases by nationality, drug resistance, treatment outcome or imaging data." %}'">
+          {% icon "sliders-horizontal" "w-4 h-4 text-muted" %}
+          <span class="count-dot" x-show="count > 0" x-text="count" {% if not active_filter_count %}x-cloak{% endif %}>{{ active_filter_count }}</span>
+        </button>
+      </div>
+      <div class="filter-panel" x-show="open" x-cloak>
+        <div class="filter-group"><p class="filter-label">{% t "국적" "Nationality" %}</p>
+          <div class="chips">{% for c in countries %}
+            <label class="chip" data-tip="{% if is_en %}Show only cases from {{ c.label }}. Pick several to match any of them.{% else %}국적이 {{ c.label }}인 케이스만 봅니다. 여러 개를 고르면 하나라도 맞는 케이스가 보입니다.{% endif %}"><input type="checkbox" name="country" value="{{ c.value }}" {% if c.value in state.country %}checked{% endif %}><span>{{ c.label }}</span></label>
+          {% endfor %}</div></div>
+        <div class="filter-group"><p class="filter-label">{% t "약제내성" "Drug Resistance" %}</p>
+          <div class="chips">{% for v in diag_types %}
+            <label class="chip" data-tip="{% if is_en %}Show only {{ v }} cases. Pick several to match any of them.{% else %}진단 유형이 {{ v }}인 케이스만 봅니다. 여러 개를 고르면 하나라도 맞는 케이스가 보입니다.{% endif %}"><input type="checkbox" name="type" value="{{ v }}" {% if v in state.type %}checked{% endif %}><span>{{ v }}</span></label>
+          {% endfor %}</div></div>
+        <div class="filter-group"><p class="filter-label">{% t "치료결과" "Treatment Outcome" %}</p>
+          <div class="chips">{% for v in outcomes %}
+            <label class="chip" data-tip="{% if is_en %}Show only cases with outcome {{ v }}. Pick several to match any of them.{% else %}치료결과가 {{ v }}인 케이스만 봅니다. 여러 개를 고르면 하나라도 맞는 케이스가 보입니다.{% endif %}"><input type="checkbox" name="outcome" value="{{ v }}" {% if v in state.outcome %}checked{% endif %}><span>{{ v }}</span></label>
+          {% endfor %}</div></div>
+        <label class="check-line" data-tip="{% t 'CXR·CT·PET-CT 영상이 하나라도 있는 케이스만 봅니다.' 'Show only cases with at least one CXR, CT or PET-CT image.' %}">
+          <input type="checkbox" name="imaging" value="1" {% if state.imaging %}checked{% endif %}> {% t "영상 데이터 보유만" "With imaging data only" %}</label>
+        <button type="button" class="link-danger" x-show="count > 0" @click="reset()" data-tip="{% t '선택한 필터를 모두 해제하고 전체 케이스를 다시 보여줍니다.' 'Clear all filters and show every case again.' %}">{% icon "x" "w-3 h-3" %} {% t "필터 초기화" "Reset Filters" %}</button>
+      </div>
+      <noscript><button type="submit" class="btn btn-secondary btn-xs mt-2">{% t "적용" "Apply" %}</button></noscript>
+    </form>
+    {% include "cases/_list.html" %}
+  </div>
+  <div class="case-right">
+    {% include "cases/_detail.html" %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/cases.js' %}"></script>{% endblock %}

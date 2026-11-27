@@ -1,0 +1,93 @@
+{# 데이터 단계(웹 폼) — 원본 LabUpload step 1: 검체·도말·배양·GeneXpert·DST·생화학 #}
+{{ fd|json_script:"lab-initial" }}
+{{ dst_initial|json_script:"lab-dst" }}
+{{ biochem_initial|json_script:"lab-biochem" }}
+{{ biochem_units|json_script:"lab-units" }}
+<form method="post" action="/upload/lab/data" class="stack" x-data="labForm()">
+  {% include "uploads/steps/_form_head.html" %}
+  <fieldset class="fs"><legend>{% t "검체 정보" "Specimen Information" %}</legend>
+    <div class="form-grid-4">
+      <div><label class="flabel" for="l-cid">Condition ID *</label><input id="l-cid" class="input{% if field_errors.condition_id %} is-invalid{% endif %}" name="condition_id" value="{{ fd.condition_id|default:'' }}" maxlength="40">
+        {% if field_errors.condition_id %}<p class="field-error">{{ field_errors.condition_id }}</p>{% endif %}</div>
+      <div><label class="flabel" for="l-sid">{% t "검체 ID *" "Specimen ID *" %}</label><input id="l-sid" class="input{% if field_errors.specimen_id %} is-invalid{% endif %}" name="specimen_id" value="{{ fd.specimen_id|default:'' }}" placeholder="SP-001" maxlength="60">
+        {% if field_errors.specimen_id %}<p class="field-error">{{ field_errors.specimen_id }}</p>{% endif %}</div>
+      <div><label class="flabel" for="l-sd">{% t "검체 채취일 *" "Collection Date *" %}</label><input id="l-sd" type="date" class="input{% if field_errors.specimen_date %} is-invalid{% endif %}" name="specimen_date" value="{{ fd.specimen_date|default:'' }}">
+        {% if field_errors.specimen_date %}<p class="field-error">{{ field_errors.specimen_date }}</p>{% endif %}</div>
+      <div><label class="flabel" for="l-st">{% t "검체 유형 *" "Specimen Type *" %}</label>
+        <select id="l-st" class="select input{% if field_errors.specimen_type %} is-invalid{% endif %}" name="specimen_type"><option value="">{% t "선택" "Select" %}</option>
+          {% for o in specimen_types %}<option{% if fd.specimen_type == o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select>
+        {% if field_errors.specimen_type %}<p class="field-error">{{ field_errors.specimen_type }}</p>{% endif %}</div>
+    </div>
+  </fieldset>
+
+  <fieldset class="fs"><div class="fs-head"><span class="fs-title">{% t "도말검사 (Microscopy)" "Smear Microscopy" %}</span>
+      <label class="check-line"><input type="checkbox" name="show_microscopy" value="1" x-model="show.microscopy"> {% t "결과 입력" "Enter Results" %}</label></div>
+    <div class="stack-sm" x-show="show.microscopy" x-cloak>
+      <div><label class="flabel">{% t "검사일" "Test Date" %}</label><input type="date" class="input" style="max-width:192px" name="microscopy_date" value="{{ fd.microscopy_date|default:'' }}"></div>
+      <input type="hidden" name="microscopy_result" :value="v.microscopy_result">
+      <div class="flex flex-wrap gap-2">{% for r in microscopy_opts %}<button type="button" class="opt-btn" :class="v.microscopy_result === '{{ r }}' && 'on'" @click="v.microscopy_result = '{{ r }}'"
+        data-tip="{% if is_en %}Set the smear microscopy result to {{ r }}.{% else %}도말검사 결과를 {{ r }}(으)로 지정합니다.{% endif %}">{{ r }}</button>{% endfor %}</div>
+    </div>
+  </fieldset>
+
+  <fieldset class="fs"><div class="fs-head"><span class="fs-title">{% t "배양검사 (Culture)" "Culture" %}</span>
+      <label class="check-line"><input type="checkbox" name="show_culture" value="1" x-model="show.culture"> {% t "결과 입력" "Enter Results" %}</label></div>
+    <div class="form-grid-4" x-show="show.culture" x-cloak>
+      <div><label class="flabel">{% t "검사일" "Test Date" %}</label><input type="date" class="input" name="culture_date" value="{{ fd.culture_date|default:'' }}"></div>
+      <div><label class="flabel">{% t "배양 방법" "Culture Method" %}</label><select class="select input" name="culture_method"><option value="">{% t "선택" "Select" %}</option>{% for m in culture_methods %}<option{% if fd.culture_method == m %} selected{% endif %}>{{ m }}</option>{% endfor %}</select></div>
+      <div><label class="flabel">{% t "결과" "Result" %}</label><input type="hidden" name="culture_result" :value="v.culture_result">
+        <div class="flex flex-wrap gap-1">{% for r in culture_results %}<button type="button" class="opt-btn" :class="v.culture_result === '{{ r }}' && 'on'" @click="v.culture_result = '{{ r }}'" data-tip="{% if is_en %}Set the culture result to {{ r }}.{% else %}배양검사 결과를 {{ r }}(으)로 지정합니다.{% endif %}">{{ r }}</button>{% endfor %}</div></div>
+      <div x-show="v.culture_result === 'Positive'"><label class="flabel">{% t "양성까지 일수" "Days to Positivity" %}</label><input type="number" min="0" class="input" name="days_to_positivity" value="{{ fd.days_to_positivity|default:'' }}" placeholder="{% t '일수' 'Days' %}"></div>
+    </div>
+  </fieldset>
+
+  <fieldset class="fs"><div class="fs-head"><span class="fs-title">GeneXpert</span>
+      <label class="check-line"><input type="checkbox" name="show_genexpert" value="1" x-model="show.genexpert"> {% t "결과 입력" "Enter Results" %}</label></div>
+    <div class="form-grid-2" x-show="show.genexpert" x-cloak>
+      <div><label class="flabel">{% t "MTB 결과" "MTB Result" %}</label><input type="hidden" name="genexpert_mtb" :value="v.genexpert_mtb">
+        <div class="flex flex-wrap gap-1">{% for r in mtb_opts %}<button type="button" class="opt-btn" :class="v.genexpert_mtb === '{{ r }}' && 'on'" @click="v.genexpert_mtb = '{{ r }}'" data-tip="{% if is_en %}Set the GeneXpert MTB result to {{ r }}.{% else %}GeneXpert MTB 결과를 {{ r }}(으)로 지정합니다.{% endif %}">{{ r }}</button>{% endfor %}</div></div>
+      <div><label class="flabel">{% t "리팜피신 내성" "Rifampicin Resistance" %}</label><input type="hidden" name="genexpert_rif" :value="v.genexpert_rif">
+        <div class="flex flex-wrap gap-1">{% for r in rif_opts %}<button type="button" class="opt-btn" :class="v.genexpert_rif === '{{ r }}' && 'on'" @click="v.genexpert_rif = '{{ r }}'" :disabled="v.genexpert_mtb !== 'Detected'"
+          :data-tip="v.genexpert_mtb === 'Detected' ? '{% if is_en %}Set the rifampicin resistance result to {{ r }}.{% else %}리팜피신 내성 결과를 {{ r }}(으)로 지정합니다.{% endif %}' : '{% t "MTB 결과가 Detected일 때만 리팜피신 내성을 입력할 수 있습니다." "Rifampicin resistance can be entered only when MTB is Detected." %}'">{{ r }}</button>{% endfor %}</div></div>
+    </div>
+  </fieldset>
+
+  <fieldset class="fs"><div class="fs-head"><span class="fs-title">{% t "약제감수성검사 (DST)" "Drug Susceptibility Testing (DST)" %}</span>
+      <label class="check-line"><input type="checkbox" name="show_dst" value="1" x-model="show.dst"> {% t "결과 입력" "Enter Results" %}</label></div>
+    <div class="stack-sm" x-show="show.dst" x-cloak>
+      <select class="select input" style="width:auto" name="dst_method"><option value="">{% t "검사 방법 선택" "Select test method" %}</option>{% for m in dst_methods %}<option{% if fd.dst_method == m %} selected{% endif %}>{{ m }}</option>{% endfor %}</select>
+      <div class="table-wrap"><table class="table table-compact">
+        <thead><tr><th>{% t "약제 분류" "Drug Class" %}</th><th>{% t "약제명" "Drug Name" %}</th><th class="text-center">S</th><th class="text-center">R</th><th class="text-center">I</th></tr></thead>
+        <tbody>{% for g in dst_groups %}{% for drug in g.drugs %}
+          <tr>{% if forloop.first %}<td rowspan="{{ g.drugs|length }}" class="text-muted" style="vertical-align:top">{{ g.label }}</td>{% endif %}
+            <td class="font-medium">{{ drug }}<input type="hidden" name="dst_{{ drug|lower }}" :value="dst['{{ drug }}'] || ''"></td>
+            {% for val in "SRI" %}<td class="text-center"><button type="button" class="dst-btn" :class="dst['{{ drug }}'] === '{{ val }}' && 'on-{{ val }}'" @click="toggleDst('{{ drug }}', '{{ val }}')"
+              :data-tip="dst['{{ drug }}'] === '{{ val }}' ? '{% if is_en %}Clear the {{ val }} result for {{ drug }}.{% else %}{{ drug }}의 {{ val }} 판정을 해제합니다.{% endif %}' : '{% if is_en %}Mark {{ drug }} as {% if val == "S" %}Susceptible (S){% elif val == "R" %}Resistant (R){% else %}Intermediate (I){% endif %}.{% else %}{{ drug }} 약제 결과를 {% if val == "S" %}감수성(S){% elif val == "R" %}내성(R){% else %}중간(I){% endif %} 판정으로 지정합니다.{% endif %}'">{{ val }}</button></td>{% endfor %}
+          </tr>{% endfor %}{% endfor %}</tbody>
+      </table></div>
+      <div class="alert alert-error" style="display:block" x-show="resistant().length" x-cloak data-testid="dst-profile">
+        <p class="text-xs font-semibold mb-1">{% t "내성 프로파일 요약" "Resistance Profile Summary" %}</p>
+        <div class="flex flex-wrap gap-1 mb-2"><template x-for="d in resistant()" :key="d"><span class="badge badge-danger" x-text="d"></span></template></div>
+        <p class="text-xs">{% t "DST 프로파일:" "DST Profile:" %} <strong x-text="classify()"></strong></p>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset class="fs"><div class="fs-head"><span class="fs-title">{% t "생화학 검사 (Biochemistry)" "Biochemistry" %}</span>
+      <label class="check-line"><input type="checkbox" name="show_biochem" value="1" x-model="show.biochem"> {% t "결과 입력" "Enter Results" %}</label></div>
+    <div class="stack-sm" x-show="show.biochem" x-cloak>
+      <div class="table-wrap" x-show="bc.length"><table class="table table-compact">
+        <thead><tr><th>{% t "검사 항목" "Test Item" %}</th><th>{% t "결과값" "Value" %}</th><th>{% t "단위" "Unit" %}</th><th>{% t "검사일" "Test Date" %}</th><th></th></tr></thead>
+        <tbody><template x-for="(r, i) in bc" :key="r.id"><tr>
+          <td><select class="select input input-xs" style="width:128px" name="bc_test" x-model="r.test" @change="r.unit = units[r.test] || r.unit"><option value="">{% t "선택" "Select" %}</option>{% for o in biochem_tests %}<option>{{ o }}</option>{% endfor %}</select></td>
+          <td><input type="number" step="0.1" class="input input-xs" style="width:88px" name="bc_value" x-model="r.value"></td>
+          <td><input class="input input-xs" style="width:72px" name="bc_unit" x-model="r.unit" maxlength="20"></td>
+          <td><input type="date" class="input input-xs" name="bc_date" x-model="r.date"></td>
+          <td><button type="button" class="icon-btn sm hover-danger" @click="bc.splice(i, 1)" aria-label="{% t '검사 항목 삭제' 'Delete test item' %}" data-tip="{% t '이 생화학 검사 행을 삭제합니다.' 'Delete this biochemistry test row.' %}">{% icon "x" "w-3_5 h-3_5" %}</button></td>
+        </tr></template></tbody></table></div>
+      <button type="button" class="btn-outline-teal" @click="addBc()" data-tip="{% t '생화학 검사 결과를 입력할 행을 하나 추가합니다.' 'Add a row for a biochemistry test result.' %}">{% icon "plus" "w-3 h-3" %} {% t "검사 항목 추가" "Add Test Item" %}</button>
+    </div>
+  </fieldset>
+  {% include "uploads/steps/_form_errors.html" %}
+  {% include "uploads/steps/_form_actions.html" with back_ko="업로드 방식 선택 단계로 돌아갑니다." back_en="Go back to upload method selection." next_ko="다음 (비식별화 확인)" next_en="Next (De-identification)" next_tip_ko="입력한 내용으로 비식별화 확인 단계로 넘어갑니다." next_tip_en="Continue to the de-identification check with the entered data." %}
+</form>

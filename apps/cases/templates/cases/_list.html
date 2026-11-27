@@ -1,0 +1,46 @@
+{# 케이스 목록 + 페이지 (HX-Target: case-list) #}
+<div id="case-list" class="case-list-wrap"{% if oob_list %} hx-swap-oob="true"{% endif %}>
+  <input type="hidden" id="case-selected-id" name="id" value="{{ selected_id }}">
+  <div class="case-list">
+    {% for r in rows %}
+      {% with p=r.p %}
+      <a href="/cases?{% if list_query %}{{ list_query }}&amp;{% endif %}page={{ page }}&amp;id={{ p.id }}"
+         class="case-item{% if p.id == selected_id %} selected{% endif %}" data-testid="case-{{ p.condition_id }}"
+         hx-get="/cases?{% if list_query %}{{ list_query }}&amp;{% endif %}page={{ page }}&amp;id={{ p.id }}"
+         hx-target="#case-detail" hx-swap="outerHTML" hx-push-url="true" hx-vals="js:{tab: window.caseTab || 0}"
+         data-tip-side="right" data-tip="{% t '누르면 오른쪽에 이 케이스의 임상·영상·유전체 등 상세 정보를 보여줍니다.' "Click to show this case's clinical, imaging, genomic and other details on the right." %}">
+        <div class="flex items-center justify-between gap-2">
+          <div style="min-width:0">
+            <p class="text-sm font-medium truncate">{{ p.condition_id }}</p>
+            <p class="text-xs text-muted mt-1">{% if is_en %}{{ p.age }} y{% else %}{{ p.age }}세{% endif %} · {% if p.sex == "M" %}{% t "남" "M" %}{% else %}{% t "여" "F" %}{% endif %} · {{ r.country_label }}</p>
+          </div>
+          <span class="badge badge-{{ r.resistance_variant }}">{{ p.diagnosis_type }}</span>
+        </div>
+        <div class="flex items-center gap-1 mt-2">
+          <span class="badge badge-sm badge-{{ r.outcome_variant }}">{{ p.treatment_outcome }}</span>
+          {% if p.has_sequence %}<span class="badge badge-sm badge-info">Seq</span>{% endif %}
+          {% if p.has_cxr %}<span class="badge badge-sm badge-neutral">CXR {{ p.cxr_count }}</span>{% endif %}
+        </div>
+      </a>
+      {% endwith %}
+    {% empty %}
+      <div class="text-sm text-muted text-center" style="padding:24px">{% t "조건에 맞는 케이스가 없습니다" "No cases match the filters" %}</div>
+    {% endfor %}
+  </div>
+  <div class="case-list-foot">
+    <span data-testid="case-total">{% if is_en %}{{ total }} total{% else %}총 {{ total }}건{% endif %}</span>
+    <div class="flex items-center gap-1">
+      {% if page > 1 %}
+        <a class="pager-btn" href="/cases?{% if list_query %}{{ list_query }}&amp;{% endif %}page={{ page|add:-1 }}&amp;id={{ selected_id }}"
+           hx-get="/cases?{% if list_query %}{{ list_query }}&amp;{% endif %}page={{ page|add:-1 }}&amp;id={{ selected_id }}" hx-target="#case-list" hx-swap="outerHTML" hx-push-url="true"
+           data-tip="{% t '이전 페이지의 케이스 10건을 봅니다.' 'Show the previous page of 10 cases.' %}">{% t "이전" "Prev" %}</a>
+      {% else %}<span class="pager-btn disabled">{% t "이전" "Prev" %}</span>{% endif %}
+      <span class="px-2">{{ page }}/{{ pages }}</span>
+      {% if page < pages %}
+        <a class="pager-btn" href="/cases?{% if list_query %}{{ list_query }}&amp;{% endif %}page={{ page|add:1 }}&amp;id={{ selected_id }}"
+           hx-get="/cases?{% if list_query %}{{ list_query }}&amp;{% endif %}page={{ page|add:1 }}&amp;id={{ selected_id }}" hx-target="#case-list" hx-swap="outerHTML" hx-push-url="true"
+           data-tip="{% t '다음 페이지의 케이스 10건을 봅니다.' 'Show the next page of 10 cases.' %}">{% t "다음" "Next" %}</a>
+      {% else %}<span class="pager-btn disabled">{% t "다음" "Next" %}</span>{% endif %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,4 @@
+condition_id,age,sex,country,site,diagnosis_type,diagnosis_date,registration_date,treatment_outcome,outcome_date,site_of_disease,previous_treatment,comorbidities
+TB-KR-101,45,Male,Korea,Seoul National University Hospital,MDR-TB,2024-01-10,2024-01-15,Cured,2024-08-20,Pulmonary,No,당뇨
+TB-KR-102,62,Female,Korea,National Masan Hospital,DS-TB,2024-02-03,2024-02-08,Completed,2024-08-05,Pulmonary,No,고혈압
+TB-KR-103,53,Female,Korea,Seoul National University Hospital,Pre-XDR-TB,2024-03-11,2024-03-14,Failed,2024-11-30,Extrapulmonary,Yes,당뇨

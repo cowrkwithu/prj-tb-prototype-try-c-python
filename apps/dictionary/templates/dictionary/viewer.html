@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% t "표준 데이터사전" "Standard Data Dictionary" %}{% endblock %}
+{% block content %}
+{# 원본 src/pages/Dictionary/DictionaryViewer.tsx #}
+<div class="container" x-data="dictPage()" @dict-apply-search.window="applySearch($event.detail.q)">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold">{% t "표준 데이터사전" "Standard Data Dictionary" %}</h1>
+    <p class="text-sm text-muted mt-1">{% t "TBRS Platform의 표준 데이터 필드 정의를 탐색합니다. 커스텀 데이터 구조 생성 시 참조할 수 있습니다." "Browse the standard data field definitions of the TBRS Platform. Use them as a reference when creating custom data schemas." %}</p>
+  </div>
+  {% if not has_version %}
+    <div class="card empty-state">{% t "적재된 표준 데이터사전이 없습니다. 관리자에게 load_dictionary 실행을 요청하세요." "No standard dictionary is loaded. Ask an administrator to run load_dictionary." %}</div>
+  {% else %}
+  <form id="dict-form" action="/dictionary" method="get" hx-get="/dictionary" hx-target="#dict-main" hx-swap="outerHTML"
+        hx-push-url="true" hx-trigger="input changed delay:300ms from:#dict-q, submit" hx-include=".dict-state"></form>
+  <div class="dict-layout">
+    <aside class="dict-aside">
+      <div class="input-icon mb-4">{% icon "search" "w-4 h-4" %}
+        <input id="dict-q" class="input input-sm" type="search" name="q" form="dict-form" value="{{ state.q }}" x-ref="q" autocomplete="off"
+               placeholder="{% t '필드 검색...' 'Search fields...' %}"></div>
+      {% include "dictionary/_catnav.html" %}
+    </aside>
+    {% include "dictionary/_main.html" %}
+  </div>
+  {% endif %}
+
+  <div id="modal-root"></div>
+  {% include "dictionary/_assistant.html" %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/dictionary.js' %}"></script>{% endblock %}

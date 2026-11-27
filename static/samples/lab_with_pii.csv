@@ -1,0 +1,6 @@
+condition_id,patient_name,rrn,phone,email,address,specimen_id,specimen_date,specimen_type,microscopy_result,culture_method,culture_result,genexpert_mtb,genexpert_rif,dst_method,isoniazid,rifampicin,ethambutol,pyrazinamide,streptomycin,levofloxacin,moxifloxacin,amikacin,kanamycin,capreomycin,bedaquiline,linezolid
+TB-KR-101,홍길동,900101-1234567,010-1234-5678,hong@hospital.kr,서울시 강남구 테헤란로 152,SP-101A,2024-01-16,Sputum,3+,MGIT,Positive,Detected,Detected,Phenotypic,R,R,S,S,R,S,S,S,,,S,S
+TB-KR-101,홍길동,900101-1234567,010-1234-5678,hong@hospital.kr,서울시 강남구 테헤란로 152,SP-101B,2024-04-16,Sputum,1+,MGIT,Positive,Detected,Detected,Phenotypic,R,R,S,S,R,S,S,S,,,S,S
+TB-KR-102,김철수,850315-2345678,02-2072-1234,,부산시 해운대구 센텀로 99,SP-102A,2024-02-09,Sputum,2+,MGIT,Positive,Detected,Not detected,Phenotypic,S,S,S,S,S,,,,,,,
+TB-KR-103,박영희,780722-2456789,010-9876-5432,park.yh@clinic.co.kr,대구시 수성구 동대구로 45,SP-103A,2024-03-15,Sputum,Scanty,Both,Positive,Detected,Detected,LPA-SecondLine,R,R,R,R,R,R,R,S,S,,S,S
+TB-KR-103,박영희,780722-2456789,010-9876-5432,park.yh@clinic.co.kr,대구시 수성구 동대구로 45,SP-103B,2024-06-15,BAL,Negative,MGIT,Negative,Not detected,,,,,,,,,,,,,,

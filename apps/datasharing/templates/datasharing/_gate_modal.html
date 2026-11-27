@@ -1,0 +1,59 @@
+{# 원본 DatasetsTab 의 DAR 게이트 모달 — state: none | pending | approved (서버가 DB 의 DAR 상태로 판정) #}
+<div class="modal-backdrop" x-show="gate === '{{ key|escapejs }}'" x-cloak @click.self="gate = null" @keydown.escape.window="gate = null" data-gate-modal="{{ key }}" data-state="{{ state }}">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h3 class="modal-title">{% if state == "approved" %}{% t "데이터 접근이 승인되었습니다" "Data access has been approved" %}{% elif state == "pending" %}{% t "데이터 접근 신청을 심사 중입니다" "Your data access request is under review" %}{% else %}{% t "데이터 접근 신청(DAR)이 필요합니다" "A Data Access Request (DAR) is required" %}{% endif %}</h3>
+      <button type="button" class="icon-btn sm" @click="gate = null" aria-label="{% t '닫기' 'Close' %}">{% icon "x" "w-4 h-4" %}</button>
+    </div>
+    <div class="modal-body stack-sm">
+      <div class="flex items-start gap-3">
+        <div class="ds-icon">{% if state == "approved" %}{% icon "circle-check" "w-5 h-5 text-success" %}{% elif state == "pending" %}{% icon "clock" "w-5 h-5 text-warning" %}{% else %}{% icon "shield-check" "w-5 h-5" %}{% endif %}</div>
+        <div style="min-width:0">
+          <p class="text-sm font-semibold text-navy">{{ label }}</p>
+          {% if state == "approved" %}
+            <p class="text-xs text-muted mt-1">{% t "데이터 접근이 " "Data access has been " %}<span class="font-medium text-success">{% t "승인" "approved" %}</span>{% t "되었습니다." "." %} {% if custom %}{% t "이 커스텀 데이터셋의 필드 서식을 CSV로 다운로드할 수 있습니다." "You can download this custom dataset's field template as CSV." %}{% else %}{% t "가명처리된 비식별 데이터셋을 CSV 또는 엑셀로 다운로드할 수 있습니다." "You can download the pseudonymized, de-identified dataset as CSV or Excel." %}{% endif %}</p>
+          {% elif state == "pending" %}
+            <p class="text-xs text-muted mt-1">{% t "데이터 접근 신청이 접수되어 " "Your data access request has been received and is " %}<span class="font-medium text-warning">{% t "심사 중" "under review" %}</span>{% t "입니다." "." %} {% t "승인이 완료되면 데이터를 다운로드할 수 있습니다. 진행 상황은 신청 현황에서 확인하세요." "You can download the data once it is approved. Check progress in the request status." %}</p>
+          {% else %}
+            <p class="text-xs text-muted mt-1">{% t "이 데이터를 다운로드하려면 먼저 " "To download this data, you must first submit a " %}<span class="font-medium text-teal">{% t "데이터 접근 신청(DAR)" "Data Access Request (DAR)" %}</span>{% t "을" "" %} {% t "제출하고 승인을 받아야 합니다. 개별 레코드는 승인 전까지 제공되지 않습니다." "and have it approved. Individual records are not provided until approval." %}</p>
+          {% endif %}
+        </div>
+      </div>
+      {% if state == "approved" %}
+        <div class="gate-box ok">
+          <p class="font-medium text-navy">{% icon "file-text" "w-3 h-3 text-success" %}
+            {% if custom %}{% if is_en %}Only a template with {{ field_count }} fields is provided{% else %}필드 {{ field_count }}개의 서식만 제공됩니다{% endif %}
+            {% else %}{% if is_en %}{{ rows }} rows will be downloaded (total {{ records }}){% else %}내려받는 행 {{ rows }}건 (전체 {{ records }}){% endif %}{% endif %}</p>
+          <p>{% icon "circle-check" "w-3 h-3 text-success" %} {% t "내려받는 자료는 가명 식별자(Condition ID) 기반의 비식별 데이터이며, 원시 식별정보를 포함하지 않습니다." "Downloaded data is de-identified and based on pseudonymous identifiers (Condition ID); it contains no raw identifying information." %}</p>
+        </div>
+      {% elif state == "pending" %}
+        <ul class="gate-box wait">
+          <li>{% icon "circle-check" "w-3 h-3 text-warning" %} {% t "신청서가 접수되었습니다." "Your request has been received." %}</li>
+          <li>{% icon "clock" "w-3 h-3 text-warning" %} {% t "승인권자 확인과 연구 목적 심사가 진행 중입니다." "Approver verification and research purpose review are in progress." %}</li>
+          <li>{% icon "file-text" "w-3 h-3 text-warning" %} {% t "심사 결과는 신청 시 등록한 이메일로 안내됩니다." "Review results will be sent to the email address you provided." %}</li>
+        </ul>
+      {% else %}
+        <ul class="gate-box none">
+          <li>{% icon "file-text" "w-3 h-3 text-teal" %} {% t "연구자·승인권자 정보와 연구 목적을 작성합니다." "Enter researcher and approver information and the research purpose." %}</li>
+          <li>{% icon "file-text" "w-3 h-3 text-teal" %} {% t "데이터 이용 동의서(DUA)에 동의합니다." "Agree to the Data Use Agreement (DUA)." %}</li>
+          <li>{% icon "file-text" "w-3 h-3 text-teal" %} {% t "승인 후 데이터셋을 다운로드할 수 있습니다." "Download the dataset after approval." %}</li>
+        </ul>
+      {% endif %}
+      <div class="flex justify-end gap-2 flex-wrap">
+        <button type="button" class="btn btn-secondary btn-sm" @click="gate = null" data-tip="{% t '창을 닫고 데이터셋 목록으로 돌아갑니다.' 'Close this dialog and return to the dataset list.' %}">{% if state == "approved" %}{% t "닫기" "Close" %}{% else %}{% t "취소" "Cancel" %}{% endif %}</button>
+        {% if state == "approved" %}
+          {% if custom %}
+            <a class="btn btn-teal btn-sm" href="/data/custom/{{ schema_id }}/template.csv" data-testid="download-csv" data-tip="{% t '이 커스텀 데이터셋의 필드 서식을 CSV 파일로 내려받습니다.' "Download this custom dataset's field template as a CSV file." %}">{% icon "download" "w-3_5 h-3_5" %} {% t "데이터 다운로드" "Download Data" %}</a>
+          {% else %}
+            <a class="btn btn-secondary btn-sm" href="/data/datasets/{{ slug }}/download.xlsx" data-testid="download-xlsx" data-tip="{% t '비식별 처리된 데이터를 엑셀(xlsx) 파일로 내려받습니다.' 'Download the de-identified data as an Excel (xlsx) file.' %}">{% icon "download" "w-3_5 h-3_5" %} Excel</a>
+            <a class="btn btn-teal btn-sm" href="/data/datasets/{{ slug }}/download.csv" data-testid="download-csv" data-tip="{% t '비식별 처리된 데이터를 CSV 파일로 내려받습니다.' 'Download de-identified data as a CSV file.' %}">{% icon "download" "w-3_5 h-3_5" %} {% t "데이터 다운로드" "Download Data" %}</a>
+          {% endif %}
+        {% elif state == "pending" %}
+          <a class="btn btn-teal btn-sm" href="/data?tab=dar#dar-status" data-tip="{% t '데이터 접근 신청 탭으로 이동해 심사 진행 상황을 확인합니다.' 'Go to the Data Access Request tab to check review progress.' %}">{% t "신청 현황 보기" "View Request Status" %} {% icon "arrow-right" "w-3_5 h-3_5" %}</a>
+        {% else %}
+          <a class="btn btn-teal btn-sm" href="/data?tab=dar&amp;types={{ dar_type }}" data-testid="apply-dar" data-tip="{% t '이 데이터 유형이 미리 선택된 데이터 접근 신청서 작성 화면으로 이동합니다.' 'Open the data access request form with this data type preselected.' %}">{% t "데이터 접근 신청" "Data Access Request" %} {% icon "arrow-right" "w-3_5 h-3_5" %}</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>

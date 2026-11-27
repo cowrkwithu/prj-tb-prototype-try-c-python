@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{% t "관리자 대시보드" "Admin Dashboard" %}{% endblock %}
+{% block content %}
+{# 원본 src/pages/Admin/Dashboard.tsx — 수치는 DB 집계 #}
+<div class="container-wide stack">
+  <div>
+    <h1 class="text-xl font-bold">{% t "관리자 대시보드" "Admin Dashboard" %}</h1>
+    <p class="text-sm text-muted mt-1">{% if is_en %}Logged in as {{ user.username }}{% else %}{{ user.username }} 님으로 로그인됨{% endif %} · {{ today|date:"Y-m-d" }}</p>
+  </div>
+  <div class="grid-4">
+    {% for c in cards %}
+      <div class="sum-card {{ c.cls }}" data-testid="admin-card">{% icon c.icon "w-5 h-5" %}<p class="text-2xl font-bold mt-2">{{ c.value }}</p><p class="text-xs mt-1">{{ c.label }}</p></div>
+    {% endfor %}
+  </div>
+  <div class="sum-card sum-yellow flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">{% icon "clock" "w-5 h-5" %}
+      <div><p class="text-sm font-medium" data-testid="pending-banner">{% if is_en %}Pending review {{ counts.pending }} · Warnings {{ counts.pending_warn }} · Rejected {{ counts.rejected }}{% else %}검증 대기 {{ counts.pending }}건 · 경고 {{ counts.pending_warn }}건 · 반려 {{ counts.rejected }}건{% endif %}</p>
+        <p class="text-xs mt-1">{% if counts.pending %}{% t "처리가 필요한 항목이 있습니다" "There are items that need attention" %}{% else %}{% t "처리할 검증 대기 항목이 없습니다" "No items are waiting for review" %}{% endif %}</p></div></div>
+    <a href="/admin/review" class="btn btn-secondary btn-xs" data-tip="{% t '데이터 검증 관리 화면으로 이동해 대기·경고·반려 항목을 처리합니다.' 'Go to data review to handle pending, warning and rejected items.' %}">{% t "검증 관리" "Manage Reviews" %} &rarr;</a>
+  </div>
+  <div class="grid-2">
+    <div class="sum-card sum-blue flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">{% icon "file-text" "w-5 h-5" %}
+        <p class="text-sm font-medium" data-testid="dar-banner">{% if is_en %}Data access requests pending {{ dar.pending }} · Approved {{ dar.approved }}{% else %}데이터 접근 신청 대기 {{ dar.pending }}건 · 승인 {{ dar.approved }}건{% endif %}</p></div>
+      <a href="/admin/dar" class="btn btn-secondary btn-xs" data-tip="{% t '데이터 접근 신청(DAR)을 검토해 승인하거나 반려하는 화면으로 이동합니다.' 'Go to the screen for reviewing data access requests (DAR).' %}">{% t "신청 관리" "Manage Requests" %} &rarr;</a>
+    </div>
+    <div class="sum-card sum-red flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">{% icon "trash-2" "w-5 h-5" %}
+        <p class="text-sm font-medium" data-testid="deletion-banner">{% if is_en %}Upload deletion requests pending {{ deletions.pending }}{% else %}업로드 삭제 요청 대기 {{ deletions.pending }}건{% endif %}</p></div>
+      <a href="/admin/deletions" class="btn btn-secondary btn-xs" data-tip="{% t '제출자가 요청한 업로드 삭제를 처리하는 화면으로 이동합니다.' 'Go to the screen for processing upload deletion requests.' %}">{% t "삭제 요청 관리" "Manage Deletions" %} &rarr;</a>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card card-sm">
+      <h2 class="card-title mb-4">{% t "최근 활동 로그" "Recent Activity Log" %}</h2>
+      <ul class="stack-sm" style="list-style:none;margin:0;padding:0">
+        {% for a in activities %}
+          <li class="flex items-start gap-3"><span class="{{ a.color }}">{% icon a.icon "w-4 h-4" %}</span>
+            <div class="flex-1" style="min-width:0"><p class="text-sm">{{ a.action }}</p><a href="/admin/review/{{ a.upload_id }}" class="text-xs text-muted truncate link-underline">{{ a.detail }}</a></div>
+            <span class="text-xs text-muted">{{ a.date|date:"Y-m-d" }}</span></li>
+        {% empty %}<li class="text-sm text-muted">{% t "아직 활동 기록이 없습니다" "No activity yet" %}</li>{% endfor %}
+      </ul>
+    </div>
+    <div class="stack">
+      <div class="card card-sm">
+        <h2 class="card-title mb-4">{% t "시스템 상태" "System Status" %}</h2>
+        <div class="stack-sm">{% for s in system %}<div class="status-row"><span class="flex items-center gap-2 text-sm">{% icon s.icon "w-4 h-4 text-muted" %} {{ s.label }}</span><span class="text-sm font-medium {{ s.color }}">{{ s.status }}</span></div>{% endfor %}</div>
+      </div>
+      <div class="card card-sm">
+        <h2 class="card-title mb-4">{% t "빠른 메뉴" "Quick Menu" %}</h2>
+        <div class="form-grid-2">
+          <a href="/admin/review" class="btn btn-secondary btn-sm" data-tip="{% t '업로드된 데이터를 검토해 승인하거나 반려하는 화면으로 이동합니다.' 'Go to the screen for reviewing, approving or rejecting uploaded data.' %}">{% icon "clipboard-check" "w-4 h-4 text-teal" %} {% t "데이터 검증 관리" "Data Review Management" %}</a>
+          <span data-tip="{% t '사용자 계정과 권한을 관리합니다. 프로토타입에서는 아직 준비 중입니다.' 'Manage user accounts and permissions. Not yet available in this prototype.' %}"><button type="button" class="btn btn-secondary btn-sm btn-block" disabled>{% icon "users" "w-4 h-4" %} {% t "사용자 관리" "User Management" %}</button></span>
+          <span data-tip="{% t '플랫폼 운영 설정을 변경합니다. 프로토타입에서는 아직 준비 중입니다.' 'Change platform settings. Not yet available in this prototype.' %}"><button type="button" class="btn btn-secondary btn-sm btn-block" disabled>{% icon "settings" "w-4 h-4" %} {% t "시스템 설정" "System Settings" %}</button></span>
+          <a href="/admin/schemas" class="btn btn-secondary btn-sm" data-tip="{% t '연구자가 만든 데이터 구조를 검토하고 발행·보관·공개 범위를 관리하는 화면으로 이동합니다.' 'Go to the screen for reviewing data schemas and managing publishing, archiving and visibility.' %}">{% icon "database" "w-4 h-4 text-teal" %} {% t "데이터 구조 관리" "Data Schema Management" %}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card card-sm">
+    <h2 class="card-title mb-4">{% t "데이터 유형별 업로드 현황" "Uploads by Data Type" %}</h2>
+    <div class="table-wrap"><table class="table table-compact" data-testid="domain-table">
+      <thead><tr><th>{% t "데이터 유형" "Data Type" %}</th><th class="text-right">{% t "검증대기" "Pending" %}</th><th class="text-right">{% t "승인" "Approved" %}</th><th class="text-right">{% t "반려" "Rejected" %}</th><th class="text-right">{% t "전체 제출" "Total Submitted" %}</th></tr></thead>
+      <tbody>{% for d in domains %}<tr data-domain="{{ d.key }}"><td>{{ d.label }}</td><td class="text-right">{{ d.pending }}</td><td class="text-right">{{ d.approved }}</td><td class="text-right">{{ d.rejected }}</td><td class="text-right">{{ d.total }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}

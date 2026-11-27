@@ -1,0 +1,17 @@
+<div class="card card-sm" data-testid="tab-stats">
+  <p class="h4" style="margin-bottom:4px">{% t "통계 검정 결과" "Statistical Test Results" %}</p>
+  <p class="text-xs text-muted mb-1">{% if is_en %}Association of each variable with treatment outcome — success (Cured·Completed, n={{ a.n_fav }}) vs. unfavourable (Failed·Died·LTFU, n={{ a.n_unf }}); significant at p &lt; 0.05. Ongoing treatment is excluded.{% else %}각 변수와 치료 결과의 연관성 — 성공(Cured·Completed, {{ a.n_fav }}명) 대 실패(Failed·Died·LTFU, {{ a.n_unf }}명), p &lt; 0.05 유의. 치료 중(Ongoing)은 제외.{% endif %}</p>
+  {% if not a.testable %}
+    <p class="text-xs text-muted text-center" data-testid="stats-untestable">{% t "치료 성공군과 실패군이 모두 있어야 검정할 수 있습니다." "Both a success group and an unfavourable-outcome group are needed to run the tests." %}</p>
+  {% else %}
+  <div class="table-wrap"><table class="table table-compact" data-testid="stats-table">
+    <thead><tr><th>{% t "변수" "Variable" %}</th><th>{% t "검정 방법" "Test" %}</th><th class="text-right">{% t "통계량" "Statistic" %}</th><th class="text-right">p-value</th><th class="text-center">{% t "유의성" "Significance" %}</th></tr></thead>
+    <tbody>{% for r in a.rows %}
+      <tr class="{% if r.significant %}row-sig{% endif %}"><td class="font-medium">{{ r.variable }}</td><td class="text-muted">{{ r.test }}</td><td class="text-right font-mono">{{ r.stat }}</td>
+        <td class="text-right font-mono" data-testid="p-value">{{ r.p_text }}</td>
+        <td class="text-center">{% if r.significant %}<span class="badge badge-teal badge-sm">{% t "유의" "Significant" %}</span>{% else %}<span class="text-muted">-</span>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  <p class="text-10 text-muted mt-1">{% t "통계량: Fisher Exact 는 오즈비(0 칸 0.5 보정), T-test 는 Welch t 값." "Statistic: odds ratio for Fisher Exact (0.5 added to zero cells), Welch t for T-test." %}</p>
+  {% endif %}
+</div>

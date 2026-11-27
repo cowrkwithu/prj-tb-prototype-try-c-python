@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{% if admin_mode %}{% t "관리자 로그인" "Administrator Log In" %}{% else %}{% t "로그인" "Log In" %}{% endif %}{% endblock %}
+{% block layout %}
+{# 원본 pages/Auth/Login.tsx · pages/Admin/Login.tsx — 상단 메뉴 없는 화면 #}
+<div class="auth-page">
+  {% include "partials/lang_toggle.html" with extra_class="lang-fixed" %}
+  <div class="auth-box">
+    <div class="text-center mb-6">
+      <div class="auth-logo">{% icon "microscope" "w-7 h-7" %}</div>
+      <h1 class="text-xl font-bold text-navy">{% t "결핵 특화 연구지원 플랫폼" "TB-Specialized Research Support Platform" %}</h1>
+      <p class="text-sm text-muted mt-1">{% if admin_mode %}{% t "TBRS Platform 관리자" "TBRS Platform Administrator" %}{% else %}TBRS Platform{% endif %}</p>
+    </div>
+
+    <div class="auth-card{% if error %} shake{% endif %}">
+      <form method="post" action="{% if admin_mode %}/admin/login{% else %}/login{% endif %}" novalidate>
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        <div>
+          <label class="label" for="id_username">{% t "아이디" "Username" %}</label>
+          <input class="input" type="text" id="id_username" name="username" value="{{ form.username.value|default:'' }}" autofocus autocomplete="username"
+                 placeholder="{% if admin_mode %}{% t '관리자 아이디를 입력하세요' 'Enter administrator username' %}{% else %}{% t '아이디를 입력하세요' 'Enter your username' %}{% endif %}">
+        </div>
+        <div>
+          <label class="label" for="id_password">{% t "비밀번호" "Password" %}</label>
+          <input class="input" type="password" id="id_password" name="password" autocomplete="current-password"
+                 placeholder="{% t '비밀번호를 입력하세요' 'Enter your password' %}">
+        </div>
+        {% if error %}
+          <div class="alert alert-error" role="alert">{% icon "circle-alert" "w-4 h-4 shrink-0" %} {{ error }}</div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary btn-block"
+                data-tip="{% if admin_mode %}{% t '입력한 관리자 계정으로 로그인해 관리자 대시보드로 이동합니다.' 'Log in with the administrator account and open the admin dashboard.' %}{% else %}{% t '입력한 아이디와 비밀번호로 로그인하고 홈 화면으로 이동합니다.' 'Log in with the entered username and password and go to the home page.' %}{% endif %}">
+          {% if admin_mode %}{% t "관리자 로그인" "Administrator Log In" %}{% else %}{% t "로그인" "Log In" %}{% endif %}
+        </button>
+      </form>
+    </div>
+
+    <div class="text-center mt-4">
+      <a href="/" class="back-link" data-tip="{% t '로그인하지 않고 플랫폼 홈 화면으로 돌아갑니다.' 'Return to the platform home page without logging in.' %}">&larr; {% t "홈으로 돌아가기" "Back to Home" %}</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

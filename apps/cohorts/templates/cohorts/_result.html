@@ -1,0 +1,73 @@
+{# 원본 CohortAnalysis — 가운데 '데이터셋 분석결과'. HTMX 로 이 영역만 다시 그린다. #}
+{% if oob %}
+<span id="depot-count" data-testid="match-count" hx-swap-oob="true">{{ count }}</span>
+<input type="hidden" name="run" id="depot-run" value="{% if run %}1{% endif %}" hx-swap-oob="true">
+<input type="hidden" name="tab" id="depot-tab" value="{{ tab }}" hx-swap-oob="true">
+{% endif %}
+<div class="depot-result-head">
+  <div class="flex items-start justify-between gap-3 flex-wrap">
+    <div>
+      <h2 class="depot-title">{% icon "activity" "w-4 h-4" %} {% t "데이터셋 분석결과" "Dataset Analysis" %}</h2>
+      <div class="flex items-center gap-3 mt-1 text-xs text-muted">
+        <span class="flex items-center gap-1">{% icon "users" "w-3 h-3" %} <span data-testid="result-count">{% if run %}{% if is_en %}{{ count }} subjects{% else %}{{ count }}명{% endif %}{% else %}{% if is_en %}0 subjects{% else %}0명{% endif %}{% endif %}</span></span>
+        <span class="flex items-center gap-1">{% icon "calendar" "w-3 h-3" %} {{ today|date:"Y-m-d" }}</span>
+      </div>
+    </div>
+    {% if active or run and count %}
+    <div class="depot-chips">
+      {% for c in active %}<span class="cond-chip" data-testid="cond-chip">{{ c }}</span>{% endfor %}
+      {% if run and count and not can_save %}
+      <button type="button" class="btn btn-teal btn-xs" disabled data-testid="save-disabled"
+              data-tip="{% t '조건에 오류가 있어 저장할 수 없습니다.' 'The conditions have an error, so they cannot be saved.' %}">{% icon "save" "w-3 h-3" %} {% t "데이터셋 저장" "Save Dataset" %}</button>
+      {% elif run and count %}
+      <form method="post" action="/depot/cohorts/save" class="inline-flex">{% csrf_token %}
+        <input type="hidden" name="query" value="{{ state_q }}">
+        <input type="hidden" name="tab" value="{{ tab }}">
+        <button type="submit" class="btn btn-teal btn-xs" data-testid="save-dataset"
+                data-tip="{% if is_en %}Save the current results ({{ count }} subjects) as a dataset in the list on the right.{% else %}현재 분석 결과({{ count }}명)를 데이터셋으로 저장해 오른쪽 목록에 추가합니다.{% endif %}">{% icon "save" "w-3 h-3" %} {% t "데이터셋 저장" "Save Dataset" %}</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% if url_too_long %}<p class="text-xs text-muted mt-2" data-testid="url-too-long">{% icon "info" "w-3 h-3" %} {% t "조건이 길어 주소에 저장되지 않습니다. 공유하려면 데이터셋으로 저장하세요." "These conditions are too long to keep in the address. Save them as a dataset to share." %}</p>{% endif %}
+  {% if error %}<div class="alert alert-error mt-2" data-testid="cond-error">{% icon "circle-alert" "w-4 h-4" %} {{ error }}</div>{% endif %}
+  {% if loaded %}
+  <p class="text-xs text-muted mt-2" data-testid="loaded-note">{% icon "folder" "w-3 h-3" %}
+    {% if is_en %}Loaded “{{ loaded.name }}” — {{ loaded.snapshot }} subjects when saved, {{ count }} matching the conditions now.{% else %}불러온 데이터셋 “{{ loaded.name }}” — 저장 시점 {{ loaded.snapshot }}명, 현재 조건 기준 {{ count }}명{% endif %}</p>
+  {% endif %}
+</div>
+
+<div class="tabs tabs-sm depot-tabs" role="tablist">
+  {% for tb in tabs %}
+  <a role="tab" class="tab" aria-selected="{% if tb.key == tab %}true{% else %}false{% endif %}" data-tip="{{ tb.help }}"
+     href="/depot?{{ state_q }}{% if state_q %}&{% endif %}run={% if run %}1{% endif %}&tab={{ tb.key }}{% if panel_saved %}&panel=saved{% endif %}"
+     hx-get="/depot?{{ state_q }}{% if state_q %}&{% endif %}run={% if run %}1{% endif %}&tab={{ tb.key }}{% if panel_saved %}&panel=saved{% endif %}"
+     hx-target="#depot-result" hx-push-url="true">{{ tb.label }}</a>
+  {% endfor %}
+</div>
+
+<div class="depot-body">
+  {% if not run %}
+    <div class="empty-state depot-empty">
+      {% icon "users" "w-12 h-12" %}
+      <p>{% t "좌측에서 조건을 설정하고" "Set conditions on the left and" %}</p>
+      <p>{% t '"데이터 생성" 버튼을 클릭하세요' 'click the "Generate Data" button' %}</p>
+    </div>
+    <div class="card card-sm depot-preview" data-testid="preview">
+      <p class="h4">{% if is_en %}Preview — {{ count }} subjects match{% else %}미리보기 — 조건에 맞는 대상자 {{ count }}명{% endif %}</p>
+      {% if preview %}
+      <div class="chips">{% for p in preview %}<a class="cond-chip font-mono" href="/cases?id={{ p.id }}" data-testid="preview-id">{{ p.condition_id }}</a>{% endfor %}
+        {% if preview_more %}<span class="text-xs text-muted">{% if is_en %}+{{ preview_more }} more{% else %}외 {{ preview_more }}명{% endif %}</span>{% endif %}</div>
+      {% else %}<p class="text-xs text-muted">{% t "조건에 맞는 대상자가 없습니다" "No subjects match the conditions" %}</p>{% endif %}
+    </div>
+  {% elif not analysis %}
+    <div class="empty-state depot-empty" data-testid="no-match">
+      {% icon "users" "w-12 h-12" %}
+      <p>{% t "조건에 맞는 대상자가 없습니다" "No subjects match the conditions" %}</p>
+    </div>
+  {% else %}
+    {% include "cohorts/_tab_"|add:tab|add:".html" with a=analysis %}
+    {{ chart_payload|json_script:"depot-chart-data" }}
+  {% endif %}
+</div>

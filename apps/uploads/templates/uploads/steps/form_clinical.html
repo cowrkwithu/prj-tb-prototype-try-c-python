@@ -1,0 +1,88 @@
+{# 데이터 단계(웹 폼) — 원본 ClinicalUpload step 1. 오류 판정은 서버(같은 규칙을 CSV 에도 적용). #}
+{{ fd|json_script:"form-initial" }}
+{{ value_labels|json_script:"value-labels" }}
+<form method="post" action="/upload/clinical/data" class="stack" x-data="clinicalForm()" novalidate>
+  {% include "uploads/steps/_form_head.html" %}
+  <h2 class="font-semibold">{% t "임상 데이터 입력" "Enter Clinical Data" %}</h2>
+  <div class="form-split">
+    <div class="stack">
+      <fieldset class="fs"><legend>{% t "기본 정보" "Basic Information" %}</legend>
+        <div class="form-grid-2">
+          <div><label class="flabel" for="f-cid">{% t "대상자 ID *" "Condition ID *" %}</label>
+            <input id="f-cid" class="input{% if field_errors.condition_id %} is-invalid{% endif %}" name="condition_id" x-model="f.condition_id" placeholder="TB-KR-001" maxlength="40">
+            {% if field_errors.condition_id %}<p class="field-error">{{ field_errors.condition_id }}</p>{% endif %}</div>
+          <div><label class="flabel" for="f-reg">{% t "등록일 *" "Registration Date *" %}</label>
+            <input id="f-reg" type="date" class="input{% if field_errors.registration_date %} is-invalid{% endif %}" name="registration_date" x-model="f.registration_date">
+            {% if field_errors.registration_date %}<p class="field-error">{{ field_errors.registration_date }}</p>{% endif %}</div>
+        </div>
+      </fieldset>
+      <fieldset class="fs"><legend>{% t "인구통계" "Demographics" %}</legend>
+        <div class="form-grid-2">
+          <div><label class="flabel" for="f-age">{% t "나이 *" "Age *" %}</label>
+            <input id="f-age" type="number" min="0" max="120" class="input{% if field_errors.age %} is-invalid{% endif %}" name="age" x-model="f.age">
+            {% if field_errors.age %}<p class="field-error">{{ field_errors.age }}</p>{% endif %}</div>
+          <div><span class="flabel">{% t "성별 *" "Sex *" %}</span>
+            <div class="radio-row{% if field_errors.sex %} text-danger{% endif %}">{% for v, l in sexes %}<label><input type="radio" name="sex" value="{{ v }}" x-model="f.sex"> {{ l }}</label>{% endfor %}</div>
+            {% if field_errors.sex %}<p class="field-error">{{ field_errors.sex }}</p>{% endif %}</div>
+          <div><label class="flabel" for="f-country">{% t "국적 *" "Nationality *" %}</label>
+            <select id="f-country" class="select input{% if field_errors.country %} is-invalid{% endif %}" name="country" x-model="f.country">
+              <option value="">{% t "선택" "Select" %}</option>{% for v, l in countries %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
+            {% if field_errors.country %}<p class="field-error">{{ field_errors.country }}</p>{% endif %}</div>
+          <div><label class="flabel" for="f-site">{% t "등록기관 *" "Registering Institution *" %}</label>
+            <input id="f-site" class="input{% if field_errors.site %} is-invalid{% endif %}" name="site" x-model="f.site" placeholder="SNUBH" maxlength="100">
+            {% if field_errors.site %}<p class="field-error">{{ field_errors.site }}</p>{% endif %}</div>
+        </div>
+      </fieldset>
+      <fieldset class="fs"><legend>{% t "진단 정보" "Diagnosis Information" %}</legend>
+        <div class="form-grid-2">
+          <div><label class="flabel" for="f-dt">{% t "진단 유형 *" "Diagnosis Type *" %}</label>
+            <select id="f-dt" class="select input{% if field_errors.diagnosis_type %} is-invalid{% endif %}" name="diagnosis_type" x-model="f.diagnosis_type">
+              <option value="">{% t "선택" "Select" %}</option>{% for d in diag_types %}<option>{{ d }}</option>{% endfor %}</select>
+            {% if field_errors.diagnosis_type %}<p class="field-error">{{ field_errors.diagnosis_type }}</p>{% endif %}</div>
+          <div><label class="flabel" for="f-dd">{% t "진단일 *" "Diagnosis Date *" %}</label>
+            <input id="f-dd" type="date" class="input{% if field_errors.diagnosis_date %} is-invalid{% endif %}" name="diagnosis_date" x-model="f.diagnosis_date">
+            {% if field_errors.diagnosis_date %}<p class="field-error">{{ field_errors.diagnosis_date }}</p>{% endif %}
+            <p class="field-error" x-show="f.diagnosis_date && f.registration_date && f.diagnosis_date > f.registration_date" x-cloak>{% t "진단일은 등록일 이전이어야 합니다" "Diagnosis date must be on or before the registration date" %}</p></div>
+          <div><span class="flabel">{% t "질병 부위 *" "Site of Disease *" %}</span>
+            <div class="radio-row text-xs{% if field_errors.site_of_disease %} text-danger{% endif %}">{% for v, l in sites %}<label><input type="radio" name="site_of_disease" value="{{ v }}" x-model="f.site_of_disease"> {{ l }}</label>{% endfor %}</div>
+            {% if field_errors.site_of_disease %}<p class="field-error">{{ field_errors.site_of_disease }}</p>{% endif %}</div>
+          <div><label class="check-line mt-3"><input type="checkbox" name="previous_treatment" value="1" x-model="f.prev"> {% t "이전 치료 여부" "Previously Treated" %}</label>
+            <input type="number" min="1" class="input mt-2" name="previous_treatment_count" x-model="f.previous_treatment_count" x-show="f.prev" x-cloak placeholder="{% t '치료 횟수' 'Number of treatments' %}">
+            {% if field_errors.previous_treatment_count %}<p class="field-error">{{ field_errors.previous_treatment_count }}</p>{% endif %}</div>
+        </div>
+      </fieldset>
+      <fieldset class="fs"><legend>{% t "동반질환" "Comorbidities" %}</legend>
+        <div class="flex flex-wrap gap-2">{% for v, l in comorbidities %}<label class="check-box"><input type="checkbox" name="comorbidities" value="{{ v }}" x-model="f.comorbidities"> {{ l }}</label>{% endfor %}</div>
+      </fieldset>
+      <fieldset class="fs"><legend>{% t "치료 결과" "Treatment Outcome" %}</legend>
+        <div class="form-grid-2">
+          <div><label class="flabel" for="f-out">{% t "치료 결과 *" "Treatment Outcome *" %}</label>
+            <select id="f-out" class="select input{% if field_errors.treatment_outcome %} is-invalid{% endif %}" name="treatment_outcome" x-model="f.treatment_outcome">
+              <option value="">{% t "선택" "Select" %}</option>{% for v, l in outcomes %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
+            {% if field_errors.treatment_outcome %}<p class="field-error">{{ field_errors.treatment_outcome }}</p>{% endif %}</div>
+          <div><label class="flabel" for="f-od">{% t "결과 확정일" "Outcome Date" %}</label>
+            <input id="f-od" type="date" class="input" name="outcome_date" x-model="f.outcome_date" :disabled="f.treatment_outcome === 'Ongoing'">
+            {% if field_errors.outcome_date %}<p class="field-error">{{ field_errors.outcome_date }}</p>{% endif %}</div>
+        </div>
+      </fieldset>
+    </div>
+    <div>
+      <div class="preview-box" data-testid="live-preview">
+        <h3 class="text-sm font-semibold text-navy mb-2">{% t "실시간 미리보기" "Live Preview" %}</h3>
+        <dl>
+          <div x-show="f.condition_id"><dt>{% t "대상자 ID" "Condition ID" %}</dt><dd x-text="f.condition_id"></dd></div>
+          <div x-show="f.age"><dt>{% t "나이/성별" "Age/Sex" %}</dt><dd x-text="{% if is_en %}f.age + ' yrs ' + (f.sex || ''){% else %}f.age + '세 ' + (f.sex ? label(f.sex) : ''){% endif %}"></dd></div>
+          <div x-show="f.country"><dt>{% t "국적" "Nationality" %}</dt><dd x-text="label(f.country)"></dd></div>
+          <div x-show="f.diagnosis_type"><dt>{% t "진단" "Diagnosis" %}</dt><dd x-text="f.diagnosis_type"></dd></div>
+          <div x-show="f.diagnosis_date"><dt>{% t "진단일" "Diagnosis Date" %}</dt><dd x-text="f.diagnosis_date"></dd></div>
+          <div x-show="f.comorbidities.length"><dt>{% t "동반질환" "Comorbidities" %}</dt><dd x-text="f.comorbidities.map(label).join(', ')"></dd></div>
+          <div x-show="f.treatment_outcome"><dt>{% t "치료결과" "Treatment Outcome" %}</dt><dd x-text="label(f.treatment_outcome)"></dd></div>
+        </dl>
+        <button type="submit" name="action" value="draft" formnovalidate class="btn btn-secondary btn-sm btn-block mt-4"
+                data-tip="{% t '지금까지 입력한 내용을 제출하지 않고 임시로 저장합니다.' 'Save what you have entered so far as a draft without submitting.' %}">{% t "임시저장" "Save Draft" %}</button>
+      </div>
+    </div>
+  </div>
+  {% include "uploads/steps/_form_errors.html" %}
+  {% include "uploads/steps/_form_actions.html" with back_ko="업로드 방식 선택 단계로 돌아갑니다." back_en="Go back to upload method selection." next_ko="다음 (비식별화 확인)" next_en="Next (De-identification)" next_tip_ko="입력값을 검증한 뒤 비식별화 확인 단계로 넘어갑니다." next_tip_en="Validate the form and continue to the de-identification check." %}
+</form>

@@ -19,7 +19,7 @@ import regex as user_re  # 사용자 정의 정규식은 반드시 이 모듈 + 
 from django.conf import settings
 
 from apps.core.naming import field_name_problem
-from apps.core.safejson import has_bad_chars
+from apps.core.safejson import has_bad_chars, strip_bad_chars
 
 from . import user_regex
 from .catalog import CODE_SYSTEMS, CONSTRAINT_KEYS, LINK_FIELD, CATEGORY, VISIBILITY, pick, option_label
@@ -1095,7 +1095,8 @@ def validate_entry(fields, rules, raw_values: dict, link_value, row_no=None, *, 
     issues = []
 
     def add(field_name, value, m, severity="error"):
-        issues.append({"row": row_no, "field": field_name, "value": "" if value is None else str(value)[:200],
+        # 거부한 입력값은 서로게이트·NUL 을 지우고 기록한다(검사 결과는 DB JSON 에 저장 — PostgreSQL jsonb 는 NUL 불가)
+        issues.append({"row": row_no, "field": field_name, "value": "" if value is None else strip_bad_chars(str(value))[:200],
                        "ko": m["ko"], "en": m["en"], "severity": severity})
 
     link = "" if link_value is None else str(link_value).strip()
@@ -1129,7 +1130,9 @@ def validate_entry(fields, rules, raw_values: dict, link_value, row_no=None, *, 
         if not ok:
             add(r.get("name") or "rule", "", _msg(r.get("message") or "검증 규칙 위반",
                                                   r.get("messageEn") or r.get("message") or "Validation rule failed"))
-    return data, link, issues
+    # 형식 오류(위 LINK_VALUE_RE)로 이미 거부된 연결 키에 서로게이트·NUL 이 있으면 지운 값으로 돌려준다
+    # (행이 검사 결과 JSON 에 저장되고 환자 조회에 쓰인다 — PostgreSQL 은 NUL 을 저장·비교하지 못한다)
+    return data, strip_bad_chars(link), issues
 
 
 def display_value(field, val, lang: str) -> str:

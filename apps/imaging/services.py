@@ -203,6 +203,7 @@ def study_view(study: ImagingStudy, user, lang: str, approved_imaging: bool) -> 
            "findings": [x for x in (finding_view(f, lang) for f in (study.findings or [])) if x],
            "suv": study.suv_max, "rois": [], "volume": None, "image": None, "thumb": None, "files": [],
            "can_view": False, "annotatable": False, "kind": "none", "impression": study.impression or "",
+           "description": study.description or "",
            "tb_activity": study.tb_activity or ""}
     if asset is not None and asset.kind == ImagingAsset.Kind.CXR:
         out.update(kind="cxr", image=static(asset.path), thumb=static(asset.path), can_view=True, annotatable=True,
@@ -290,3 +291,28 @@ def condition_counts(findings: list[str], location: str, severity: str) -> dict:
             n_studies += 1
             pats.add(pid)
     return {"studies": n_studies, "patients": len(pats)}
+
+
+# ═══════════════════════════════════════════════════════════
+#  환자 영상 목록 + 전문가 소견 — 영상 분석(RAP)과 대상자 등록조회 영상 탭이 같은 함수를 쓴다(5단계 통합)
+# ═══════════════════════════════════════════════════════════
+def patient_imaging(patient: Patient, user, lang: str) -> tuple[list[dict], list[dict]]:
+    """(검사 목록, 볼 수 있는 전문가 소견). 검사는 촬영일순 study_view 에 hidden_expert(볼 권한이 없는 업로드 영상의
+    소견 수 — 텍스트·좌표는 내보내지 않음)와 expert_count(보이는 소견 수)를 붙인다."""
+    from apps.datasharing.services import is_approved
+
+    approved = is_approved(user, "imaging")
+    studies = [study_view(s, user, lang, approved) for s in patient_studies(patient)]
+    anns = (ExpertAnnotation.objects.filter(study__patient=patient).select_related("author")
+            .order_by("created_at", "id")[:5000])
+    viewable = {s["id"] for s in studies if s["can_view"]}
+    annotations = [annotation_view(a, user, lang) for a in anns if a.study_id in viewable]
+    hidden: dict[int, int] = {}
+    shown: dict[int, int] = {}
+    for a in anns:
+        bucket = shown if a.study_id in viewable else hidden
+        bucket[a.study_id] = bucket.get(a.study_id, 0) + 1
+    for s in studies:
+        s["hidden_expert"] = hidden.get(s["id"], 0)
+        s["expert_count"] = shown.get(s["id"], 0)
+    return studies, annotations

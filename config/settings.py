@@ -6,6 +6,8 @@
   TB_SECRET_KEY     지정하지 않으면 var/secret_key 를 자동 생성·재사용한다.
   TB_ALLOWED_HOSTS  쉼표 구분 (기본 "*" — 내부망 HTTP 시범 운영 전제. 외부 공개 시 반드시 지정)
   TB_BIND / TB_PORT 서버 바인딩 주소·포트 (rundev 기본 127.0.0.1, serve 기본 0.0.0.0 / 포트 4363)
+  TB_DATABASE_URL   지정하면 PostgreSQL (빈 값이면 SQLite)
+var/.env 가 있으면 먼저 읽는다(KEY=VALUE, 이미 설정된 환경변수가 우선 — config/envfile.py 참고).
 """
 import os
 from pathlib import Path
@@ -15,6 +17,11 @@ from django.core.management.utils import get_random_secret_key
 BASE_DIR = Path(__file__).resolve().parent.parent
 VAR_DIR = BASE_DIR / "var"
 VAR_DIR.mkdir(exist_ok=True)
+
+from config.envfile import load_env_file  # noqa: E402
+
+ENV_FILE = VAR_DIR / ".env"
+ENV_FILE_APPLIED = load_env_file(ENV_FILE)  # 셸/OS 환경변수가 항상 우선(덮어쓰지 않음)
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -67,6 +74,7 @@ INSTALLED_APPS = [
     "apps.datasharing",
     "apps.genomics",
     "apps.imaging",
+    "apps.manual",
 ]
 
 MIDDLEWARE = [
@@ -79,6 +87,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.core.middleware.DatabaseBusyMiddleware",  # DB 잠금(쓰기 경합) → 503 안내 (맨 끝: process_exception 이 가장 먼저)
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -102,9 +111,49 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# SQLite(WAL). ORM 만 사용하므로 PostgreSQL 전환은 이 블록만 바꾸면 된다.
+# 기본은 SQLite(WAL). ORM 만 사용하므로 PostgreSQL 은 환경변수로만 전환한다(코드 수정 불필요):
+#   TB_DATABASE_URL=postgresql://<user>:<password>@<host>:<port>/<db>   (드라이버: requirements-postgres.txt)
+#   TB_DB_LOCK_TIMEOUT_MS  잠금 대기 상한(기본 5000, 1 이상 — SQLite busy_timeout 과 같은 값, 넘으면 503 안내)
+#   URL 쿼리 문자열은 libpq 옵션 sslmode·sslrootcert·sslcert·sslkey·connect_timeout·application_name 만(그 밖은 오류)
+# URL 쿼리 문자열로 받는 libpq 접속 옵션(그 밖의 이름은 오타·미지원으로 보고 오류)
+_PG_URL_OPTIONS = ("sslmode", "sslrootcert", "sslcert", "sslkey", "connect_timeout", "application_name")
+
+
+def _database_from_url(url: str) -> dict:
+    from urllib.parse import parse_qsl, unquote, urlsplit
+
+    u = urlsplit(url)
+    if u.scheme not in ("postgres", "postgresql"):
+        raise ValueError(f"TB_DATABASE_URL: 지원하지 않는 형식입니다 ({u.scheme!r}) — postgresql://… 만 지원")
+    lock_ms = os.environ.get("TB_DB_LOCK_TIMEOUT_MS", "5000").strip()
+    if not lock_ms.isdigit() or int(lock_ms) < 1:
+        # 0 은 PostgreSQL 에서 '무제한 대기'라 503 안내가 동작하지 않는다
+        raise ValueError("TB_DB_LOCK_TIMEOUT_MS 는 1 이상의 정수(밀리초)여야 합니다")
+    options = {"options": f"-c lock_timeout={int(lock_ms)}"}
+    try:
+        pairs = parse_qsl(u.query, keep_blank_values=True, strict_parsing=bool(u.query))
+    except ValueError:
+        raise ValueError("TB_DATABASE_URL: 쿼리 문자열 형식이 올바르지 않습니다(이름=값&…)") from None
+    for k, v in pairs:
+        if k not in _PG_URL_OPTIONS:
+            raise ValueError(f"TB_DATABASE_URL: 지원하지 않는 접속 옵션입니다 ({k!r}) — 지원: {', '.join(_PG_URL_OPTIONS)}")
+        if k in options:
+            raise ValueError(f"TB_DATABASE_URL: 접속 옵션이 두 번 지정되었습니다 ({k!r})")
+        options[k] = v
+    return {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": unquote(u.path.lstrip("/")),
+        "USER": unquote(u.username or ""),
+        "PASSWORD": unquote(u.password or ""),
+        "HOST": u.hostname or "",
+        "PORT": str(u.port or ""),
+        "OPTIONS": options,
+    }
+
+
+_DB_URL = os.environ.get("TB_DATABASE_URL", "").strip()
 DATABASES = {
-    "default": {
+    "default": _database_from_url(_DB_URL) if _DB_URL else {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": VAR_DIR / "db.sqlite3",
         "OPTIONS": {
@@ -199,6 +248,9 @@ CSRF_COOKIE_SAMESITE = "Lax"
 X_FRAME_OPTIONS = "DENY"
 
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
+
+# DEBUG 오류 화면에서 DB 접속 URL(비밀번호) 등 환경변수를 가린다(apps/core/debug.py)
+DEFAULT_EXCEPTION_REPORTER_FILTER = "apps.core.debug.PortalExceptionReporterFilter"
 
 # 시드 원본
 SEED_DIR = BASE_DIR / "data" / "seed"

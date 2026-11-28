@@ -21,6 +21,7 @@ from django.utils import timezone
 
 from apps.cases.models import DSTResult, ImagingStudy, Patient, Regimen, RegimenDrug, SequenceRun
 from apps.cases.services import related_drug
+from apps.core.textinput import clean_free_text, free_text_problem
 from apps.uploads.models import SubmissionFile
 from apps.uploads.services.csvio import safe_cell
 from apps.uploads.services.files import format_size
@@ -115,12 +116,15 @@ def submit_request(user, data: dict) -> DataAccessRequest:
     raise DarError("신청번호를 만들 수 없습니다. 다시 시도하세요", "Could not allocate a request number. Try again")
 
 
-_INVISIBLE = dict.fromkeys(map(ord, "​‌‍⁠﻿­"), None)
 MAX_COMMENT = 2000
+_clean_text = clean_free_text  # apps.core.textinput — 업로드 검토(workflow)와 같은 정리 규칙
 
 
-def _clean_text(v) -> str:
-    return (v or "").translate(_INVISIBLE).strip() if isinstance(v, str) else ""
+def _check_comment(text: str) -> None:
+    """검토 의견·반려 사유 — 공통 검사(apps.core.textinput.free_text_problem: NUL·서로게이트·길이)."""
+    problem = free_text_problem(text, MAX_COMMENT)
+    if problem:
+        raise DarError(*problem)
 
 
 def _check_reviewer(dar: DataAccessRequest, reviewer) -> None:
@@ -137,8 +141,7 @@ def approve_request(dar: DataAccessRequest, reviewer, types=None, comment: str =
     if not chosen:
         raise DarError("승인할 데이터 유형을 하나 이상 선택하세요.", "Select at least one data type to approve.")
     comment = _clean_text(comment)
-    if len(comment) > MAX_COMMENT:
-        raise DarError(f"최대 {MAX_COMMENT}자까지 입력할 수 있습니다", f"At most {MAX_COMMENT} characters allowed")
+    _check_comment(comment)
     now = timezone.now()
     changed = DAR.objects.filter(pk=dar.pk, status=DAR.Status.PENDING).update(
         status=DAR.Status.APPROVED, approved_types=chosen, reviewer=reviewer, review_comment=comment,
@@ -154,8 +157,7 @@ def reject_request(dar: DataAccessRequest, reviewer, reason: str) -> DataAccessR
     reason = _clean_text(reason)
     if not reason:
         raise DarError("반려 사유를 입력해주세요.", "Please enter the reason for rejection.")
-    if len(reason) > MAX_COMMENT:
-        raise DarError(f"최대 {MAX_COMMENT}자까지 입력할 수 있습니다", f"At most {MAX_COMMENT} characters allowed")
+    _check_comment(reason)
     now = timezone.now()
     changed = DAR.objects.filter(pk=dar.pk, status=DAR.Status.PENDING).update(
         status=DAR.Status.REJECTED, approved_types=[], reviewer=reviewer, review_comment=reason,

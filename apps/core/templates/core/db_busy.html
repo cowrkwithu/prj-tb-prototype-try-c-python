@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{% t "잠시 후 다시 시도해주세요" "Please try again shortly" %}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="card empty-state" role="alert">
+    <span class="icon-circle">{% icon "clock" "w-6 h-6" %}</span>
+    <p class="font-semibold text-primary">{% t "데이터베이스가 다른 작업으로 바쁩니다 (503)" "The database is busy (503)" %}</p>
+    <p class="text-sm mt-1">{{ message }}</p>
+    <div class="flex gap-2 justify-center mt-4">
+      <button type="button" class="btn btn-primary btn-sm" onclick="history.back()">{% t "이전 화면으로" "Go back" %}</button>
+      <a href="/" class="btn btn-secondary btn-sm">{% t "홈으로" "Home" %}</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

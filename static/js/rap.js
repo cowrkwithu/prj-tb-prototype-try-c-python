@@ -239,7 +239,7 @@
       post: function (url, fields) {
         var body = new URLSearchParams();
         Object.keys(fields).forEach(function (k) { if (fields[k] !== null && fields[k] !== undefined) body.append(k, fields[k]); });
-        return fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
+        return fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
                             body: body, credentials: 'same-origin' })
           .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, data: j }; }); });
       },

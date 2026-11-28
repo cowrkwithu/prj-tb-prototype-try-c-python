@@ -108,7 +108,9 @@ def test_has_any_value_requires_array(seeded_patients):
     obj.save()
     with CaptureQueriesContext(connection) as ctx:
         ids = set(Patient.objects.filter(comorbidities__has_any_value=["당뇨"]).values_list("id", flat=True))
-    assert "json_type" in ctx[0]["sql"]
+    # DB 안에서 배열 여부를 확인하는 백엔드별 SQL(lookups.HasAnyValue.as_sqlite / as_postgresql)
+    marker = {"sqlite": "json_type", "postgresql": "jsonb_typeof"}[connection.vendor]
+    assert marker in ctx[0]["sql"]
     assert 1 in ids and 2 not in ids and 3 not in ids
 
 

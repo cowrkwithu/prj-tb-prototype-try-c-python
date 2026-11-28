@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 
 from django.conf import settings
-from django.db import transaction
+from django.db import OperationalError, transaction
 from django.db.models import Count, Q
 
 from apps.core.naming import field_name_problem
@@ -346,8 +346,17 @@ def import_workbook(user, uploaded) -> dict:
             for chunk in uploaded.chunks():
                 out.write(chunk)
         check_zip_bomb(path)
+
+        def finish(result):  # 적재와 같은 트랜잭션 — 원본 파일명·변경 이력까지 한 번에 커밋(중간 실패 시 모두 롤백)
+            DictionaryVersion.objects.filter(version=result["version"]).update(source_file=name[:300])
+            _log(user, "version_load", version=result["version"], target=name,
+                 detail={k: result.get(k) for k in ("categories", "fields", "created", "updated", "deprecated",
+                                                    "carried_custom")})
+
         try:
-            result = services.load_dictionary(path, force=True)
+            result = services.load_dictionary(path, force=True, on_loaded=finish)
+        except OperationalError:  # DB 잠금(503 안내) 등은 엑셀 형식 오류로 바꾸지 않는다
+            raise
         except services.DictionaryFormatError as exc:
             raise DictAdminError(f"엑셀 형식 오류: {exc}", f"Workbook format error: {exc}") from None
         except (KeyError, ValueError, IndexError, TypeError, OSError) as exc:
@@ -361,7 +370,4 @@ def import_workbook(user, uploaded) -> dict:
             path.unlink()
         except OSError:
             pass
-    DictionaryVersion.objects.filter(version=result["version"]).update(source_file=name[:300])
-    _log(user, "version_load", version=result["version"], target=name,
-         detail={k: result.get(k) for k in ("categories", "fields", "created", "updated", "deprecated", "carried_custom")})
     return result

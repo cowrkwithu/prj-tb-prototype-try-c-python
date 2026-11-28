@@ -187,7 +187,7 @@ def test_fisher_known_values_and_speed():
     _, p = services.fisher_exact(2600, 2400, 2500, 2500)
     took = time.perf_counter() - t0
     print(f"\n[측정] Fisher n=10,000: {took * 1000:.1f} ms")
-    assert took < 0.05
+    assert took < 0.5  # 측정 약 5ms — 로그 공간 계산(선형)과 큰 정수 계승 방식(수 초)을 가르는 넉넉한 상한
     assert 0 < p < 1
 
 

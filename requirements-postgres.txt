@@ -1,0 +1,5 @@
+# PostgreSQL 사용 시에만 추가 설치(선택). 기본(SQLite)에는 필요 없다.
+#   .venv/bin/python -m pip install -r requirements-postgres.txt
+# 모든 버전은 == 로 고정한다. psycopg-binary 는 Windows/Linux wheel 제공(libpq 동봉 — 시스템 패키지 불필요).
+psycopg==3.3.9
+psycopg-binary==3.3.9

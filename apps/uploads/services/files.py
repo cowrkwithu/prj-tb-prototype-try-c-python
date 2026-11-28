@@ -10,15 +10,21 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import logging
 import re
 import unicodedata
 import uuid
 from pathlib import Path
 
 from django.conf import settings
+from django.db import DatabaseError, transaction
 from django.utils import timezone
 
+from apps.core.filetx import delete_after_commit, register_new_file
+
 from ..models import SubmissionFile
+
+logger = logging.getLogger(__name__)
 
 MIME_ALLOWED = {
     "csv": {"text/csv", "text/plain", "application/vnd.ms-excel", "application/csv", "text/x-csv",
@@ -152,6 +158,7 @@ def store(submission, f, kind: str, original_name: str, ext: str, meta: dict | N
     digest = hashlib.sha256()
     size = 0
     f.seek(0)
+    register_new_file(rel.as_posix())  # 요청 트랜잭션이 롤백되면 지운다(apps.core.filetx)
     with open(dest, "xb") as out:
         for chunk in f.chunks():
             digest.update(chunk)
@@ -178,22 +185,30 @@ def delete_path(rel: str) -> bool:
         if target.exists():
             target.unlink()
     except OSError as exc:
-        obj, created = OrphanFile.objects.get_or_create(path=rel, defaults={"reason": str(exc)[:255]})
-        if not created:
-            obj.attempts += 1
-            obj.reason = str(exc)[:255]
-            obj.save(update_fields=["attempts", "reason", "last_tried_at"])
+        try:
+            with transaction.atomic():  # 트랜잭션 안에서 불려도 실패를 savepoint 로 가둔다(PostgreSQL 트랜잭션 중단 방지)
+                obj, created = OrphanFile.objects.get_or_create(path=rel, defaults={"reason": str(exc)[:255]})
+                if not created:
+                    obj.attempts += 1
+                    obj.reason = str(exc)[:255]
+                    obj.save(update_fields=["attempts", "reason", "last_tried_at"])
+        except DatabaseError:  # 기록도 실패(DB 잠금 등) — 로그만. DB 가 참조하지 않는 파일은 cleanup_media 가 회수한다
+            logger.warning("파일 삭제 실패, OrphanFile 기록도 실패: %s (%s)", rel, exc)
         return False
-    OrphanFile.objects.filter(path=rel).delete()
+    try:
+        with transaction.atomic():
+            OrphanFile.objects.filter(path=rel).delete()
+    except DatabaseError:
+        logger.warning("OrphanFile 기록 정리 실패: %s", rel)
     return True
 
 
 def delete_stored(sf: SubmissionFile) -> None:
-    """DB 행은 지우고, 파일 삭제가 실패하면(Windows 파일 잠금 등) OrphanFile 로 남겨 cleanup_media 가 다시 지운다."""
+    """DB 행은 지우고, 파일은 그 삭제가 커밋된 뒤에 지운다(트랜잭션 밖이면 바로 — 롤백되면 행과 파일이 함께 남는다).
+    파일 삭제가 실패하면(Windows 파일 잠금 등) OrphanFile 로 남겨 cleanup_media 가 다시 지운다."""
     rel = sf.file.name
     sf.delete()
-    if rel:
-        delete_path(rel)
+    delete_after_commit([rel], delete_path)
 
 
 def format_size(n: int) -> str:

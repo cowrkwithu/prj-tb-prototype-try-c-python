@@ -52,7 +52,7 @@ def test_bad_params_400(client, key, params):
     assert r.status_code == 400 and r.json()["status"] == "bad_request"
 
 
-def test_rate_limit_applies(client, key, settings):
+def test_rate_limit_applies(client, key, settings, frozen_api_clock):
     settings.API_RATE_LIMIT_PER_MINUTE = 2
     codes = [client.get(URL, **auth(key)).status_code for _ in range(3)]
     assert codes == [200, 200, 429]

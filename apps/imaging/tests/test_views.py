@@ -235,13 +235,12 @@ def test_english(researcher_client, samples):
 
 
 def test_case_editor_modal_shows_db_expert_findings(researcher_client, samples):
-    """대상자 등록조회의 영상 상세 모달이 RAP 에서 저장한 전문가 소견(DB)을 보인다(이전: 0건 고정)."""
-    from apps.cases import imaging as case_imaging
-
-    p = Patient.objects.get(pk=4)
-    gen = case_imaging.generate_images(p)
+    """대상자 등록조회의 영상 상세 모달이 RAP 에서 저장한 전문가 소견(DB)을 보인다 — 목록·도형 모두."""
     st = cxr_sample()
     assert researcher_client.post("/rap/annotations", {**RECT, "study": st.pk}).status_code == 201
-    im = next(g for g in gen if g["type"] == "CXR" and g["date"] == st.study_date.isoformat())
-    body = researcher_client.get(f"/cases/4/images/{im['id']}").content.decode()
+    body = researcher_client.get(f"/cases/4/images/{st.pk}").content.decode()
     assert 'data-testid="expert-count">1건' in body and "추적 필요" in body and "공동 · 우폐 · 중증" in body
+    assert 'class="expert-box"' in body  # 영상 위 하늘색 도형
+    tab = researcher_client.get("/cases?id=4&tab=1").content.decode()
+    assert 'data-testid="thumb-expert"' in tab  # 썸네일 배지
+

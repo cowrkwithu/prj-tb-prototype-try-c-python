@@ -109,3 +109,21 @@
 - 헤더 결정: Variant.drugs 다약제 연관(genomics 0002, rrs a1401g→AMK·KAN·CAP, inhA c-15t→INH·ETH, eis c-14t→KAN) + 불변식 "연관 유전자 변이 검출 시 S 금지"(전 조합 테스트). 공개 샘플은 외부 공유 경로(API·내보내기) 전부 제외. 열람 불가 검사 소견은 개수만. 케이스 모달 소견은 seed_key 로 검사 단위 연결. /data 유전체 내보내기 변이 단위 그룹·분모를 GAP 과 통일.
 - 범위 외 소폭 변경(수용): /data 유전체 좌표 채움, 케이스 영상 모달 DB 소견 표시, 업로드 영상 원 파일명은 열람 권한자만.
 - 5단계 이월: 케이스 에디터 영상 탭을 DB 검사 기반으로 통합(현재 generate_images 파생 목록), DICOM 미리보기 없음, 변이 집계 캐시 없음(요청마다 전 환자 스캔), 업로드 영상 메타데이터(촬영일·소견) 로그인 사용자 전체 공개 정책 재검토, NIT: 영상 수만 수동 변경 시 force 재시드가 샘플 추가, fabG1 카탈로그 편입 검토, 소견 500건 상한 동시성. PostgreSQL 실행 미검증. 수정 후 브라우저 수동 확인 미실시.
+
+## 5단계 마무리 — 범위 결정 (헤더)
+- **사용자 매뉴얼(/manual)**: 원본 pages/Manual(manualContent.ts, ManualPage.tsx) 계승 — 아코디언·검색(한/영)·목차·스크린샷(static/manual). 내용은 DB 모델 + 멱등 시드(manual 앱), 화면은 DB에서 읽음. 원본 문구 중 Python 판과 동작이 다른 부분(예: 약제내성 예측은 카탈로그 규칙, 유사도 방법명, DAR 관리자 승인, 서버 저장)은 실제 동작에 맞게 고친다.
+- **README**: Windows/Linux 설치·실행(setup/run 스크립트, 수동 명령), 데모 계정, 표준 명령, 구조, 설정 환경변수(TB_PORT/TB_BIND/TB_SECRET_KEY 등), PostgreSQL 전환법, 알려진 한계(아래 이월 중 수용한 것).
+- **이식성 검증**: 저장소를 scratchpad 로 git clone(깨끗한 디렉터리) → setup.sh → bootstrap → run.sh 다른 포트 기동·스모크(로그인·주요 화면 200) → 종료. .bat 정적 점검(경로·인코딩·chcp·venv 경로). 코드 전체 grep: open() encoding 누락, os.path 셸 의존, 하드코딩 '/' 경로.
+- **이월 처리**:
+  - 삭제 재적용 성능: clean_rows 등 재적용 범위를 대상 환자로 축소, 1000행×8 업로드 삭제 시간 측정 전후 보고. 쓰기 중 DB 잠금(OperationalError locked/busy)은 공통 처리로 500 대신 503 안내 화면(HTMX/JSON 요청은 해당 형식).
+  - 케이스 에디터 영상 탭을 DB ImagingStudy(공개 샘플 표시 포함 + 업로드) 기반으로 통합, RAP 과 같은 목록·소견.
+  - 수정 후 브라우저 확인 미실시 화면(RAP 숨김 문구, GWAS 연관 약제 열) 헤드리스 확인.
+  - 수용(README 한계로 기록): 변이 집계 캐시 없음, 업로드 영상 메타데이터 로그인 사용자 공개, force 재시드 NIT, fabG1 미편입, 소견 상한 동시성, 요청 제한 프로세스 메모리, DICOM 미리보기 없음.
+- **PostgreSQL 실행 검증**: 로컬 공용 PG 서버 사용은 사용자 승인 필요 — 별도 진행.
+- 끝으로 전체 회귀 리뷰(reviewer).
+- (갱신) PostgreSQL: 사용자 승인으로 전용 상시 컨테이너 tbportal-pg(postgres:16, 127.0.0.1:5462, 볼륨 tbportal-pgdata) 사용. var/.env 로더(config/envfile.py, 기존 환경변수 우선, 빈 값이면 SQLite) 추가, var/.env 활성 → 개발 기본 DB 는 PG. PG pytest 1차 10 실패(NUL 500 6건 = 코드 결함 수정, SQLite 가정 테스트 4건 분기) → 1799 통과. SQLite 1796 통과. 원인 미확인 간헐 실패 1회(재현 안 됨).
+
+### 5단계 합격 (4차 리뷰 PASS, 2026-11-28) — SQLite 1826 통과/8 skip, PostgreSQL 16 1832 통과/2 skip
+- 구현: 사용자 매뉴얼(manual 앱, DB 시드, 원본 문구 40건 실제 동작에 맞게 교정), README, 이식성(깨끗한 venv setup→bootstrap→run·prod 기동), 삭제 재적용 성능(wide 11.5s→1.5s), DB 잠금 503 미들웨어, 케이스 영상 탭 DB 통합, var/.env 로더, PostgreSQL 실행 검증(전용 컨테이너 tbportal-pg).
+- 리뷰 경과: 1차 FAIL(확정 4: PG NUL 500 22경로 / 검토 사유 NUL / 503 "저장 안 됨"인데 일부 커밋 / DEBUG 화면 DB 비밀번호) → NUL 퍼징을 URL resolver 전 패턴 × GET/POST 하네스로, 자유 텍스트 공통 검사, 쓰기 뷰 atomic_write(감사 표), 예외 보고 필터. 2차 FAIL(확정 1: 커밋 후 콜백 실패 시 새 파일 삭제) → 커밋 표시·robust 지연 삭제. 3차 FAIL(확정 1: 불변식 테스트 자정 직후 실패 — 1차의 원인 미확인 간헐 실패) → 테스트 시계 정오 고정(헤더 직접 수정). 4차 PASS.
+- 수용 NIT: 몇 초 창의 날짜 경계 의존 테스트 4건, 바깥 atomic 롤백 시 고아 파일(cleanup_media 회수), 느린 디스크 2GB 업로드 시 SQLite 잠금 5초 초과 가능(기존 한계).

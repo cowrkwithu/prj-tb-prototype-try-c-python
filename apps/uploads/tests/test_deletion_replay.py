@@ -510,8 +510,13 @@ def test_replay_reproduces_initial_approval(users, make):
     keys = ("created", "duplicates", "dropped", "rows", "unmatched_files")
     for orig, again in zip(originals, replayed):
         assert {k: orig.apply_summary.get(k) for k in keys} == {k: again.get(k) for k in keys}
-        if domain == "regimen":  # 미등록 대상자 행은 승인 당시처럼 건너뛴다(요약에 남김)
-            assert [x["condition_id"] for x in again["skipped"]] == [x["condition_id"] for x in orig.apply_summary["skipped"]]
+        if domain == "regimen":
+            # 미등록 대상자 행은 다시 적용하지 않는다. 5단계부터 재적용은 대상 환자(only) 행만 읽으므로
+            # 대상 밖(미등록 UNKNOWN-9) 행은 요약에도 나오지 않는다 — 승인 당시 요약에는 남아 있다.
+            assert {x["condition_id"] for x in orig.apply_summary["skipped"]} <= {"UNKNOWN-9"}
+            assert again["skipped"] == []
+    if domain == "regimen":
+        assert [x["condition_id"] for x in originals[0].apply_summary["skipped"]] == ["UNKNOWN-9"]
     assert all(Submission.objects.get(pk=s.pk).apply_summary == s.apply_summary for s in originals)  # 이력 보존
 
 

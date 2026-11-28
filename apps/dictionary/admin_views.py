@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST, require_safe
 
 from apps.accounts.decorators import admin_required
 from apps.core.i18n import get_lang, t
+from apps.core.safejson import has_bad_chars
 from apps.core.views import render_page
 
 from . import admin_services as svc
@@ -61,7 +62,9 @@ def manager(request):
         if not show_dep:
             entries = entries.filter(is_deprecated=False)
         q = (request.GET.get("q") or "").strip()[:100]
-        if q:
+        if q and has_bad_chars(q):  # NUL·서로게이트가 든 검색어는 어떤 값과도 일치하지 않는다(PostgreSQL 은 비교 자체가 DataError)
+            entries = entries.none()
+        elif q:
             entries = entries.filter(Q(display_name__icontains=q) | Q(display_name_en__icontains=q) |
                                      Q(field_name__icontains=q) | Q(dictionary_id__icontains=q))
         pager = Paginator(entries, ENTRY_PAGE)

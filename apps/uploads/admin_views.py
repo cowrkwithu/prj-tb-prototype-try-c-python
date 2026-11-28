@@ -254,7 +254,14 @@ def _cell(v):
 
 
 def _review_action(request, uid, action):
-    sub = get_object_or_404(Submission, upload_id=uid)
+    try:
+        sub = get_object_or_404(Submission, upload_id=uid)
+    except DatabaseError:  # 다른 처리의 쓰기 잠금과 겹친 첫 조회(테스트용 공유 캐시 SQLite 등) — 아래와 같은 안내
+        logger.exception("review %s lookup failed for %s", action, uid)
+        messages.error(request, t(request, "다른 처리와 겹쳐 처리하지 못했습니다. 잠시 후 다시 시도해주세요.",
+                                  "This could not be processed because it overlapped with another operation. "
+                                  "Please try again shortly."))
+        return redirect("/admin/review")
     try:
         if action == "approve":
             workflow.approve(sub, request.user, request.POST.getlist("check"), request.POST.get("comment", ""))

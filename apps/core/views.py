@@ -10,9 +10,7 @@ from .navigation import build_sidebar
 
 # 이후 단계에서 구현될 화면(업로드·관리자 대시보드·데이터 검증은 apps.uploads, 데이터신청 /data 는 apps.datasharing,
 # 유전자 분석 /gap 은 apps.genomics, 영상 분석 /rap 은 apps.imaging 이 구현): route → (제목 ko, en, 접근 수준, 사이드바)
-PLACEHOLDER_PAGES = {
-    "manual": ("사용자 매뉴얼", "User Manual", "login", None),
-}
+PLACEHOLDER_PAGES: dict = {}  # 5단계에서 마지막 자리표시(/manual)를 apps.manual 이 구현했다
 
 
 def render_page(request, template, context=None, sidebar=None, status=200):

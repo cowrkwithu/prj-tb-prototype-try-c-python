@@ -18,6 +18,7 @@ import re
 from functools import wraps
 
 from django.conf import settings
+from django.db import transaction
 from django.http import FileResponse, JsonResponse
 from django.http.request import RawPostDataException
 from django.core.exceptions import RequestDataTooBig
@@ -322,11 +323,12 @@ def cohorts(request):
     state = cohort_services.resolve_conditions({"tree": tree_text}, "en")
     if state["error"]:
         return _err(400, "bad_request", state["error"])
-    c = cohort_services.save_cohort(request.api_key.user, state["tree"], None, name)
     clean_desc = re.sub(r"[\x00-\x1f\x7f]", " ", desc).strip()
-    if clean_desc:
-        c.description, c.description_en = clean_desc, ""
-        c.save(update_fields=["description", "description_en", "updated_at"])
+    with transaction.atomic():  # 생성 + 설명 저장을 한 커밋으로(중간 잠금 오류 시 503 '저장되지 않았습니다' 가 참이 되게)
+        c = cohort_services.save_cohort(request.api_key.user, state["tree"], None, name)
+        if clean_desc:
+            c.description, c.description_en = clean_desc, ""
+            c.save(update_fields=["description", "description_en", "updated_at"])
     return _ok({"id": c.pk, "name": c.name, "description": c.description, "patientIds": list(c.snapshot_ids),
                 "patientCount": c.snapshot_count, "createdDate": c.created_date.isoformat()}, status=201)
 

@@ -6,6 +6,7 @@ from pathlib import Path
 from django.conf import settings
 from django.db import transaction
 
+from apps.core.safejson import has_bad_chars
 from apps.core.seeding import is_seeded, mark_seeded, reset_sequences
 
 from .models import DSTResult, Patient
@@ -115,7 +116,9 @@ def filter_patients(params: dict, lang: str):
     """원본 CaseList 의 filtered (검색어·국적·약제내성·치료결과·영상 보유)."""
     qs = Patient.objects.all().order_by("id")
     q = (params.get("q") or "").strip()
-    if q:
+    if q and has_bad_chars(q):  # NUL·서로게이트가 든 검색어는 어떤 값과도 일치하지 않는다(PostgreSQL 은 비교 자체가 DataError)
+        qs = qs.none()
+    elif q:
         ql = q.lower()
         cond = (Q(condition_id__icontains=ql) | Q(country__contains=ql) | Q(diagnosis_type__icontains=ql))
         if lang == "en":  # dataLabel(country, 'en').toLowerCase().includes(q)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""원본(React) Mock 데이터(.ts/.json)를 data/seed/*.json 으로 변환하는 일회성 스크립트.
+r"""원본(React) Mock 데이터(.ts/.json)를 data/seed/*.json 으로 변환하는 일회성 스크립트.
 
 Node.js 없이 TypeScript 객체 리터럴을 파싱한다. 지원 범위는 원본 data/*.ts 가 쓰는 문법:
 주석(// · /* */), 따옴표 없는 키, '…'/"…"/`…`(보간 없는) 문자열, 숫자, true/false/null/undefined,

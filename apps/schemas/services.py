@@ -26,6 +26,7 @@ from django.db.models import Count, Exists, F, OuterRef, Q, Sum
 from django.db.models.fields.json import KeyTransform
 from django.utils import timezone
 
+from apps.core.filetx import delete_after_commit, register_new_file
 from apps.core.safejson import has_bad_chars, loads_user_json
 from apps.core.seeding import is_seeded, mark_seeded
 from apps.uploads.services import csvio, files as upload_files
@@ -365,6 +366,12 @@ def transition(schema: Schema, action: str, user, note: str = "", by_admin: bool
     결과 상태가 발행인 전이(publish·restore)는 strict 검증을 통과해야 한다(checked=True: 호출 측이 방금 같은 검증을 마침)."""
     if action not in TRANSITIONS:
         raise SchemaError("알 수 없는 조치입니다", "Unknown action")
+    from apps.core.textinput import clean_free_text, free_text_problem
+
+    note = clean_free_text(note)
+    problem = free_text_problem(note, 500)  # 자유 텍스트 공통 검사(NUL·서로게이트·길이) — 상태를 바꾸기 전에
+    if problem:
+        raise SchemaError(*problem)
     src, dst = TRANSITIONS[action]
     # 결과 상태가 발행(published)인 모든 전이(발행·보관 복원)는 같은 strict 검증을 거친다
     to_published = dst == Schema.Status.PUBLISHED
@@ -430,7 +437,7 @@ def delete_schema(schema: Schema) -> None:
             raise SchemaError("입력된 데이터가 있어 삭제할 수 없습니다. 더 이상 쓰지 않으려면 보관하세요.",
                               "Cannot delete: data has been entered. Archive it instead.")
         raise SchemaError("이미 삭제된 데이터 구조입니다", "The data schema was already deleted")
-    transaction.on_commit(lambda: [upload_files.delete_path(p) for p in paths if p])
+    delete_after_commit(paths, upload_files.delete_path)  # 커밋 뒤, 실패해도 응답 불변(robust)
 
 
 @transaction.atomic
@@ -678,8 +685,7 @@ def _clean_pending(user):
     paths = list(SchemaFile.objects.filter(pending__in=old, record__isnull=True).values_list("file", flat=True))
     SchemaFile.objects.filter(pending__in=old, record__isnull=True).delete()
     old.delete()
-    for p in paths:
-        upload_files.delete_path(p)
+    delete_after_commit(paths, upload_files.delete_path)  # 행 삭제가 커밋된 뒤에 파일을 지운다
 
 
 # files.check_magic 이 내용(매직바이트)까지 확인하는 형식
@@ -724,6 +730,7 @@ def store_field_file(schema, field: SchemaField, uploaded, user) -> tuple[Schema
     dest.parent.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256()
     written = 0
+    register_new_file(rel.as_posix())  # 요청 트랜잭션이 롤백되면 지운다(apps.core.filetx)
     with open(dest, "xb") as out:
         for chunk in uploaded.chunks():
             digest.update(chunk)
@@ -939,7 +946,7 @@ def _drop_files(ids, immediate: bool = False):
             if p:
                 upload_files.delete_path(p)
     else:
-        transaction.on_commit(lambda: [upload_files.delete_path(p) for p in paths if p])
+        delete_after_commit(paths, upload_files.delete_path)  # 커밋 뒤, 실패해도 응답 불변(robust)
 
 
 @transaction.atomic

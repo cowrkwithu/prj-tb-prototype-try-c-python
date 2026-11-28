@@ -30,6 +30,7 @@ from __future__ import annotations
 from django.db import transaction
 from django.utils import timezone
 
+from apps.core.filetx import delete_after_commit
 from apps.cases.models import BiochemResult, ImagingStudy, Patient, Regimen, SequenceRun
 
 from ..models import DeletedSubmission, DerivedBaseline, Submission, SubmissionEvent, SubmissionRecord
@@ -119,7 +120,7 @@ def _touching(domain: str, cids: set[str]) -> dict[str, list[Submission]]:
                .exclude(status=SubmissionRecord.RowStatus.ERROR).values_list("submission_id", flat=True).distinct())
     out: dict[str, list[Submission]] = {}
     for s in sorted(Submission.objects.filter(pk__in=list(sub_ids)), key=approval_key):
-        for cid in touched_condition_ids(s) & cids:
+        for cid in touched_condition_ids(s, within=cids):  # 관련 대상자 행만 정리(5단계 성능)
             out.setdefault(cid, []).append(s)
     return out
 
@@ -326,7 +327,7 @@ def approve_deletion(sub: Submission, reviewer) -> DeletedSubmission:
                      **detail})
         s.delete()  # 행·파일 행·이력은 CASCADE
         # 파일은 커밋이 확정된 뒤에만 지운다(롤백되면 DB 가 참조하는 파일이 남아 있어야 한다)
-        transaction.on_commit(lambda: [files.delete_path(rel) for rel in paths])
+        delete_after_commit(paths, files.delete_path)  # 커밋 뒤, 실패해도 응답 불변(robust)
     return log
 
 

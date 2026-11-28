@@ -50,12 +50,12 @@ def test_condition_types_still_enforces_dar(client, demo_users, seeded_patients)
 
 
 # ─── 6. 인증 실패 요청 제한(IP 단위, REMOTE_ADDR) ───
-def test_auth_failure_rate_limited_per_ip(client, api_key, seeded_patients, settings):
+def test_auth_failure_rate_limited_per_ip(client, api_key, seeded_patients, settings, frozen_api_clock):
     settings.API_AUTH_FAIL_LIMIT_PER_MINUTE = 3
     codes = [client.get("/api/v1/cases", HTTP_AUTHORIZATION="Bearer tbk_" + "x" * 30).status_code for _ in range(4)]
     assert codes == [401, 401, 401, 429]
     r = client.get("/api/v1/cases")  # 키 없음도 같은 IP 계수
-    assert r.status_code == 429 and r.json()["status"] == "rate_limited" and 1 <= int(r["Retry-After"]) <= 61
+    assert r.status_code == 429 and r.json()["status"] == "rate_limited" and int(r["Retry-After"]) == 31
     # 차단된 IP 에서는 올바른 키도 그 창 동안 429(무차별 대입 확인 방지)
     assert client.get("/api/v1/cases", **auth(api_key)).status_code == 429
     # X-Forwarded-For 는 신뢰하지 않는다 — 헤더를 바꿔도 같은 IP 로 센다

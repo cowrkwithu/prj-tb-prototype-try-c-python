@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST, require_safe
 
 from apps.accounts.decorators import login_required
 from apps.core.i18n import get_lang, t
+from apps.core.safejson import has_bad_chars
 from apps.core.views import render_page
 
 from . import catalog, schema_view, services
@@ -73,7 +74,7 @@ def _page_context(request, tab: str, **extra) -> dict:
             ctx["dar_values"] = {"name": user.display_name or "", "institution": user.organization or "",
                                  "email": user.email or "", "data_types": _prefill_types(request)}
         sub_id = request.GET.get("submitted", "")
-        if sub_id:
+        if sub_id and not has_bad_chars(sub_id):  # NUL 이 든 신청번호는 없다(PostgreSQL 은 비교 시 DataError)
             ctx["submitted"] = DataAccessRequest.objects.filter(applicant=request.user, request_id=sub_id[:20]).first()
     elif tab == "uploads":
         from apps.uploads.views import my_uploads_context

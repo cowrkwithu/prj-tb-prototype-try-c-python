@@ -23,7 +23,6 @@ from apps.cases.services import data_label
 from apps.cohorts import conditions as cond
 from apps.core.i18n import get_lang, t
 from apps.core.views import render_page
-from apps.datasharing.services import is_approved
 from apps.uploads.models import SubmissionFile
 
 from . import services
@@ -83,23 +82,13 @@ def rap(request):
     patient = next((p for p in patients if p.condition_id == cid), None) if cid else None
     if patient is None:
         patient = services.default_patient(patients)
-    approved = is_approved(request.user, "imaging")
     studies, sel = [], 0
     if patient is not None:
-        rows = services.patient_studies(patient)
-        studies = [services.study_view(s, request.user, lang, approved) for s in rows]
+        # 볼 권한이 없는 업로드 영상의 전문가 소견은 텍스트·좌표를 내보내지 않고 개수만(검사별 hidden_expert)
+        # — 대상자 등록조회 영상 탭과 같은 함수(services.patient_imaging)
+        studies, annotations = services.patient_imaging(patient, request.user, lang)
         sid = cond.parse_uint(request.GET.get("study") or "")
         sel = next((i for i, s in enumerate(studies) if s["id"] == sid), 0) if sid is not None else 0
-        anns = ExpertAnnotation.objects.filter(study__patient=patient).select_related("author")[:5000]
-        # 볼 권한이 없는 업로드 영상의 전문가 소견은 텍스트·좌표를 내보내지 않고 개수만(검사별 hidden_expert)
-        viewable = {s["id"] for s in studies if s["can_view"]}
-        annotations = [services.annotation_view(a, request.user, lang) for a in anns if a.study_id in viewable]
-        hidden = {}
-        for a in anns:
-            if a.study_id not in viewable:
-                hidden[a.study_id] = hidden.get(a.study_id, 0) + 1
-        for s in studies:
-            s["hidden_expert"] = hidden.get(s["id"], 0)
     else:
         annotations = []
     data = {

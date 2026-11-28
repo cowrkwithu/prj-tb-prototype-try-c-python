@@ -6,7 +6,6 @@ import re
 
 import pytest
 
-from apps.cases import imaging as case_imaging
 from apps.cases.models import ImagingStudy, Patient
 from apps.datasharing import services as ds
 from apps.datasharing.tests.conftest import auth, make_dar
@@ -25,15 +24,15 @@ def api_key(demo_users, samples):
     return raw
 
 
-# ─── 2) 케이스 상세 '업로드된 영상 검사' 목록 ───
-def test_case_detail_lists_only_uploaded_studies(researcher_client, demo_users, samples):
+# ─── 2) 케이스 상세 영상 탭 — 5단계: 공개 샘플과 업로드를 RAP 과 같은 DB 목록으로(배지로 구분) ───
+def test_case_detail_lists_db_studies_with_source_badges(researcher_client, demo_users, samples):
     p = Patient.objects.get(pk=3)
-    body = researcher_client.get(f"/cases?id={p.pk}&tab=2").content.decode()
-    assert 'data-testid="imaging-studies"' not in body  # 샘플만 있는 환자 — 목록 없음
-    make_uploaded_study(demo_users["researcher"], p)
-    body = researcher_client.get(f"/cases?id={p.pk}&tab=2").content.decode()
-    block = body.split('data-testid="imaging-studies"', 1)[1].split("</ul>", 1)[0]
-    assert block.count("<li>") == 1 and "2025-06-01" in block
+    n_samples = ImagingStudy.objects.filter(patient=p, is_public_sample=True).count()
+    body = researcher_client.get(f"/cases?id={p.pk}&tab=1").content.decode()
+    assert 'data-testid="thumb-upload"' not in body and body.count('class="thumb"') == min(n_samples, 24)
+    st = make_uploaded_study(demo_users["researcher"], p)
+    body = researcher_client.get(f"/cases?id={p.pk}&tab=1").content.decode()
+    assert body.count('data-testid="thumb-upload"') == 1 and f'data-image="{st.pk}"' in body and "2025-06-01" in body
 
 
 # ─── 3) 외부 공유(API·내보내기)에서 공개 샘플 제외 ───
@@ -78,20 +77,22 @@ def test_hidden_expert_findings_for_unviewable_study(client, demo_users, other_u
 
 
 def test_case_modal_links_by_study_not_date(researcher_client, demo_users, samples):
+    """모달은 검사 pk 로 연다 — 같은 날짜·모달리티의 다른 검사 소견은 섞이지 않는다."""
     p = Patient.objects.get(pk=4)
-    gen = case_imaging.generate_images(p)
-    cxrs = [g for g in gen if g["type"] == "CXR"]
+    first = ImagingStudy.objects.get(seed_key=f"sample:{p.condition_id}:CXR:1")
     second = ImagingStudy.objects.get(seed_key=f"sample:{p.condition_id}:CXR:2")
-    assert second.study_date.isoformat() == cxrs[1]["date"]
     assert researcher_client.post("/rap/annotations", {**RECT, "study": second.pk, "text": "둘째 검사"}).status_code == 201
-    # 같은 날짜·모달리티의 다른 검사(업로드)에 붙은 소견은 섞이지 않는다
     other = make_uploaded_study(demo_users["researcher"], p)
     ImagingStudy.objects.filter(pk=other.pk).update(study_date=second.study_date)
     ExpertAnnotation.objects.create(study=other, shape="text", x=1, y=1, text="다른 검사", author_name="x")
-    body = researcher_client.get(f"/cases/4/images/{cxrs[1]['id']}").content.decode()
+    body = researcher_client.get(f"/cases/4/images/{second.pk}").content.decode()
     assert "둘째 검사" in body and "다른 검사" not in body and 'data-testid="expert-count">1건' in body
-    body = researcher_client.get(f"/cases/4/images/{cxrs[0]['id']}").content.decode()
+    body = researcher_client.get(f"/cases/4/images/{first.pk}").content.decode()
     assert "둘째 검사" not in body and 'data-testid="expert-count">0건' in body
+    body = researcher_client.get(f"/cases/4/images/{other.pk}").content.decode()
+    assert "다른 검사" in body and "둘째 검사" not in body
+    # 다른 환자의 검사 pk 로는 열 수 없다
+    assert researcher_client.get(f"/cases/3/images/{second.pk}").status_code == 404
 
 
 # ─── 5) 유전체 데이터셋 내보내기 — 카탈로그 변이 단위·GAP 과 같은 분모 ───

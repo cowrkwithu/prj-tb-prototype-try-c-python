@@ -1,3 +1,4 @@
+import json
 from urllib.parse import urlencode
 
 from django.http import Http404
@@ -7,7 +8,7 @@ from django.views.decorators.http import require_safe
 from apps.accounts.decorators import login_required
 from apps.core.i18n import get_lang
 
-from . import imaging, services
+from . import services
 from .models import Patient
 
 TABS = [
@@ -61,19 +62,24 @@ def _list_query(state) -> str:
 THUMB_PAGE = 24  # 영상 썸네일은 24개씩 그린다(나머지는 '더보기'로 지연 로드) — 승인 업로드로 영상 수가 커져도 가볍게
 
 
-def _image_items(p: Patient, lang: str) -> list[dict]:
-    return [{**im,
-             "finding_text": ", ".join(services.data_label(f["type"], lang) for f in im["findings"]),
-             "findings_l": [{k: services.data_label(v, lang) if isinstance(v, str) else v for k, v in f.items()}
-                            for f in im["findings"]],
-             "ann_label": services.data_label(im["annotations"][0]["type"], lang) if im["annotations"] else ""}
-            for im in imaging.generate_images(p)]
+def _image_items(p: Patient, user, lang: str) -> tuple[list[dict], list[dict]]:
+    """영상 탭 목록 = 영상 분석(RAP)과 같은 DB 검사 목록(공개 샘플 + 승인 업로드, 촬영일순)과 볼 수 있는 전문가 소견.
+    5단계에서 generate_images(환자 영상 수 파생) 대신 ImagingStudy 를 쓰도록 통합했다 — 썸네일 id 는 검사 pk."""
+    from apps.imaging import services as rap
+
+    studies, annotations = rap.patient_imaging(p, user, lang)
+    for s in studies:
+        s["finding_text"] = ", ".join(f["type_l"] for f in s["findings"])
+        s["initial_slice"] = s["volume"]["initial"]["axial"] if s.get("volume") else 0
+        rows = (s.get("volume") or {}).get("coronal_rows") or []
+        s["coronal_rows_js"] = json.dumps([r for r in rows if isinstance(r, int) and not isinstance(r, bool)])
+    return studies, annotations
 
 
-def _detail_context(p: Patient, lang: str, tab: int) -> dict:
+def _detail_context(p: Patient, lang: str, tab: int, user=None) -> dict:
     if p is None:
         return {"patient": None}
-    images = _image_items(p, lang)
+    images, _ = _image_items(p, user, lang)
     regimen = services.regimen_data(p)
     return {
         "patient": p,
@@ -91,9 +97,6 @@ def _detail_context(p: Patient, lang: str, tab: int) -> dict:
         "images": images[:THUMB_PAGE],
         "image_total": len(images),
         "more_offset": THUMB_PAGE if len(images) > THUMB_PAGE else None,
-        "volume": imaging.volume_info(),
-        # '업로드된 영상 검사' 목록 — 공개 샘플 검사(4단계 시드)는 나열하지 않는다(영상 수 표시는 그대로)
-        "studies": list(p.imaging_studies.filter(is_public_sample=False).prefetch_related("files")[:50]),
         "sequence_runs": list(p.sequence_runs.prefetch_related("files")[:50]),
         "mutations": services.mutations(p),
         "dst": services.dst_rows(p),
@@ -108,41 +111,28 @@ def case_images(request, pk):
     """영상 썸네일 다음 묶음(HTMX '더보기')."""
     p = get_object_or_404(Patient, pk=pk)
     offset = max(0, _int(request.GET.get("offset"), 0))
-    images = _image_items(p, get_lang(request))
+    images, _ = _image_items(p, request.user, get_lang(request))
     nxt = offset + THUMB_PAGE
     return render(request, "cases/_thumbs.html", {
         "patient": p, "images": images[offset:nxt], "image_total": len(images),
-        "more_offset": nxt if len(images) > nxt else None, "volume": imaging.volume_info()})
+        "more_offset": nxt if len(images) > nxt else None})
 
 
 @login_required
 @require_safe
 def case_image_detail(request, pk, image_id):
-    """영상 상세 모달 본문(HTMX 지연 로드) — 모달은 화면에 하나만 두고 고른 영상만 그린다."""
+    """영상 상세 모달 본문(HTMX 지연 로드) — 모달은 화면에 하나만 두고 고른 검사만 그린다.
+
+    image_id 는 이 환자의 ImagingStudy pk. 전문가 소견은 영상 분석(RAP)에서 DB 에 저장한 그 검사의 것만 보인다.
+    볼 권한이 없는 업로드 영상은 영상·소견 내용 없이 메타데이터와 소견 수만(RAP 과 같은 규칙)."""
     p = get_object_or_404(Patient, pk=pk)
-    image_id = int(image_id)
-    items = _image_items(p, get_lang(request))
-    im = next((i for i in items if i["id"] == image_id), None)
+    lang = get_lang(request)
+    images, annotations = _image_items(p, request.user, lang)
+    im = next((i for i in images if i["id"] == int(image_id)), None)
     if im is None:
         raise Http404
-    # 4단계: 영상 분석(RAP)에서 DB 에 저장한 전문가 소견 — 이 썸네일과 **같은 검사**(공개 샘플 검사의 seed_key 로 연결:
-    # 같은 모달리티 안에서 촬영일순 k 번째 = 'sample:<케이스 ID>:<모달리티>:k')에 붙은 것만. 촬영일만 같은 다른 검사의
-    # 소견은 섞지 않는다. 공개 샘플은 로그인 사용자 누구나 볼 수 있는 영상이라 열람 권한 검사가 따로 필요 없다.
-    from apps.cases.models import ImagingStudy
-    from apps.imaging.models import ExpertAnnotation
-
-    k = sum(1 for i in items if i["type"] == im["type"] and i["id"] <= im["id"])
-    study = ImagingStudy.objects.filter(patient=p, is_public_sample=True,
-                                        seed_key=f"sample:{p.condition_id}:{im['type']}:{k}").first()
-    lang = get_lang(request)
-    expert = [{"finding": services.data_label(a.finding_type, lang) if a.finding_type else "",
-               "location": services.data_label(a.location, lang) if a.location else "",
-               "severity": services.data_label(a.severity, lang) if a.severity else "", "text": a.text,
-               "author": a.author_name, "plane": a.plane, "slice": a.slice_index}
-              for a in (ExpertAnnotation.objects.filter(study=study).order_by("created_at", "id")[:100]
-                        if study is not None else [])]
-    return render(request, "cases/_image_modal.html", {"im": im, "volume": imaging.volume_info(), "expert": expert,
-                                                       "patient": p})
+    expert = [a for a in annotations if a["study"] == im["id"]][:100]
+    return render(request, "cases/_image_modal.html", {"im": im, "expert": expert, "patient": p})
 
 
 @login_required
@@ -178,7 +168,7 @@ def case_editor(request):
         "diag_types": services.FILTER_DIAG_TYPES,
         "outcomes": services.FILTER_OUTCOMES,
         "active_filter_count": len(state["country"]) + len(state["type"]) + len(state["outcome"]) + (1 if state["imaging"] else 0),
-        **_detail_context(selected, lang, tab),
+        **_detail_context(selected, lang, tab, request.user),
     }
     target = request.headers.get("HX-Target") if request.headers.get("HX-Request") else None
     if target == "case-list":

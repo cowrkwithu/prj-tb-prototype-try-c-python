@@ -1,5 +1,11 @@
-{% load static %}{# 영상 상세 모달 본문 — 부모(영상 탭)의 Alpine 상태 showAI·showExpert·slice 를 그대로 쓴다 #}
+{# 영상 상세 모달 본문 — 부모(영상 탭)의 Alpine 상태 showAI·showExpert·slice(축상 단면)를 그대로 쓴다. #}
+{# im = apps.imaging.services.study_view(영상 분석과 같은 직렬화), expert = 이 검사의 볼 수 있는 전문가 소견(annotation_view) #}
+{% if im.kind == "volume" %}{% with vm=im.volume %}
+<div class="viewer" data-image-detail="{{ im.id }}"
+     x-data="{ plane: 'axial', cor: {{ vm.initial.coronal|add:0 }}, mip: 0 }">
+{% endwith %}{% else %}
 <div class="viewer" data-image-detail="{{ im.id }}">
+{% endif %}
   <div class="viewer-toggles">
     <button type="button" class="vt" :class="showAI ? 'on-teal' : ''" @click="showAI = !showAI"
             :data-tip="showAI ? '{% t "AI가 찾은 병변 표시(빨강·노랑 상자)를 숨깁니다." "Hide AI-detected lesion boxes." %}' : '{% t "AI가 찾은 병변 위치를 상자로 영상 위에 표시합니다." "Show AI-detected lesion boxes on the image." %}'">
@@ -7,46 +13,74 @@
     <button type="button" class="vt" :class="showExpert ? 'on-sky' : ''" @click="showExpert = !showExpert" data-testid="expert-toggle"
             :data-tip="showExpert ? '{% t "전문의가 그린 영역·텍스트(하늘색) 표시를 숨깁니다." "Hide the expert-drawn regions and text (sky blue)." %}' : '{% t "영상 분석에서 전문의가 입력한 소견 영역·텍스트를 하늘색으로 표시합니다." "Show expert findings entered in Imaging Analysis, in sky blue." %}'">
       <span x-show="showExpert">{% icon "eye" "w-3 h-3" %}</span><span x-show="!showExpert">{% icon "eye-off" "w-3 h-3" %}</span> {% t "전문가 소견" "Expert Findings" %}</button>
-  </div>
-  {% if im.type == "CXR" %}
-    <div class="cxr-frame">
-      <img src="{% static im.src %}" alt="CXR {{ im.date }}" draggable="false">
-      <div class="cxr-caption"><p>CXR · PA</p><p>{{ im.date }}</p></div>
-      {% for a in im.annotations %}
-        <div class="ann-box" x-show="showAI" style="left:{{ a.x }}%;top:{{ a.y }}%;width:{{ a.width }}%;height:{{ a.height }}%;border-color:{{ a.color }};background:{{ a.color }}20">
-          {% if forloop.first %}<span class="ann-label" style="color:{{ a.color }};background:{{ a.color }}30">{{ im.ann_label }}</span>{% endif %}</div>
+    {% if im.kind == "volume" %}
+      {% for pl in im.volume.planes %}
+        <button type="button" class="vt" :class="plane === '{{ pl|escapejs }}' ? 'on-teal' : ''" @click="plane = '{{ pl|escapejs }}'" data-testid="plane-{{ pl }}">{% if pl == "axial" %}{% t "축상" "Axial" %}{% elif pl == "coronal" %}{% t "관상" "Coronal" %}{% else %}MIP{% endif %}</button>
       {% endfor %}
-    </div>
-  {% else %}
-    {% static im.volume_dir as vdir %}
+    {% endif %}
+  </div>
+  {% if im.kind == "cxr" or im.kind == "upload" %}
     <div class="cxr-frame">
-      <img :src="'{{ vdir }}' + String(slice).padStart(3, '0') + '.jpg'" src="{% static im.src %}" alt="{{ im.type }} {{ im.date }}" draggable="false">
-      <div class="cxr-caption"><p>{{ im.type }} · Axial</p><p x-text="(slice + 1) + ' / {{ volume.axial_count }}'"></p></div>
-      {% with a=im.annotations.0 %}
-        <div class="ann-box" x-show="showAI && slice >= {{ volume.slice_range.0 }} && slice <= {{ volume.slice_range.1 }}" style="left:{{ a.x }}%;top:{{ a.y }}%;width:{{ a.width }}%;height:{{ a.height }}%;border-color:{{ a.color }};background:{{ a.color }}20">
-          <span class="ann-label" style="color:{{ a.color }};background:{{ a.color }}30">{{ im.ann_label }}</span></div>
-      {% endwith %}
+      <img src="{{ im.image }}" alt="{{ im.type }} {{ im.date }}" draggable="false">
+      <div class="cxr-caption"><p>{{ im.type }}{% if im.kind == "cxr" %} · PA{% endif %}</p><p>{{ im.date }}</p></div>
+      {% for r in im.rois %}
+        <div class="ann-box" x-show="showAI" style="left:{{ r.x }}%;top:{{ r.y }}%;width:{{ r.width }}%;height:{{ r.height }}%;border-color:{{ im.ai_color }};background:{{ im.ai_color }}20">
+          {% if forloop.first %}<span class="ann-label" style="color:{{ im.ai_color }};background:{{ im.ai_color }}30">{{ im.ai_label }}</span>{% endif %}</div>
+      {% endfor %}
+      {% for a in expert %}{% if not a.plane %}
+        {% if a.shape == "text" %}<span class="expert-text" x-show="showExpert" style="left:{{ a.x }}%;top:{{ a.y }}%">{{ a.text }}</span>
+        {% else %}<div class="expert-box{% if a.shape == 'ellipse' %} ellipse{% endif %}" x-show="showExpert" style="left:{{ a.x }}%;top:{{ a.y }}%;width:{{ a.width }}%;height:{{ a.height }}%"></div>{% endif %}
+      {% endif %}{% endfor %}
     </div>
-    <input type="range" class="slice-range" min="0" max="{{ volume.axial_count|add:-1 }}" x-model.number="slice" aria-label="{% t '단면' 'Slice' %}">
+  {% elif im.kind == "volume" %}{% with vm=im.volume %}
+    <div class="cxr-frame">
+      <img :src="'{{ vm.dir|escapejs }}' + plane + '/' + String((plane === 'axial' ? slice : (plane === 'coronal' ? cor : mip))).padStart(3, '0') + '.jpg'" src="{{ im.thumb }}" alt="{{ im.type }} {{ im.date }}" draggable="false">
+      <div class="cxr-caption"><p>{{ im.type }} · <span x-text="plane === 'axial' ? 'Axial' : (plane === 'coronal' ? 'Coronal' : 'MIP')"></span></p><p x-text="((plane === 'axial' ? slice : (plane === 'coronal' ? cor : mip)) + 1) + ' / ' + (plane === 'axial' ? {{ vm.counts.axial|add:0 }} : (plane === 'coronal' ? {{ vm.counts.coronal|add:0 }} : {{ vm.counts.mip|add:0 }}))"></p></div>
+      {% if vm.axial_box %}
+        <div class="ann-box" x-show="showAI && plane === 'axial' && slice >= {{ vm.slice_range.0|add:0 }} && slice <= {{ vm.slice_range.1|add:0 }}" style="left:{{ vm.axial_box.x }}%;top:{{ vm.axial_box.y }}%;width:{{ vm.axial_box.width }}%;height:{{ vm.axial_box.height }}%;border-color:{{ im.ai_color }};background:{{ im.ai_color }}20">
+          <span class="ann-label" style="color:{{ im.ai_color }};background:{{ im.ai_color }}30">{{ im.ai_label }}{% if im.suv %} · SUVmax {{ im.suv|floatformat:1 }}{% endif %}</span></div>
+      {% endif %}
+      {% if vm.coronal_box %}
+        <div class="ann-box" x-show="showAI && plane === 'coronal' && {{ im.coronal_rows_js|escapejs }}.indexOf(cor) >= 0" style="left:{{ vm.coronal_box.x }}%;top:{{ vm.coronal_box.y }}%;width:{{ vm.coronal_box.width }}%;height:{{ vm.coronal_box.height }}%;border-color:{{ im.ai_color }};background:{{ im.ai_color }}20">
+          <span class="ann-label" style="color:{{ im.ai_color }};background:{{ im.ai_color }}30">{{ im.ai_label }}</span></div>
+      {% endif %}
+      {% for a in expert %}{% if a.plane %}
+        {% if a.shape == "text" %}<span class="expert-text" x-show="showExpert && plane === '{{ a.plane|escapejs }}' && (plane === 'axial' ? slice : (plane === 'coronal' ? cor : mip)) === {{ a.slice|add:0 }}" style="left:{{ a.x }}%;top:{{ a.y }}%">{{ a.text }}</span>
+        {% else %}<div class="expert-box{% if a.shape == 'ellipse' %} ellipse{% endif %}" x-show="showExpert && plane === '{{ a.plane|escapejs }}' && (plane === 'axial' ? slice : (plane === 'coronal' ? cor : mip)) === {{ a.slice|add:0 }}" style="left:{{ a.x }}%;top:{{ a.y }}%;width:{{ a.width }}%;height:{{ a.height }}%"></div>{% endif %}
+      {% endif %}{% endfor %}
+    </div>
+    <input type="range" class="slice-range" min="0" x-show="plane === 'axial'" max="{{ vm.counts.axial|add:-1 }}" x-model.number="slice" aria-label="{% t '단면' 'Slice' %}">
+    <input type="range" class="slice-range" min="0" x-show="plane === 'coronal'" x-cloak max="{{ vm.counts.coronal|add:-1 }}" x-model.number="cor" aria-label="{% t '관상 단면' 'Coronal slice' %}">
+    <input type="range" class="slice-range" min="0" x-show="plane === 'mip'" x-cloak max="{{ vm.counts.mip|add:-1 }}" x-model.number="mip" aria-label="MIP">
+  {% endwith %}{% else %}
+    <div class="thumb-placeholder viewer-empty" data-testid="no-preview">{% icon "image" "w-8 h-8" %}
+      <span>{% if not im.can_view %}{% t "이 업로드 영상을 볼 권한이 없습니다(제출자·관리자·영상 데이터 접근 승인자만). 메타데이터와 소견만 표시합니다." "You do not have access to this uploaded image (submitter, administrators and approved imaging data requesters only). Only metadata and findings are shown." %}{% else %}{% t "표시할 수 있는 영상 파일(JPG·PNG)이 없습니다 — DICOM 미리보기는 지원하지 않습니다." "No displayable image file (JPG/PNG) — DICOM preview is not supported." %}{% endif %}</span></div>
   {% endif %}
-  <p class="source-note">{% if im.type == "CXR" %}{% t "영상: NLM Shenzhen 결핵 CXR 세트 (판독의 합의 ROI) — 기관 내부 시연용" "Image: NLM Shenzhen TB CXR Set (consensus ROI) — internal demonstration only" %}{% else %}{% t "영상: TCIA Lung-PET-CT-Dx (CC BY 4.0) — 폐암 환자 공개 영상, 결핵 영상 아님" "Image: TCIA Lung-PET-CT-Dx (CC BY 4.0) — public lung cancer study, not tuberculosis" %}{% endif %}</p>
+  {% if im.source %}<p class="source-note">{{ im.source }}</p>{% endif %}
 </div>
 <div class="flex gap-6 flex-wrap text-sm">
   <div><span class="text-muted">{% t "유형:" "Type:" %}</span> <strong>{{ im.type }}</strong></div>
   <div><span class="text-muted">{% t "촬영일:" "Taken:" %}</span> <strong>{{ im.date }}</strong></div>
-  {% if im.suv_max %}<div><span class="text-muted">{% t "FDG 섭취:" "FDG uptake:" %}</span> <strong>SUVmax {{ im.suv_max|floatformat:1 }}</strong></div>{% endif %}
+  {% if im.suv %}<div><span class="text-muted">{% t "FDG 섭취:" "FDG uptake:" %}</span> <strong>SUVmax {{ im.suv|floatformat:1 }}</strong></div>{% endif %}
+  {% if im.tb_activity %}<div><span class="text-muted">{% t "결핵 활동성:" "TB activity:" %}</span> <strong>{{ im.tb_activity }}</strong></div>{% endif %}
+  {% if im.files %}<div><span class="text-muted">{% t "파일:" "Files:" %}</span> {% for f in im.files %}<strong>{{ f.name }}</strong>{% if not forloop.last %}, {% endif %}{% endfor %}</div>{% endif %}
 </div>
+{% if im.description and not im.sample %}<p class="text-sm" data-testid="study-description"><span class="text-muted">{% t "검사 설명:" "Description:" %}</span> {{ im.description }}</p>{% endif %}
+{% if im.impression %}<p class="text-sm"><span class="text-muted">{% t "판독 소견:" "Impression:" %}</span> {{ im.impression }}</p>{% endif %}
 <div class="flex flex-wrap gap-2">
-  {% for f in im.findings_l %}<span class="finding-chip">{{ f.type }} · {{ f.location }} · {{ f.severity }}</span>
+  {% for f in im.findings %}<span class="finding-chip">{{ f.type_l }}{% if f.location_l %} · {{ f.location_l }}{% endif %}{% if f.severity_l %} · {{ f.severity_l }}{% endif %}</span>
   {% empty %}<span class="text-sm text-muted">{% t "소견 없음" "No findings" %}</span>{% endfor %}
 </div>
 <div>
   <h4 class="h4 flex items-center gap-2"><span class="swatch" style="background:#0EA5E9"></span>{% t "전문가 소견" "Expert Findings" %} <span class="text-xs text-muted" data-testid="expert-count">{% if is_en %}({{ expert|length }}){% else %}{{ expert|length }}건{% endif %}</span></h4>
+  {% if im.hidden_expert %}
+    <p class="text-xs text-muted" data-testid="expert-hidden">{% if is_en %}{{ im.hidden_expert }} expert finding(s) on this image are hidden because you cannot view it.{% else %}이 영상을 볼 권한이 없어 전문가 소견 {{ im.hidden_expert }}건의 내용을 표시하지 않습니다.{% endif %}</p>
+  {% endif %}
   {% for a in expert %}
-    <p class="text-xs">{% if a.finding %}<span class="finding-chip">{{ a.finding }}{% if a.location %} · {{ a.location }}{% endif %}{% if a.severity %} · {{ a.severity }}{% endif %}</span>{% endif %}
+    <p class="text-xs">{% if a.finding_l %}<span class="finding-chip">{{ a.finding_l }}{% if a.location_l %} · {{ a.location_l }}{% endif %}{% if a.severity_l %} · {{ a.severity_l }}{% endif %}</span>{% endif %}
       {% if a.text %}{{ a.text }}{% endif %} <span class="text-muted">— {{ a.author }}{% if a.plane %} · {{ a.plane }} {{ a.slice|add:1 }}{% endif %}</span></p>
-  {% empty %}
+  {% empty %}{% if not im.hidden_expert %}
     <p class="text-xs text-muted">{% t "입력된 전문가 소견이 없습니다. 영상 분석 화면에서 영상에 영역을 그려 입력할 수 있습니다." "No expert findings yet. Radiologists can draw on the image in Imaging Analysis to add them." %}</p>
-  {% endfor %}
-  <a class="link-underline text-xs" href="/rap?patient={{ patient.condition_id|urlencode }}">{% t "영상 분석에서 열기" "Open in Imaging Analysis" %}</a>
+  {% endif %}{% endfor %}
+  <a class="link-underline text-xs" href="/rap?patient={{ patient.condition_id|urlencode }}&study={{ im.id }}">{% t "영상 분석에서 열기" "Open in Imaging Analysis" %}</a>
 </div>

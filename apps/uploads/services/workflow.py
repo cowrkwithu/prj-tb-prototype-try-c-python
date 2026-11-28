@@ -9,6 +9,9 @@ from datetime import date
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from apps.core.safejson import strip_bad_chars
+from apps.core.textinput import clean_free_text, free_text_problem
+
 from ..models import Submission, SubmissionEvent, SubmissionFile, SubmissionRecord
 from . import csvio, deidentify, dicom, files, schemas, validators
 
@@ -98,8 +101,13 @@ def record_file_error(sub: Submission, ko: str, en: str) -> None:
     _sync(sub, s)
 
 
-def _txt(v) -> str:
-    return (v or "").strip()[:MAX_TEXT] if isinstance(v, str) else ""
+def form_text(v) -> str:
+    """업로드 웹 폼 입력값(행 검증 전 원값) — NUL·고립 서로게이트는 지운다(PostgreSQL 은 NUL 을 저장하지 못한다.
+    값은 이어서 행 검증을 거치므로 지운 결과도 형식 검사를 받는다)."""
+    return strip_bad_chars(v).strip()[:MAX_TEXT] if isinstance(v, str) else ""
+
+
+_txt = form_text
 
 
 # ─── 폼 → 행 ───
@@ -426,6 +434,7 @@ def submit(sub: Submission, user, checklist: list[str], signer: str = "", confir
         signer = clean_text(signer)
         if len(signer) > 100:
             raise WorkflowError("기관 담당자 서명은 최대 100자까지 입력할 수 있습니다", "The signature can be at most 100 characters")
+        check_text(signer, 100)
         locked.deid_signer = signer
         try:
             locked.deid_date = date.fromisoformat(confirm_date) if confirm_date else timezone.localdate()
@@ -444,22 +453,23 @@ def submit(sub: Submission, user, checklist: list[str], signer: str = "", confir
 
 
 # ─── 검토 (관리자) ───
-_INVISIBLE = dict.fromkeys(map(ord, "\u200b\u200c\u200d\u2060\ufeff\u00ad"), None)
 MAX_COMMENT = 2000
+clean_text = clean_free_text  # 제로폭 문자 제거 + 공백 다듬기(apps.core.textinput)
 
 
-def clean_text(v) -> str:
-    """제로폭 문자(U+200B~U+200D, U+2060, BOM, soft hyphen)를 지우고 공백류를 다듬는다."""
-    return (v or "").translate(_INVISIBLE).strip() if isinstance(v, str) else ""
+def check_text(text: str, max_len: int = MAX_COMMENT) -> str:
+    """자유 텍스트(검토 의견·사유·서명) 공통 검사 — NUL·서로게이트·길이 초과는 WorkflowError."""
+    problem = free_text_problem(text, max_len)
+    if problem:
+        raise WorkflowError(*problem)
+    return text
 
 
 def _reason(raw, ko_empty, en_empty) -> str:
     reason = clean_text(raw)
     if not reason:
         raise WorkflowError(ko_empty, en_empty)
-    if len(reason) > MAX_COMMENT:
-        raise WorkflowError(f"최대 {MAX_COMMENT}자까지 입력할 수 있습니다", f"At most {MAX_COMMENT} characters allowed")
-    return reason
+    return check_text(reason)
 
 
 def is_own_upload(sub: Submission, reviewer) -> bool:
@@ -491,9 +501,7 @@ def approve(sub: Submission, reviewer, checklist: list[str], comment: str = "") 
     _check_reviewer(sub, reviewer)
     if len(checked) != len(schemas.REVIEW_CHECK_ITEMS):
         raise WorkflowError("체크리스트 항목을 모두 확인해야 승인할 수 있습니다.", "Check every checklist item before you can approve.")
-    comment = clean_text(comment)
-    if len(comment) > MAX_COMMENT:
-        raise WorkflowError(f"최대 {MAX_COMMENT}자까지 입력할 수 있습니다", f"At most {MAX_COMMENT} characters allowed")
+    comment = check_text(clean_text(comment))
     with transaction.atomic():
         # 잠금 순서(삭제 승인과 같다): 대상 환자(id 오름차순 한 문장) → 업로드 행. 승인 순서 번호도 이 잠금 안에서.
         lock_patients(patient_ids_for(sub))

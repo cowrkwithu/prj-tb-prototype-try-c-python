@@ -134,8 +134,13 @@ def test_static_assets_copied():
 
 
 def test_sqlite_wal_configured():
-    opts = settings.DATABASES["default"]["OPTIONS"]
-    assert "journal_mode=WAL" in opts["init_command"]
+    db = settings.DATABASES["default"]
+    opts = db["OPTIONS"]
+    if db["ENGINE"] == "django.db.backends.postgresql":
+        # TB_DATABASE_URL 로 PostgreSQL 을 쓸 때는 WAL 대신 잠금 대기 상한(SQLite busy_timeout 대응)이 걸려 있어야 한다
+        assert opts["options"].startswith("-c lock_timeout=")
+    else:
+        assert "journal_mode=WAL" in opts["init_command"] and "busy_timeout=5000" in opts["init_command"]
     assert settings.VAR_DIR == settings.BASE_DIR / "var"
     assert (settings.VAR_DIR / "secret_key").exists() or settings.SECRET_KEY
 

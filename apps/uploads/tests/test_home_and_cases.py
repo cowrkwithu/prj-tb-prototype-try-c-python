@@ -65,10 +65,20 @@ def test_contribution_range_shown(client):
 
 
 def test_case_thumbnails_capped_and_lazy(client, demo_users, seeded_patients):
+    from apps.cases.models import ImagingStudy
+    from apps.cases.imaging import rap_imaging
+    from apps.imaging.services import load_assets
+    from apps.imaging.models import ImagingAsset
+
     client.force_login(demo_users["researcher"])
     p = Patient.objects.get(pk=1)
-    p.cxr_count, p.has_cxr = 60, True
-    p.save()
+    load_assets(rap_imaging())
+    asset = ImagingAsset.objects.filter(kind="cxr").first()
+    ImagingStudy.objects.filter(patient=p).delete()
+    ImagingStudy.objects.bulk_create([ImagingStudy(patient=p, modality="CXR", study_date=f"2024-{1 + k % 12:02d}-01",
+                                                   is_public_sample=True, sample_asset=asset, seed_key=f"t:{k}")
+                                      for k in range(60)])
+    ids = list(ImagingStudy.objects.filter(patient=p).order_by("study_date", "id").values_list("id", flat=True))
     body = client.get("/cases?id=1&tab=1").content.decode()
     assert body.count('class="thumb"') == 24 and 'data-testid="thumb-more"' in body
     assert body.count('data-testid="image-modal"') == 1 and "data-image-detail" not in body  # 모달 본문은 지연 로드
@@ -76,12 +86,12 @@ def test_case_thumbnails_capped_and_lazy(client, demo_users, seeded_patients):
     assert nxt.count('class="thumb"') == 24 and "offset=48" in nxt
     last = client.get("/cases/1/images?offset=48").content.decode()
     assert last.count('class="thumb"') == 12 + 0 and "thumb-more" not in last
-    detail = client.get("/cases/1/images/3").content.decode()
-    assert 'data-image-detail="3"' in detail
+    detail = client.get(f"/cases/1/images/{ids[2]}").content.decode()
+    assert f'data-image-detail="{ids[2]}"' in detail
     assert "전문의가 그린 영역·텍스트(하늘색) 표시를 숨깁니다." in detail
-    assert client.get("/cases/1/images/999").status_code == 404
+    assert client.get("/cases/1/images/9999999").status_code == 404
     client.logout()
-    assert client.get("/cases/1/images/1").status_code == 302
+    assert client.get(f"/cases/1/images/{ids[0]}").status_code == 302
 
 
 def test_dictionary_table_tooltips(client, demo_users, loaded_dictionary):

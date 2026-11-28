@@ -106,8 +106,9 @@ def test_home_english(client, seeded_patients):
 
 
 def test_home_chart_data_is_xss_safe(client, seeded_patients):
-    Patient.objects.filter(pk=1).update(diagnosis_type="</script><script>alert(1)</script>",
+    # diagnosis_type 은 max_length=20 — PostgreSQL 은 길이를 강제하므로 20자 안의 탈출 문자열을 쓴다
+    Patient.objects.filter(pk=1).update(diagnosis_type="</script><script>1/",
                                         country="<img src=x onerror=alert(1)>")
     body = client.get("/").content.decode()
-    assert "</script><script>alert(1)" not in body
+    assert "</script><script>1/" not in body
     assert "<img src=x onerror" not in body

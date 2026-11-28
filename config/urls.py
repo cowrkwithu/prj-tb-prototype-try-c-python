@@ -14,6 +14,7 @@ urlpatterns = [
     path("", include("apps.datasharing.urls")),
     path("", include("apps.genomics.urls")),
     path("", include("apps.imaging.urls")),
+    path("", include("apps.manual.urls")),
     path("", include("apps.core.urls")),
     # 정의되지 않은 주소는 홈으로 (원본: <Route path="*" element={<Navigate to="/" replace />} />)
     re_path(r"^(?!static/|media/).*$", core_views.fallback_redirect),

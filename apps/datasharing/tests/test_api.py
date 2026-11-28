@@ -242,14 +242,24 @@ def test_post_cohort_csrf_exempt_but_cookie_session_cannot_call(demo_users, seed
     assert r.status_code == 201
 
 
-def test_rate_limit(client, api_key, seeded_patients, settings):
+def test_rate_limit(client, api_key, seeded_patients, settings, frozen_api_clock):
     settings.API_RATE_LIMIT_PER_MINUTE = 3
     codes = [client.get("/api/v1/cases", **auth(api_key)).status_code for _ in range(5)]
     assert codes == [200, 200, 200, 429, 429]
     r = client.get("/api/v1/cases", **auth(api_key))
-    assert r.json()["status"] == "rate_limited" and 1 <= int(r["Retry-After"]) <= 61
+    assert r.json()["status"] == "rate_limited" and int(r["Retry-After"]) == 31  # 고정 시각 …:30초 → 다음 창까지
     # 키 없는 요청은 계수와 무관하게 401
     assert client.get("/api/v1/cases").status_code == 401
+
+
+def test_rate_limit_window_resets_at_minute_boundary(client, api_key, seeded_patients, settings, frozen_api_clock):
+    """고정 창(분) 경계 — 다음 분이 되면 계수가 새로 시작한다(시계 고정으로 결정적)."""
+    settings.API_RATE_LIMIT_PER_MINUTE = 2
+    frozen_api_clock.now = 1_800_000_059.9
+    codes = [client.get("/api/v1/cases", **auth(api_key)).status_code for _ in range(3)]
+    frozen_api_clock.now = 1_800_000_060.05
+    codes += [client.get("/api/v1/cases", **auth(api_key)).status_code for _ in range(3)]
+    assert codes == [200, 200, 429, 200, 200, 429]
 
 
 def _imaging_study(demo_users, client):

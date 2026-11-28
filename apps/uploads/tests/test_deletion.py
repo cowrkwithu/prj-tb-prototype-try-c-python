@@ -226,15 +226,16 @@ def test_my_uploads_tab_in_data_page(client, demo_users):
     assert "삭제 요청됨" in client.get("/data?tab=uploads").content.decode()
 
 
-def test_duplicate_sha256_rejected_within_submission(client, demo_users):
+def test_duplicate_sha256_rejected_within_submission(client, demo_users, django_capture_on_commit_callbacks):
     client.force_login(demo_users["researcher"])
     data = make_fastq_gz("@dup\nACGT\n+\nIIII\n")
     r = client.post("/upload/genomic/files", {"mode": "individual",
                                               "files": [SimpleUploadedFile("a.fq.gz", data, content_type="application/gzip")]})
     uid = upload_id_from(r)
-    r = client.post("/upload/genomic/files", {"id": uid, "files": [SimpleUploadedFile("b.fq.gz", data,
-                                                                                      content_type="application/gzip")]},
-                    follow=True)
+    with django_capture_on_commit_callbacks(execute=True):  # 거부된 사본 파일은 커밋 뒤에 지운다
+        r = client.post("/upload/genomic/files", {"id": uid, "files": [SimpleUploadedFile("b.fq.gz", data,
+                                                                                          content_type="application/gzip")]},
+                        follow=True)
     sub = Submission.objects.get(upload_id=uid)
     assert sub.files.count() == 1 and "같은 내용의 파일이 이미 이 업로드에 있습니다" in r.content.decode()
     stored = [f for f in os.listdir(sub.files.get().file.path.rsplit(os.sep, 1)[0])]

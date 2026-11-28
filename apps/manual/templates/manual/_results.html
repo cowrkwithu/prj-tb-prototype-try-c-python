@@ -1,0 +1,55 @@
+{# 검색 결과 + (검색어 없을 때) 목차 — HTMX 실시간 검색이 이 부분만 바꾼다. 검색 중에는 일치한 대주제·소주제를 모두 펼친다(원본). #}
+{% load static %}
+{% if not q %}
+  <nav class="manual-toc" x-data aria-label="{% t '목차' 'Contents' %}" data-testid="manual-toc">
+    {% for s in toc %}
+      <button type="button" class="manual-toc-item" data-tip="{% if is_en %}Open the &quot;{{ s.title_en }}&quot; chapter and scroll to it.{% else %}'{{ s.title_ko }}' 장을 펼치고 그 위치로 이동합니다.{% endif %}"
+              @click="$dispatch('manual-open', '{{ s.key|escapejs }}'); $nextTick(() => { const el = document.getElementById('sec-{{ s.key|escapejs }}'); el && el.scrollIntoView({ behavior: 'smooth', block: 'start' }) })">
+        {% icon s.icon "w-5 h-5 text-teal" %}<span>{{ s.title }}</span>
+      </button>
+    {% endfor %}
+  </nav>
+{% endif %}
+<div class="manual-sections">
+  {% for s in sections %}
+    <section class="manual-section" id="sec-{{ s.key }}" data-section="{{ s.key }}"
+             x-data="{ open: {% if q or forloop.first %}true{% else %}false{% endif %} }" @manual-open.window="if ($event.detail === '{{ s.key|escapejs }}') open = true">
+      <button type="button" class="manual-section-head" @click="open = !open" :aria-expanded="open.toString()"
+              :data-tip="open ? '{% t "이 장의 소주제 목록을 접습니다." "Collapse the list of topics in this chapter." %}' : '{% t "이 장을 펼쳐 소주제 목록을 보여줍니다." "Expand this chapter to show its topics." %}'">
+        <span class="manual-no">{{ s.no }}</span>{% icon s.icon "w-5 h-5 text-navy shrink-0" %}
+        <span class="flex-1 min-w-0"><span class="block text-sm font-semibold">{{ s.title }}</span><span class="block text-xs text-muted truncate">{{ s.summary }}</span></span>
+        <span x-show="open" {% if not q and not forloop.first %}x-cloak{% endif %}>{% icon "chevron-down" "w-4 h-4 text-muted" %}</span><span x-show="!open" {% if q or forloop.first %}x-cloak{% endif %}>{% icon "chevron-right" "w-4 h-4 text-muted" %}</span>
+      </button>
+      <div class="manual-topics" x-show="open" {% if not q and not forloop.first %}x-cloak{% endif %}>
+        {% for t in s.topics %}
+          <div class="manual-topic" x-data="{ open: {% if q %}true{% else %}false{% endif %} }" data-topic="{{ t.key }}">
+            <button type="button" class="manual-topic-head" @click="open = !open" :aria-expanded="open.toString()"
+                    :data-tip="open ? '{% t "이 소주제의 설명을 접습니다." "Collapse the explanation for this topic." %}' : '{% t "이 소주제를 펼쳐 자세한 사용 방법을 보여줍니다." "Expand this topic to show detailed instructions." %}'">
+              {% icon "corner-down-right" "w-3_5 h-3_5 text-muted shrink-0" %}<span class="flex-1 text-sm font-medium">{{ t.title }}</span>
+              <span x-show="open" {% if not q %}x-cloak{% endif %}>{% icon "chevron-down" "w-3_5 h-3_5 text-muted" %}</span><span x-show="!open" {% if q %}x-cloak{% endif %}>{% icon "chevron-right" "w-3_5 h-3_5 text-muted" %}</span>
+            </button>
+            <div class="manual-topic-body" x-show="open" {% if not q %}x-cloak{% endif %}>
+              {% for b in t.blocks %}
+                {% if b.kind == "paragraph" %}<p class="manual-p">{{ b.text }}</p>
+                {% elif b.kind == "steps" %}<ol class="manual-steps">{% for it in b.items %}<li><span class="manual-step-no">{{ forloop.counter }}</span><span>{{ it }}</span></li>{% endfor %}</ol>
+                {% elif b.kind == "list" %}<ul class="manual-list">{% for it in b.items %}<li><span class="manual-dot"></span><span>{{ it }}</span></li>{% endfor %}</ul>
+                {% elif b.kind == "table" %}<div class="table-wrap manual-table"><table class="table table-compact"><thead><tr>{% for h in b.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+                  <tbody>{% for r in b.rows %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+                {% elif b.kind == "note" %}<div class="manual-note">{% icon "info" "w-4 h-4 text-teal shrink-0" %}<p>{{ b.text }}</p></div>
+                {% elif b.kind == "path" %}<p class="text-xs"><span class="text-muted">{{ b.label }}: </span><span class="font-medium text-navy">{{ b.value }}</span></p>
+                {% elif b.kind == "image" %}<figure class="manual-figure"><img src="{% static b.src %}" alt="{{ b.caption }}" loading="lazy"><figcaption>{{ b.caption }}</figcaption></figure>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% empty %}
+    <div class="empty-state" data-testid="manual-empty">
+      {% icon "info" "w-12 h-12" %}
+      {% if q %}<p class="text-muted">{% if is_en %}"{{ q }}" — no results found.{% else %}"{{ q }}"에 대한 검색 결과가 없습니다.{% endif %}</p>
+      {% else %}<p class="text-muted">{% t "등록된 매뉴얼이 없습니다. (python manage.py load_manual)" "No manual content loaded. (python manage.py load_manual)" %}</p>{% endif %}
+    </div>
+  {% endfor %}
+</div>

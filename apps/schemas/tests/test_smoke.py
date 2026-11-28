@@ -20,9 +20,12 @@ def test_pages_render(researcher_client, seeded_schemas, seeded_patients):
 
 @pytest.mark.django_db
 def test_admin_pages_render(admin_client_portal, seeded_schemas):
+    from apps.dictionary.models import DictionaryCategory
+
+    cat_pk = DictionaryCategory.objects.order_by("pk").values_list("pk", flat=True).first()  # PostgreSQL 은 테스트마다 시퀀스가 이어진다(1 고정 불가)
     for url in ["/admin/schemas", "/admin/schemas?status=published&q=PFT", "/admin/schemas/schema-001", "/admin/schemas/schema-004/confirm?action=publish",
                 "/admin/dictionary", "/admin/dictionary?cat=soc&dep=1", "/admin/dictionary?view=versions", "/admin/dictionary?view=history",
-                "/admin/dictionary/category/modal", "/admin/dictionary/entry/modal?cat=1", "/schemas/schema-004/edit", "/schemas/schema-001/data?method=edit"]:
+                "/admin/dictionary/category/modal", f"/admin/dictionary/entry/modal?cat={cat_pk}", "/schemas/schema-004/edit", "/schemas/schema-001/data?method=edit"]:
         r = admin_client_portal.get(url)
         assert r.status_code == 200, (url, r.status_code)
 

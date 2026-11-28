@@ -398,14 +398,20 @@ PRE = {"genomic": "sequence", "imaging": "imaging", "regimen": "regimen", "lab":
 
 class _Clock:
     """승인 시각 충돌·역전 흉내 — 'fixed' 는 모든 시각이 같고, 'reverse' 는 부를 때마다 1초씩 과거로 간다.
-    정렬이 reviewed_at 이 아니라 approval_seq 만 쓰는지 본다."""
+    정렬이 reviewed_at 이 아니라 approval_seq 만 쓰는지 본다. 'forward' 는 1초씩 앞으로 가는 평범한 시계.
+
+    시작 시각은 실제 현재가 아니라 오늘 정오(현지 시각)로 고정한다 — 촬영일이 빈 영상은 승인일로 채워지므로,
+    자정 근처에서 시작하면 두 시나리오(W1/W2) 사이에 승인일이 하루 갈려 불변식 비교가 시각 때문에 실패한다."""
 
     def __init__(self, mode):
-        self.mode, self.t = mode, timezone.now()
+        noon = timezone.localtime().replace(hour=12, minute=0, second=0, microsecond=0)
+        self.mode, self.t = mode, noon
 
     def __call__(self):
         if self.mode == "reverse":
             self.t -= datetime.timedelta(seconds=1)
+        elif self.mode == "forward":
+            self.t += datetime.timedelta(seconds=1)
         return self.t
 
 
@@ -420,7 +426,6 @@ def test_random_scenarios(users, seed, monkeypatch):
             s["resubmit"] = True
     order = rng.sample(range(n), rng.randint(1, n))
     pre = {rng.choice([P2, P3]): [PRE[domain]]} if rng.random() < 0.4 else None
-    clock = rng.choice([None, None, "fixed", "reverse"])
-    if clock:
-        monkeypatch.setattr(timezone, "now", _Clock(clock))
+    clock = rng.choice(["forward", "forward", "fixed", "reverse"])
+    monkeypatch.setattr(timezone, "now", _Clock(clock))
     check(users, specs, order, pre=pre)

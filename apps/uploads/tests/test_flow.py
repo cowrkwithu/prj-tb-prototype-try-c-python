@@ -300,7 +300,9 @@ def test_imaging_e2e_dicom_check_and_counts(client, demo_users, seeded_patients)
     st = ImagingStudy.objects.get(patient=p)
     assert st.modality == "CXR" and st.findings[0]["finding"] == "Cavity" and st.files.count() == 1
     body = client.get(f"/cases?id={p.pk}&tab=1").content.decode()
-    assert 'data-testid="imaging-studies"' in body and "Initial CXR" in body
+    # 5단계: 영상 탭은 DB 검사 목록(RAP 과 같음) — 승인된 업로드 검사가 썸네일로, 설명은 상세 모달에
+    assert f'data-image="{st.pk}"' in body and 'data-testid="thumb-upload"' in body
+    assert "Initial CXR" in client.get(f"/cases/{p.pk}/images/{st.pk}").content.decode()
     assert dashboard.contribution_stats()[3]["count"] == 1  # 홈 '영상 업로드' 기여(최근 30일)
 
 
@@ -405,12 +407,13 @@ def test_permissions(client, demo_users, other_researcher):
     assert Submission.objects.get(pk=sub.pk).status == "pending"
 
 
-def test_my_uploads_delete_and_deletion_request(client, demo_users):
+def test_my_uploads_delete_and_deletion_request(client, demo_users, django_capture_on_commit_callbacks):
     client.force_login(demo_users["researcher"])
     r = client.post("/upload/clinical/csv", {"mode": "csv", "file": csv_upload("clinical_deidentified.csv")})
     draft_uid = upload_id_from(r)
     stored = Submission.objects.get(upload_id=draft_uid).files.get().file.path
-    client.post(f"/upload/mine/{draft_uid}/delete")
+    with django_capture_on_commit_callbacks(execute=True):  # 파일은 행 삭제가 커밋된 뒤에 지운다
+        client.post(f"/upload/mine/{draft_uid}/delete")
     assert not Submission.objects.filter(upload_id=draft_uid).exists()
     import os
 

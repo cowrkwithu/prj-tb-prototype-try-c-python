@@ -13,6 +13,12 @@ def has_bad_chars(s: str) -> bool:
     return bool(BAD_CHARS.search(s))
 
 
+def strip_bad_chars(s: str) -> str:
+    """서로게이트·NUL 을 지운 문자열 — 오류 안내(검사 결과의 입력값 표시)처럼 '이미 거부한 값'을 기록할 때만 쓴다.
+    PostgreSQL 은 text/jsonb 에 NUL(\\u0000)을 저장하지 못한다(SQLite 는 저장하지만 화면 출력·내보내기에서 문제가 된다)."""
+    return BAD_CHARS.sub("", s)
+
+
 def loads_user_json(text: str):
     """json.loads + 결과 전체(객체 키·문자열 값, 재귀)에 서로게이트·NUL 이 있으면 ValueError.
 

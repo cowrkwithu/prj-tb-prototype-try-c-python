@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST, require_safe
 
 from apps.accounts.decorators import login_required
+from apps.core.filetx import atomic_write
 from apps.core.i18n import get_lang, t
 from apps.core.safejson import loads_user_json
 
@@ -575,6 +576,7 @@ def data_entry(request, schema_id):
 
 @login_required
 @require_POST
+@atomic_write  # 오래된 입력 정리 + 첨부 저장 + 검사 결과 저장을 한 커밋으로(실패 시 새 첨부 파일도 지움)
 def data_check(request, schema_id):
     schema = _schema_or_404(request, schema_id)
     if not services.can_enter_data(request.user, schema):

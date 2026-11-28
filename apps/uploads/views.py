@@ -18,7 +18,9 @@ from django.views.decorators.http import require_POST, require_safe
 
 from apps.accounts.decorators import login_required
 from apps.accounts.utils import safe_next
+from apps.core.filetx import atomic_write
 from apps.core.i18n import get_lang, t, tr_pair
+from apps.core.safejson import has_bad_chars
 from apps.core.views import render_page
 
 from .models import Submission, SubmissionFile
@@ -98,6 +100,8 @@ def _domain_or_404(domain):
 
 
 def _own_submission(request, uid, domain=None) -> Submission:
+    if not isinstance(uid, str) or has_bad_chars(uid):  # NUL 이 든 ID 는 없다(PostgreSQL 은 비교 시 DataError)
+        raise Http404
     qs = Submission.objects.filter(submitter=request.user)
     if domain:
         qs = qs.filter(domain=domain)
@@ -337,11 +341,12 @@ def _load_or_create(request, domain, require_mode_csv=None) -> Submission | None
     if require_mode_csv is not None and schemas.uses_csv(domain, mode) != require_mode_csv:
         _err(request, "업로드 방식이 맞지 않습니다", "Upload method mismatch")
         return None
-    return workflow.create_draft(request.user, domain, mode, (request.POST.get("condition_id") or "").strip()[:40])
+    return workflow.create_draft(request.user, domain, mode, workflow.form_text(request.POST.get("condition_id"))[:40])
 
 
 @login_required
 @require_POST
+@atomic_write  # 요청 1건 = 커밋 1번(503 '저장되지 않았습니다' 보장, 실패 시 새 파일 정리)
 def choose_mode(request, domain):
     """방식 선택(0단계) — 기존 draft 의 방식을 바꾸면 입력한 행·CSV 는 비운다."""
     domain = _domain_or_404(domain)
@@ -369,6 +374,7 @@ def _edit_failed(request, domain, sub, exc):
 
 @login_required
 @require_POST
+@atomic_write  # 요청 1건 = 커밋 1번(503 '저장되지 않았습니다' 보장, 실패 시 새 파일 정리)
 def save_data(request, domain):
     """웹 폼 입력(임상·레지멘·검사실·유전체 메타데이터·영상 어노테이션) — 임시저장 또는 다음 단계."""
     domain = _domain_or_404(domain)
@@ -407,6 +413,7 @@ def _aborted_redirect(request, domain):
 
 @login_required
 @require_POST
+@atomic_write  # 요청 1건 = 커밋 1번(503 '저장되지 않았습니다' 보장, 실패 시 새 파일 정리)
 def upload_csv(request, domain):
     domain = _domain_or_404(domain)
     if _upload_aborted(request):
@@ -434,6 +441,7 @@ def upload_csv(request, domain):
 
 @login_required
 @require_POST
+@atomic_write  # 요청 1건 = 커밋 1번(503 '저장되지 않았습니다' 보장, 실패 시 새 파일 정리)
 def proceed(request, domain):
     """CSV 데이터·파일·DICOM 단계에서 다음 단계로."""
     domain = _domain_or_404(domain)
@@ -463,6 +471,7 @@ def proceed(request, domain):
 
 @login_required
 @require_POST
+@atomic_write  # 요청 1건 = 커밋 1번(503 '저장되지 않았습니다' 보장, 실패 시 새 파일 정리)
 def upload_files(request, domain):
     """시퀀스(유전체)·영상 파일 추가 + (영상) Condition ID·촬영일.
 
@@ -523,8 +532,11 @@ def upload_files(request, domain):
 
 @login_required
 @require_POST
+@atomic_write  # 요청 1건 = 커밋 1번(503 '저장되지 않았습니다' 보장, 실패 시 새 파일 정리)
 def remove_file(request, domain, file_id):
     domain = _domain_or_404(domain)
+    if "files" not in [k for k, _ in schemas.STEPS[domain]]:  # 파일 단계가 없는 도메인(임상 등) — 500 대신 404
+        raise Http404
     sub = _own_submission(request, request.POST.get("id", ""), domain)
     if sub.status != Submission.Status.DRAFT:
         raise Http404
@@ -537,6 +549,7 @@ def remove_file(request, domain, file_id):
 
 @login_required
 @require_POST
+@atomic_write  # 요청 1건 = 커밋 1번(503 '저장되지 않았습니다' 보장, 실패 시 새 파일 정리)
 def submit(request, domain):
     domain = _domain_or_404(domain)
     sub = _own_submission(request, request.POST.get("id", ""), domain)
@@ -639,6 +652,7 @@ def my_uploads(request):
 
 @login_required
 @require_POST
+@atomic_write  # 요청 1건 = 커밋 1번(503 '저장되지 않았습니다' 보장, 실패 시 새 파일 정리)
 def my_delete(request, uid):
     sub = _own_submission(request, uid)
     try:
@@ -658,6 +672,7 @@ def my_delete(request, uid):
 
 @login_required
 @require_POST
+@atomic_write  # 요청 1건 = 커밋 1번(503 '저장되지 않았습니다' 보장, 실패 시 새 파일 정리)
 def my_resubmit(request, uid):
     sub = _own_submission(request, uid)
     try:

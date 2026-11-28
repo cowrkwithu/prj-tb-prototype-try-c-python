@@ -306,7 +306,7 @@ def test_length_and_format_validation(client, demo_users):
 
 
 # ─── 11. 삭제 실패 파일 기록과 cleanup_media ───
-def test_orphan_file_recorded_and_cleaned(client, demo_users, monkeypatch, _media_tmp):
+def test_orphan_file_recorded_and_cleaned(client, demo_users, monkeypatch, _media_tmp, django_capture_on_commit_callbacks):
     client.force_login(demo_users["researcher"])
     r = client.post("/upload/genomic/files", {"mode": "individual",
                                               "files": [SimpleUploadedFile("a.fq.gz", make_fastq_gz(), content_type="application/gzip")]})
@@ -318,7 +318,8 @@ def test_orphan_file_recorded_and_cleaned(client, demo_users, monkeypatch, _medi
         raise PermissionError("[WinError 32] 다른 프로세스가 파일을 사용 중")
 
     monkeypatch.setattr(Path, "unlink", locked)
-    client.post(f"/upload/mine/{uid}/delete")
+    with django_capture_on_commit_callbacks(execute=True):  # 파일 삭제는 커밋 뒤
+        client.post(f"/upload/mine/{uid}/delete")
     assert not Submission.objects.filter(upload_id=uid).exists() and path.exists()
     o = OrphanFile.objects.get()
     assert "WinError 32" in o.reason

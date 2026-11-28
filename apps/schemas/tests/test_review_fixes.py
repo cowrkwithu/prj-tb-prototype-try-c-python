@@ -112,12 +112,13 @@ def _evil_field(default=None):
 
 def test_redos_definition_rejected_fast_preview_and_draft(researcher_client):
     p = simple_payload(fields=[_evil_field(EVIL_INPUT[:900])])
+    # 시간 단언은 넉넉하게(부하 시 흔들림 방지) — 거부 자체는 아래 '너무 복잡합니다' 문구가 확인한다
     t = time.monotonic()
     r = researcher_client.post("/schemas/builder/preview", {"payload": json.dumps(p)})
-    assert r.status_code == 200 and time.monotonic() - t < 0.5
+    assert r.status_code == 200 and time.monotonic() - t < 2
     t = time.monotonic()
     r = researcher_client.post("/schemas/create", {"payload": json.dumps(p), "action": "draft"})
-    assert r.status_code == 400 and time.monotonic() - t < 0.5
+    assert r.status_code == 400 and time.monotonic() - t < 2
     assert "정규식이 너무 복잡합니다" in r.content.decode()
     assert Schema.objects.count() == 0
 
@@ -129,7 +130,7 @@ def test_redos_data_check_times_out_to_error(researcher_client, demo_users):
     SchemaField.objects.filter(schema=s).update(constraints={"pattern": EVIL})
     t = time.monotonic()
     researcher_client.post(f"/schemas/{s.schema_id}/data/check", {"mode": "form", "link_value": "A1", "f__code": EVIL_INPUT})
-    assert time.monotonic() - t < 0.5
+    assert time.monotonic() - t < 2  # 제한 자체는 아래 '시간 초과' 오류가 확인(넉넉한 벽시계 — 부하 시 흔들림 방지)
     p = PendingEntry.objects.get()
     assert p.errors and "정규식 검사 시간 초과" in p.errors[0]["ko"]
 

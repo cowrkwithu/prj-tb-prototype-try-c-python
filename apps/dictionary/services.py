@@ -349,13 +349,15 @@ FIELD_UPDATE_COLS = ("category", "field_name", "display_name", "display_name_en"
                      "data_type", "constraints", "options", "cdisc_mapping", "order", "is_standard", "is_deprecated")
 
 
-def load_dictionary(path: Path, force: bool = False) -> dict:
+def load_dictionary(path: Path, force: bool = False, on_loaded=None) -> dict:
     """엑셀을 DB 에 적재한다.
 
     - 적재 기록(SeedLog)이 있으면 건너뛴다(멱등, 관리자 편집 보존). force=True 면 다시 반영한다.
     - 같은 버전을 다시 반영할 때는 지우고 새로 만들지 않고 UDE 기준으로 갱신한다(update_or_create).
       엑셀에서 사라진 항목은 삭제하지 않고 is_deprecated=True — 이후 단계의 FK 참조가 CASCADE 로 지워지지 않게.
     - 다른 버전의 엑셀이면 새 DictionaryVersion 을 만들고 현행(is_active)으로 바꾼다. 이전 버전 행은 그대로 둔다.
+    - on_loaded(result): 같은 트랜잭션 안에서 이어서 할 쓰기(관리자 업로드의 원본 파일명·변경 이력 — 한 번에 커밋).
+      엑셀 파싱은 트랜잭션 밖(쓰기 잠금을 오래 잡지 않게).
     """
     from .models import DictionaryCategory, DictionaryField, DictionaryVersion
 
@@ -409,6 +411,8 @@ def load_dictionary(path: Path, force: bool = False) -> dict:
                   "created": len(to_create), "updated": len(to_update), "deprecated": len(gone),
                   "carried_custom": carried}
         mark_seeded(DATASET, {k: result[k] for k in ("version", "created", "updated", "deprecated")})
+        if on_loaded is not None:
+            on_loaded(result)
     return result
 
 

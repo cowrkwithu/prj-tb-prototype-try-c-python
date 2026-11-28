@@ -60,7 +60,14 @@ def deletion_detail(request, uid):
 
 
 def _action(request, uid, approve: bool):
-    sub = get_object_or_404(Submission, upload_id=uid)
+    try:
+        sub = get_object_or_404(Submission, upload_id=uid)
+    except DatabaseError:  # 다른 처리의 쓰기 잠금과 겹친 첫 조회 — 아래와 같은 안내
+        logger.exception("deletion lookup failed for %s", uid)
+        messages.error(request, t(request, "다른 처리와 겹쳐 삭제 요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.",
+                                  "The deletion request could not be processed because it overlapped with another "
+                                  "operation. Please try again shortly."))
+        return redirect("/admin/deletions")
     try:
         if approve:
             deletion.approve_deletion(sub, request.user)

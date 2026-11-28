@@ -83,11 +83,18 @@ def _s(v) -> str:
     return v.strip() if isinstance(v, str) else ""
 
 
-def clean_rows(sub: Submission) -> tuple[list[tuple[int, dict]], list[dict]]:
-    """(행번호, 정리된 행) 목록과 버린 필드 목록. 오류 행은 제외."""
+def clean_rows(sub: Submission, condition_ids=None) -> tuple[list[tuple[int, dict]], list[dict]]:
+    """(행번호, 정리된 행) 목록과 버린 필드 목록. 오류 행은 제외.
+
+    condition_ids 를 주면 그 대상자 행만 읽어 정리한다(삭제 재적용·관련 업로드 탐색 — 5단계 성능 이월).
+    정리(clean_row)는 condition_id 를 바꾸지 않거나(규칙 통과) 빈 값으로 만들 뿐(위반 → 그 행은 이미 error)이라
+    'DB 에서 원래 condition_id 로 거른 뒤 정리' == '전부 정리한 뒤 정리된 condition_id 로 거름' 이다."""
     form = sub.method != Submission.Method.CSV
     rows, dropped = [], []
-    for rec in sub.records.order_by("row_no"):
+    records = sub.records.order_by("row_no")
+    if condition_ids is not None:
+        records = records.filter(payload__condition_id__in=sorted({c for c in condition_ids if isinstance(c, str)}))
+    for rec in records:
         if rec.status == "error":
             continue
         clean, d = clean_row(sub.domain, rec.payload, rec.row_no, form)
@@ -113,6 +120,7 @@ class Scope:
     def __init__(self, sub: Submission, only=None, replay: bool = False):
         self.only = set(only) if only is not None else None
         self.replay = replay
+        self.total_rows = 0  # 오류 아닌 전체 행 수(apply_submission 이 채운다)
         self.skipped_rows = skipped_rows(sub) if replay else set()
 
     def target(self, patients: dict, cid, row_no: int):
@@ -131,10 +139,11 @@ def skipped_rows(sub: Submission) -> set[int]:
         if isinstance(items, list) else set()
 
 
-def touched_condition_ids(sub: Submission, rows=None) -> set[str]:
-    """이 업로드가 반영 대상으로 삼은 대상자 ID(오류 행·승인 당시 미등록으로 건너뛴 행 제외)."""
+def touched_condition_ids(sub: Submission, rows=None, within=None) -> set[str]:
+    """이 업로드가 반영 대상으로 삼은 대상자 ID(오류 행·승인 당시 미등록으로 건너뛴 행 제외).
+    within(대상자 ID 집합)을 주면 그 안에서만 찾는다 — 결과는 '전체 결과 ∩ within' 과 같다."""
     if rows is None:
-        rows, _ = clean_rows(sub)
+        rows, _ = clean_rows(sub, within)
     skip = skipped_rows(sub) if sub.status == Submission.Status.APPROVED else set()
     return {r.get("condition_id") for i, r in rows if i not in skip and isinstance(r.get("condition_id"), str)
             and r.get("condition_id")}
@@ -178,10 +187,20 @@ def apply_submission(sub: Submission, only=None, replay: bool = False) -> dict:
     호출자는 대상 환자 행을 먼저 잠근다(workflow.approve · deletion.approve_deletion — 환자 id 오름차순 한 문장)."""
     if replay and sub.domain == "clinical":
         raise ValueError("clinical uploads are not replayed")  # 임상 덮어쓰기는 되돌릴 기록이 없다
-    rows, dropped = clean_rows(sub)
-    handler = {"clinical": _clinical, "regimen": _regimen, "lab": _lab, "genomic": _genomic, "imaging": _imaging}[sub.domain]
     scope = Scope(sub, only, replay)
-    summary = {"created": 0, "updated": 0, "skipped": [], "duplicates": [], "dropped": dropped, "rows": len(rows)}
+    if scope.only is not None:
+        # 재적용: 대상 환자 행만 읽어 정리한다(나머지 행은 scope.target 이 어차피 건너뛴다).
+        # 시퀀스 파일 매칭은 전체 행 수 기준(files_for_row)이라 그 수는 따로 센다.
+        cids = Patient.objects.filter(pk__in=sorted(scope.only)).values_list("condition_id", flat=True)
+        rows, dropped = clean_rows(sub, list(cids))
+        scope.total_rows = sub.records.exclude(status="error").count()
+    else:
+        rows, dropped = clean_rows(sub)
+        scope.total_rows = len(rows)
+    handler = {"clinical": _clinical, "regimen": _regimen, "lab": _lab, "genomic": _genomic, "imaging": _imaging}[sub.domain]
+    # 재적용(only)의 요약은 대상 환자 행만 담는다(dropped·skipped 등) — 호출자(deletion._replay)는 요약을 버린다.
+    summary = {"created": 0, "updated": 0, "skipped": [], "duplicates": [], "dropped": dropped,
+               "rows": scope.total_rows}
     # recompute 표지 — 없으면 '재계산 규칙 이전에 승인된 건'(예전 건)으로 보고 삭제 시 다시 적용하지 않는다(services.deletion)
     summary["recompute"] = 1
     if sub.domain == "genomic":
@@ -346,6 +365,7 @@ def _lab(sub, rows, summary, scope):
     today = timezone.localdate()
     profiles = []
     touched = set()
+    cache = _BiochemCache()
     for i, r in sorted(rows, key=lambda t: t[1].get("specimen_date", "")):
         cid = r.get("condition_id", "")
         p, ignore = scope.target(patients, cid, i)
@@ -356,7 +376,7 @@ def _lab(sub, rows, summary, scope):
             continue
         if not scope.replay:  # 도말·배양·DST 는 최신값 병합이라 재적용 대상이 아니다(되돌리지 않음)
             _lab_merge(p, r, cid, profiles)
-        _biochem(sub, p, r, i, cid, summary)
+        _biochem(sub, p, r, i, cid, summary, cache)
         p.last_update_date = today
         touched.add(p.pk)
     for p in patients.values():
@@ -386,8 +406,34 @@ def _lab_merge(p, r, cid, profiles) -> None:
         profiles.append({"condition_id": cid, "specimen_id": r.get("specimen_id", ""), "ko": ko, "en": en})
 
 
-def _biochem(sub, p, r, i, cid, summary) -> None:
+class _BiochemCache:
+    """apply_submission 1회 동안 환자별 생화학 행을 메모리에 들고 (항목, 검사일, 결과) 로 찾는다(5단계 성능).
+
+    예전에는 항목마다 조회·update_or_create·개수 세기·순서 저장으로 쿼리 약 9개를 썼다 — 1000행×8 업로드 삭제 재적용이
+    수십 초 걸린 주원인. 행 잠금은 호출자가 환자 행으로 이미 잡았으므로(lock_patients) 호출 동안 다른 쓰기가 끼어들지 않는다.
+    같은 키가 여러 개면 id 가 가장 작은 행을 쓴다(예전 '직전 값' 조회와 같은 기준)."""
+
+    FIELDS = ("pk", "test", "measured_on", "value", "reference_range", "flag", "submission_id")
+
+    def __init__(self):
+        self.rows: dict[int, dict] = {}
+        self.counts: dict[int, int] = {}
+
+    def for_patient(self, p) -> dict:
+        if p.pk not in self.rows:
+            found: dict = {}
+            n = 0
+            for row in BiochemResult.objects.filter(patient=p).order_by("id").values(*self.FIELDS):
+                n += 1
+                found.setdefault((row["test"], row["measured_on"], row["value"]), row)
+            self.rows[p.pk], self.counts[p.pk] = found, n
+        return self.rows[p.pk]
+
+
+def _biochem(sub, p, r, i, cid, summary, cache: _BiochemCache | None = None) -> None:
     """생화학 (환자, 항목, 검사일, 결과) upsert — 새 행은 이 업로드 소유(submission FK)."""
+    cache = cache or _BiochemCache()
+    rows = cache.for_patient(p)
     for b in r.get("biochemistry") or []:
         ref = BIOCHEM_REF.get(b.get("test", ""))
         val = _float(b.get("value"))
@@ -396,25 +442,30 @@ def _biochem(sub, p, r, i, cid, summary) -> None:
             flag = "H" if val > ref[2] else ("L" if val < ref[1] else "")
         value = f"{b.get('value', '')} {b.get('unit', '')}".strip()
         measured = _d(b.get("date")) or _d(r.get("specimen_date"))
-        lookup = {"patient": p, "test": b.get("test", ""), "measured_on": measured, "value": value}
+        test = b.get("test", "")
         new_vals = {"reference_range": ref[0] if ref else "", "flag": flag}
-        before = (BiochemResult.objects.filter(**lookup).order_by("id")
-                  .values("pk", "reference_range", "flag", "submission_id").first())
-        obj, created = BiochemResult.objects.update_or_create(**lookup, defaults=new_vals,
-                                                              create_defaults={**new_vals, "submission": sub})
-        summary["biochem_values"][str(obj.pk)] = dict(new_vals)  # 이력용(승인 당시 쓴 값)
-        if created:
-            obj.order = BiochemResult.objects.filter(patient=p).count()
-            obj.save(update_fields=["order"])
+        hit = rows.get((test, measured, value))
+        if hit is None:
+            cache.counts[p.pk] += 1  # 표시 순서 = 만든 뒤 그 환자의 행 수(예전과 같은 값)
+            obj = BiochemResult.objects.create(patient=p, test=test, measured_on=measured, value=value, submission=sub,
+                                               order=cache.counts[p.pk], **new_vals)
+            rows[(test, measured, value)] = {"pk": obj.pk, "test": test, "measured_on": measured, "value": value,
+                                             "submission_id": sub.pk, **new_vals}
+            summary["biochem_values"][str(obj.pk)] = dict(new_vals)  # 이력용(승인 당시 쓴 값)
             summary.setdefault("created_biochem_ids", []).append(obj.pk)
             continue
-        if obj.submission_id != sub.pk:
-            _share(summary, "shared_biochem_ids", [obj.pk])  # 이력용
-        if before and before["pk"] == obj.pk and before["submission_id"] is None:
+        before = dict(hit)
+        if (hit["reference_range"], hit["flag"]) != (new_vals["reference_range"], new_vals["flag"]):
+            BiochemResult.objects.filter(pk=hit["pk"]).update(**new_vals)
+            hit.update(new_vals)
+        summary["biochem_values"][str(hit["pk"])] = dict(new_vals)  # 이력용(승인 당시 쓴 값)
+        if hit["submission_id"] != sub.pk:
+            _share(summary, "shared_biochem_ids", [hit["pk"]])  # 이력용
+        if before["submission_id"] is None:
             # 업로드 밖에서 생긴 행을 처음 갱신 — 직전 값을 기준 스냅샷에 남긴다(삭제 재적용의 출발점)
-            derived.capture_biochem_baseline(p, obj.pk, before, sub)
-        _dup(summary, i, cid, f"생화학 {obj.test} {obj.value} ({measured}) 이미 있음 — 갱신만",
-             f"Biochemistry {obj.test} {obj.value} ({measured}) already exists — updated only")
+            derived.capture_biochem_baseline(p, hit["pk"], before, sub)
+        _dup(summary, i, cid, f"생화학 {test} {value} ({measured}) 이미 있음 — 갱신만",
+             f"Biochemistry {test} {value} ({measured}) already exists — updated only")
 
 
 # ─── 파일 중복(같은 SHA-256 이 이미 그 환자에 연결됨) ───
@@ -486,7 +537,7 @@ def _genomic(sub, rows, summary, scope):
         if p is None:
             _skip(summary, i, cid)
             continue
-        mine = files_for_row(sub, seq_files, len(rows), r)  # 파일 매칭은 범위와 무관하게 전체 행 수 기준
+        mine = files_for_row(sub, seq_files, scope.total_rows, r)  # 파일 매칭은 범위와 무관하게 전체 행 수 기준
         unmatched -= {f.pk for f in mine}
         if mine and {f.sha256 for f in mine} <= _linked_hashes(p, "sequence"):
             _dup(summary, i, cid, "같은 시퀀스 파일(SHA-256)이 이미 이 환자에 있어 건너뜀",

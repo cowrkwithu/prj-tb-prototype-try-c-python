@@ -2,7 +2,8 @@
 
 원본과 같은 규칙으로 환자 DB 필드(cxr/ct/pet_ct 수, CXR 소견, id)에서 촬영 목록을 파생한다.
 실제 영상 파일은 static/imaging/ (원본 public/imaging), 자산 목록은 data/seed/rapImaging.json.
-영상 DB 모델은 4단계(RAP)에서 도입한다 — 그때 이 함수는 모델 조회로 대체된다.
+5단계부터 화면(대상자 등록조회 영상 탭·영상 분석)은 DB ImagingStudy 만 읽는다. 이 함수는 공개 샘플 검사 시드
+(apps.imaging.services.load_imaging_samples)의 촬영일·소견 규칙으로만 쓴다.
 """
 from __future__ import annotations
 
